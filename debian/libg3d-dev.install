@@ -1,0 +1,4 @@
+usr/include/g3d/*.h
+usr/lib/pkgconfig/libg3d.pc
+usr/lib/libg3d.la
+usr/lib/libg3d.so

@@ -1,0 +1,11 @@
+libtool
+libg3d.pc
+gtk-doc.make
+configure
+config.status
+config.log
+config
+autom4te.cache
+aclocal.m4
+Makefile.in
+Makefile

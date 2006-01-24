@@ -1,0 +1,3 @@
+usr/lib/libg3d/plugins/image/imp_bmp.*
+usr/lib/libg3d/plugins/image/imp_sgi.*
+usr/lib/libg3d/plugins/import/*

@@ -1,0 +1,42 @@
+Source: libg3d
+Section: libs
+Priority: optional
+Build-Depends: debhelper (>> 3.0.0), libglib2.0-dev
+Maintainer: Markus Dahms <mad@automagically.de>
+
+Package: libg3d0
+Section: libs
+Architecture: any
+Depends: libglib2.0-0, libg3d-plugins-base
+Recommends: libg3d-plugins-gdkpixbuf
+Description: library for loading and manipulating 3D models
+
+Package: libg3d-plugins-base
+Section: libs
+Architecture: any
+Depends: libg3d0
+Description: Base plugins for libg3d
+ Libg3d is a library for loading and manipulating 3D models.
+ .
+ This package contains all plugins which only depend on libg3d and glib.
+
+Package: libg3d-plugins-gdkpixbuf
+Section: libs
+Architecture: any
+Depends: libg3d0, libgtk2.0-0
+Description: Gdk_pixbuf plugin for libg3d
+ Libg3d is a library for loading and manipulating 3D models.
+ .
+ This package contains the gdkpixbuf image loading plugin which depends on
+ the GTK+ package.
+
+Package: libg3d-dev
+Section: libdevel
+Architecture: any
+Depends: libg3d0, libglib2.0-dev
+Description: libg3d development package
+
+Package: libg3d-doc
+Section: doc
+Architecture: all
+Description: libg3d API documentation in HTML format

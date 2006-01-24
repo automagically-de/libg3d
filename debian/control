@@ -1,7 +1,7 @@
 Source: libg3d
 Section: libs
 Priority: optional
-Build-Depends: debhelper (>> 3.0.0), libglib2.0-dev
+Build-Depends: debhelper (>> 3.0.0), flex (>> 2.5.5), libglib2.0-dev, libgtk2.0-dev
 Maintainer: Markus Dahms <mad@automagically.de>
 
 Package: libg3d0

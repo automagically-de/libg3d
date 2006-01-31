@@ -43,7 +43,7 @@ binary-arch: build install
 	#dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
-	dh_builddeb --destdir=../upload-libg3d/debian
+	dh_builddeb
 
 binary: binary-indep binary-arch
 

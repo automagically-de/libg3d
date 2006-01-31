@@ -94,6 +94,9 @@ typedef struct {
 	GSList *faces;
 	GSList *objects;
 
+	/* don't render this object */
+	gboolean hide;
+
 	/* vertices */
 	guint32 vertex_count;
 	gfloat *vertex_data;

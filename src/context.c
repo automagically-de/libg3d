@@ -41,7 +41,8 @@ void g3d_context_free(G3DContext *context)
 	g_free(context);
 }
 
-/* callback wrappers */
+/* callback wrappers - to be called from libg3d plugins */
+
 gboolean g3d_context_set_bgcolor(G3DContext *context,
 	gfloat r, gfloat g, gfloat b, gfloat a)
 {
@@ -71,10 +72,25 @@ gboolean g3d_context_update_progress_bar(G3DContext *context,
 		return FALSE;
 }
 
-/* set callback functions */
+/* set callback functions - to be called from client program */
+
 void g3d_context_set_set_bgcolor_func(G3DContext *context,
 	G3DSetBgColorFunc func, gpointer user_data)
 {
 	context->set_bgcolor_func = func;
 	context->set_bgcolor_data = user_data;
+}
+
+void g3d_context_set_update_interface_func(G3DContext *context,
+	G3DUpdateInterfaceFunc func, gpointer user_data)
+{
+	context->update_interface_func = func;
+	context->update_interface_data = user_data;
+}
+
+void g3d_context_set_update_progress_bar_func(G3DContext *context,
+	G3DUpdateProgressBarFunc func, gpointer user_data)
+{
+	context->update_progress_bar_func = func;
+	context->update_progress_bar_data = user_data;
 }

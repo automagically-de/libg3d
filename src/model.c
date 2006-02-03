@@ -21,6 +21,7 @@
 */
 
 #include <g3d/types.h>
+#include <g3d/context.h>
 #include <g3d/model.h>
 #include <g3d/object.h>
 #include <g3d/material.h>
@@ -44,8 +45,12 @@ G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
 
 	model = g3d_model_new();
 
+	g3d_context_update_progress_bar(context, 0.0, TRUE);
+
 	if(g3d_plugins_load_model(context, filename, model))
 	{
+		g3d_context_update_progress_bar(context, 0.0, FALSE);
+
 		/* check model */
 		if(!g3d_model_check(model))
 		{
@@ -83,7 +88,10 @@ G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
 		return model;
 	}
 	else
+	{
+		g3d_context_update_progress_bar(context, 0.0, FALSE);
 		g3d_model_free(model);
+	}
 
 	return NULL;
 }

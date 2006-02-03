@@ -98,6 +98,7 @@ All types used in libg3d
 @materials: 
 @faces: 
 @objects: 
+@hide: 
 @vertex_count: 
 @vertex_data: 
 @tex_vertex_count: 

@@ -64,7 +64,7 @@ gboolean g3d_context_set_bgcolor(G3DContext *context,
 
 /**
  * g3d_context_update_interface:
- * @context: a valid context.
+ * @context: a valid context
  *
  * Try to update the interface. This will call a function registered with
  * @g3d_context_set_update_interface_func.
@@ -75,7 +75,7 @@ gboolean g3d_context_update_interface(G3DContext *context);
 
 /**
  * g3d_context_update_progress_bar:
- * @context: a valid context.
+ * @context: a valid context
  * @percentage: the percentage to set on the progress bar
  * @visibility: show or hide the progress bar
  *
@@ -88,7 +88,7 @@ gboolean g3d_context_update_progress_bar(G3DContext *context,
 
 /**
  * g3d_context_set_set_bgcolor_func:
- * @context: a valid context.
+ * @context: a valid context
  * @func: the callback function
  * @user_data: user-defined opaque pointer
  *
@@ -96,6 +96,26 @@ gboolean g3d_context_update_progress_bar(G3DContext *context,
  */
 void g3d_context_set_set_bgcolor_func(G3DContext *context,
 	G3DSetBgColorFunc func, gpointer user_data);
+
+/**
+ * g3d_context_set_update_interface_func
+ * @context: a valid context
+ * @func: the callback function
+ */
+void g3d_context_set_update_interface_func(G3DContext *context,
+	G3DUpdateInterfaceFunc func, gpointer user_data);
+
+/**
+ * g3d_context_set_update_progress_bar_func
+ * @context: a valid context
+ * @func: the callback function
+ * @user_data: user-defined opaque pointer
+ *
+ * Registers a callback function for updating the progress bar.
+ */
+void g3d_context_set_update_progress_bar_func(G3DContext *context,
+	G3DUpdateProgressBarFunc func, gpointer user_data);
+
 
 G_END_DECLS
 

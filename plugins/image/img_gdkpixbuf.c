@@ -73,7 +73,8 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 			image->pixeldata[(y * image->width + x) * 4 + 0] = p[0];
 			image->pixeldata[(y * image->width + x) * 4 + 1] = p[1];
 			image->pixeldata[(y * image->width + x) * 4 + 2] = p[2];
-			image->pixeldata[(y * image->width + x) * 4 + 3] = p[3];
+			if(gdk_pixbuf_get_n_channels(pixbuf) >= 4)
+				image->pixeldata[(y * image->width + x) * 4 + 3] = p[3];
 		}
 
 	/* set alpha to 1.0 */

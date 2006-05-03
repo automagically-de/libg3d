@@ -85,6 +85,10 @@ G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
 			oitem = oitem->next;
 		}
 
+		/* save filename */
+		if(model->filename == NULL)
+			model->filename = g_strdup(filename);
+
 		return model;
 	}
 	else
@@ -261,6 +265,8 @@ void g3d_model_clear(G3DModel *model)
 void g3d_model_free(G3DModel *model)
 {
 	g3d_model_clear(model);
+	if(model->filename)
+		g_free(model->filename);
 	g_free(model);
 }
 

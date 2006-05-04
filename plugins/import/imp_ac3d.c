@@ -37,7 +37,7 @@ struct ac3d_transform {
 	gfloat offx, offy, offz;
 };
 
-static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
+static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gchar *line, struct ac3d_transform *transform, guint32 flags,
 	GSList **objectlist);
 
@@ -157,7 +157,13 @@ static gchar *ac3d_remove_quotes(gchar *text)
 	}
 }
 
-static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
+/**
+ * ac3d_read_object:
+ * returns: number of objects (including sub-objects) read, 0 in case of
+ *          error.
+ */
+
+static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gchar *line, struct ac3d_transform *parent_transform, guint32 flags,
 	GSList **objectlist)
 {
@@ -174,6 +180,7 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gfloat texscaleu = 1.0, texscalev = 1.0;
 	gfloat crease = 0.0;
 	gchar *filename;
+	gint32 kidsread, objectcount = 0;
 	static guint32 texid = 1;
 
 	if(sscanf(line, "OBJECT %s", namebuf) != 1)
@@ -185,6 +192,7 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	memcpy(transform, parent_transform, sizeof(struct ac3d_transform));
 
 	object = g_new0(G3DObject, 1);
+	objectcount ++;
 	*(objectlist) = g_slist_append(*(objectlist), object);
 
 	while(fgets(buffer, 2048, f))
@@ -195,15 +203,22 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 			if(sscanf(buffer, "kids %u", &nkids) != 1)
 			{
 				g_warning("AC3D: error reading kids line (%s)", buffer);
-				return FALSE;
+				return 0;
 			}
 			for(i = 0; i < nkids; i ++)
 			{
 				/* read kids */
 				fgets(buffer, 2048, f);
-				ac3d_read_object(f, context, model, buffer, transform, flags,
-					&(object->objects));
+				kidsread = ac3d_read_object(f, context, model, buffer,
+					transform, flags, &(object->objects));
+				objectcount += kidsread;
 			}
+
+#if DEBUG > 0
+			g_print("AC3D: \"%s\": %d sub-objects read\n",
+				object->name ? object->name : "unnamed",
+				objectcount - 1);
+#endif
 
 			if(crease > 0.0)
 			{
@@ -212,7 +227,7 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 				g3d_object_smooth(object, crease);
 #endif
 			}
-			return TRUE;
+			return objectcount;
 		}
 		else if(strncmp(buffer, "name", 4) == 0)
 		{
@@ -285,7 +300,7 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 			while(!surf_done)
 			{
 				if(!fgets(buffer, 2048, f))
-					return FALSE;
+					return 0;
 
 				if(sscanf(buffer, "refs %u", &ti1) == 1)
 				{
@@ -311,7 +326,7 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 						for(i = 0; i < face->vertex_count; i ++)
 						{
 							if(!fgets(buffer, 2048, f))
-								return FALSE;
+								return 0;
 
 							if(sscanf(buffer, "%u %f %f",
 								&(face->vertex_indices[i]),
@@ -478,5 +493,5 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 		}
 	}
 
-	return FALSE;
+	return 0;
 }

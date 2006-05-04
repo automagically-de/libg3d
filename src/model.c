@@ -36,12 +36,53 @@ G3DModel *g3d_model_new(void)
 	return model;
 }
 
-G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
+static gdouble objects_max_radius(GSList *objects)
 {
-	G3DModel *model;
 	G3DObject *object;
 	GSList *oitem;
 	gdouble radius, max_rad = 0.0;
+
+	oitem = objects;
+	while(oitem)
+	{
+		object = (G3DObject *)oitem->data;
+		radius = g3d_object_radius(object);
+		if(radius > max_rad)
+			max_rad = radius;
+
+		radius = objects_max_radius(object->objects);
+		if(radius > max_rad)
+			max_rad = radius;
+
+		oitem = oitem->next;
+	}
+
+	return max_rad;
+}
+
+static void objects_post_load(GSList *objects, gdouble max_rad)
+{
+	G3DObject *object;
+	GSList *oitem;
+
+	oitem = objects;
+	while(oitem)
+	{
+		object = (G3DObject *)oitem->data;
+
+		g3d_object_scale(object, (10.0 / max_rad));
+		g3d_object_optimize(object);
+
+		objects_post_load(object->objects, max_rad);
+
+		oitem = oitem->next;
+	}
+}
+
+G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
+{
+	G3DModel *model;
+	gdouble max_rad;
 
 	model = g3d_model_new();
 
@@ -62,28 +103,10 @@ G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
 		g3d_model_center(model);
 
 		/* get maximum radius of all objects */
-		oitem = model->objects;
-		while(oitem)
-		{
-			object = (G3DObject *)oitem->data;
-			radius = g3d_object_radius(object);
-			if(radius > max_rad)
-				max_rad = radius;
-
-			oitem = oitem->next;
-		}
+		max_rad = objects_max_radius(model->objects);
 
 		/* scale and optimize objects */
-		oitem = model->objects;
-		while(oitem)
-		{
-			object = (G3DObject *)oitem->data;
-
-			g3d_object_scale(object, (10.0 / max_rad));
-			g3d_object_optimize(object);
-
-			oitem = oitem->next;
-		}
+		objects_post_load(model->objects, max_rad);
 
 		/* save filename */
 		if(model->filename == NULL)

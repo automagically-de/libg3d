@@ -38,7 +38,8 @@ struct ac3d_transform {
 };
 
 static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
-	gchar *line, struct ac3d_transform *transform, guint32 flags);
+	gchar *line, struct ac3d_transform *transform, guint32 flags,
+	GSList **objectlist);
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer user_data)
@@ -115,7 +116,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		else if(strncmp(buffer, "OBJECT", 6) == 0)
 		{
 			transform = g_new0(struct ac3d_transform, 1);
-			ac3d_read_object(f, context, model, buffer, transform, flags);
+			ac3d_read_object(f, context, model, buffer, transform, flags,
+				&(model->objects));
 		}
 		else
 		{
@@ -156,7 +158,8 @@ static gchar *ac3d_remove_quotes(gchar *text)
 }
 
 static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
-	gchar *line, struct ac3d_transform *parent_transform, guint32 flags)
+	gchar *line, struct ac3d_transform *parent_transform, guint32 flags,
+	GSList **objectlist)
 {
 	struct ac3d_transform *transform;
 	G3DObject *object;
@@ -182,7 +185,7 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	memcpy(transform, parent_transform, sizeof(struct ac3d_transform));
 
 	object = g_new0(G3DObject, 1);
-	model->objects = g_slist_append(model->objects, object);
+	*(objectlist) = g_slist_append(*(objectlist), object);
 
 	while(fgets(buffer, 2048, f))
 	{
@@ -198,7 +201,8 @@ static int ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 			{
 				/* read kids */
 				fgets(buffer, 2048, f);
-				ac3d_read_object(f, context, model, buffer, transform, flags);
+				ac3d_read_object(f, context, model, buffer, transform, flags,
+					&(object->objects));
 			}
 
 			if(crease > 0.0)

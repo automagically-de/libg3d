@@ -1,8 +1,0 @@
-.deps
-.libs
-Makefile
-Makefile.in
-*.la
-*.lo
-imp_vrml_v1.h
-imp_vrml_v1.c

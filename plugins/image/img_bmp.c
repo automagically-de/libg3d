@@ -32,7 +32,7 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 {
 	FILE *f;
 	guint32 filesize, offset, headsize, compression;
-	guint32 x, y;
+	gint32 x, y;
 
 	f = fopen(filename, "r");
 	if(f == NULL)
@@ -57,7 +57,7 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 	headsize = g3d_read_int32_le(f);      /* size of header */
 	image->width  = g3d_read_int32_le(f); /* width */
 	image->height = g3d_read_int32_le(f); /* height */
-	g3d_read_int16_le(f);                               /* num of color planes */
+	g3d_read_int16_le(f);                 /* num of color planes */
 	image->depth  = g3d_read_int16_le(f); /* bits per pixel */
 	compression   = g3d_read_int32_le(f); /* compression */
 	g3d_read_int32_le(f);                 /* image size */
@@ -116,7 +116,7 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 }
 
 gchar *plugin_description(G3DContext *context)
-{ 
+{
 	return g_strdup(
 		"Plugin to read Windows Bitmap (.bmp) images\n"
 		"(for use as textures or height fields)\n"

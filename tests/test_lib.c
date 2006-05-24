@@ -33,6 +33,9 @@ int main(int argc, char *argv[])
 	GSList *oitem;
 	guint32 i;
 
+	atexit(g_mem_profile);
+	g_mem_set_vtable(glib_mem_profiler_table);
+
 	context = g3d_context_new();
 
 	if(argc > 1)

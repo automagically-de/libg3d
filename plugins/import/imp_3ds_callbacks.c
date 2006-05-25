@@ -185,6 +185,8 @@ gboolean x3ds_cb_0x4110(x3ds_global_data *global, x3ds_parent_data *parent)
 		object->vertex_data[i * 3 + 1] = g3d_read_float_le(global->f);
 		object->vertex_data[i * 3 + 2] = g3d_read_float_le(global->f);
 		parent->nb -= 12;
+
+		if((i % 1000) == 0) x3ds_update_progress(global);
 	}
 	return TRUE;
 }
@@ -235,6 +237,8 @@ gboolean x3ds_cb_0x4120(x3ds_global_data *global, x3ds_parent_data *parent)
 		face->material = g_slist_nth_data(object->materials, 0);
 
 		object->faces = g_slist_append(object->faces, face);
+
+		if((i % 1000) == 0) x3ds_update_progress(global);
 	}
 
 	return TRUE;
@@ -299,6 +303,8 @@ gboolean x3ds_cb_0x4130(x3ds_global_data *global, x3ds_parent_data *parent)
 				}
 			} /* textured face */
 		} /* material != NULL */
+
+		if((i % 1000) == 0) x3ds_update_progress(global);
 	} /* 0..nfaces */
 
 	return TRUE;
@@ -323,6 +329,8 @@ gboolean x3ds_cb_0x4140(x3ds_global_data *global, x3ds_parent_data *parent)
 		object->tex_vertex_data[i * 2 + 0] = g3d_read_float_le(global->f);
 		object->tex_vertex_data[i * 2 + 1] = g3d_read_float_le(global->f);
 		parent->nb -= 8;
+
+		if((i % 1000) == 0) x3ds_update_progress(global);
 	}
 
 	return TRUE;

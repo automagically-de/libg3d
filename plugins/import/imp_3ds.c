@@ -43,6 +43,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	gint32 nbytes, magic;
 	x3ds_global_data global;
 	x3ds_parent_data *parent;
+	long int fpos;
 
 	f = fopen(filename, "r");
 	if(f == NULL)
@@ -67,6 +68,12 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	global.f = f;
 	global.scale = 1.0;
 	global.max_tex_id = 0;
+
+	/* get size of file */
+	fpos = ftell(global.f);
+	fseek(global.f, 0, SEEK_END);
+	global.max_fpos = ftell(global.f);
+	fseek(global.f, fpos, SEEK_SET);
 
 	parent = g_new0(x3ds_parent_data, 1);
 	parent->id = magic;
@@ -156,9 +163,22 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 		}
 
 		parent->nb -= chunk_len;
+
+		/* update progress bar */
+		x3ds_update_progress(global);
 	}
 
 	return TRUE;
+}
+
+void x3ds_update_progress(x3ds_global_data *global)
+{
+	long int fpos;
+
+	/* update progress bar */
+	fpos = ftell(global->f);
+	g3d_context_update_progress_bar(global->context,
+		((gfloat)fpos / (gfloat)global->max_fpos), TRUE);
 }
 
 gint32 x3ds_read_cstr(FILE *f, char *string)

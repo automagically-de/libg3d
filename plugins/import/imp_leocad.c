@@ -67,7 +67,9 @@ void plugin_cleanup(gpointer user_data)
 	LeoCadLibrary *library;
 
 	library = (LeoCadLibrary *)user_data;
-	leocad_library_free(library);
+
+	if(library)
+		leocad_library_free(library);
 }
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,

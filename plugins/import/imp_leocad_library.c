@@ -107,7 +107,9 @@ static gboolean leocad_free_piece_cb(gpointer key, gpointer value,
 
 	piece = (LeoCadPiece *)value;
 
+#if DEBUG > 3
 	g_print("D: freeing piece %s\n", piece->name);
+#endif
 
 	if(piece->name) g_free(piece->name);
 	if(piece->description) g_free(piece->description);

@@ -66,6 +66,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	global.model = model;
 	global.f = f;
 	global.scale = 1.0;
+	global.max_tex_id = 0;
 
 	parent = g_new0(x3ds_parent_data, 1);
 	parent->id = magic;

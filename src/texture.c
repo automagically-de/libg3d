@@ -91,6 +91,30 @@ gboolean g3d_texture_prepare(G3DImage *texture)
 	return FALSE;
 }
 
+gboolean g3d_texture_flip_y(G3DImage *texture)
+{
+	guint8 *newpixel;
+	gint32 y;
+
+	g_return_val_if_fail(texture != NULL, FALSE);
+
+	newpixel = g_new0(guint8, texture->width * texture->height * 4);
+
+	for(y = 0; y < texture->height; y ++)
+	{
+		memcpy(
+			newpixel + (y * texture->width * 4),
+			texture->pixeldata + (
+				(texture->height - y - 1) * texture->width * 4),
+			texture->width * 4);
+	}
+
+	g_free(texture->pixeldata);
+	texture->pixeldata = newpixel;
+
+	return TRUE;
+}
+
 static gboolean dump_ppm(G3DImage *image, const gchar *filename)
 {
 	FILE *f;

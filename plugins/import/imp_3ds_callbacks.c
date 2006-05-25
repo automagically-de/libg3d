@@ -86,8 +86,24 @@ gboolean x3ds_cb_0x0030(x3ds_global_data *global, x3ds_parent_data *parent)
 			material->shininess = (gfloat)percent / 100.0;
 			break;
 
+		case 0xA041: /* shininess (2) */
+			/* TODO: do something here? */
+			break;
+
 		case 0xA050: /* transparency */
 			material->a = 1.0 - ((gfloat)percent / 100.0);
+			break;
+
+		case 0xA200: /* texture map */
+			/* TODO: do something here? */
+			break;
+
+		case 0xA220: /* reflection map */
+			/* TODO: do something here? */
+			break;
+
+		case 0xA230: /* bump map */
+			/* TODO: do something here? */
 			break;
 
 		default:
@@ -177,6 +193,7 @@ gboolean x3ds_cb_0x4110(x3ds_global_data *global, x3ds_parent_data *parent)
 gboolean x3ds_cb_0x4120(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	gint32 i, flags, nfaces;
+#define X3DS_REORDER_FACES
 #ifdef X3DS_REORDER_FACES
 	gint32 p1 = -1, p2 = -1, bottle;
 #endif
@@ -394,8 +411,57 @@ gboolean x3ds_cb_0xA300(x3ds_global_data *global, x3ds_parent_data *parent)
 		global->model, buffer);
 	if(material->tex_image)
 	{
+		g3d_texture_flip_y(material->tex_image);
 		material->tex_image->tex_id = ++ global->max_tex_id;
 	}
+
+	return TRUE;
+}
+
+/* texture map scale u */
+gboolean x3ds_cb_0xA354(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	G3DMaterial *material;
+	G3DImage *image;
+	gfloat scale;
+
+	material = (G3DMaterial *)parent->object;
+	g_return_val_if_fail(material, FALSE);
+
+	image = material->tex_image;
+	g_return_val_if_fail(image, FALSE);
+
+	scale = g3d_read_float_le(global->f);
+	parent->nb -= 4;
+
+	image->tex_scale_u = scale;
+#if DEBUG > 3
+	g_print("[3DS] scale_u: %f\n", image->tex_scale_u);
+#endif
+
+	return TRUE;
+}
+
+/* texture map scale v */
+gboolean x3ds_cb_0xA356(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	G3DMaterial *material;
+	G3DImage *image;
+	gfloat scale;
+
+	material = (G3DMaterial *)parent->object;
+	g_return_val_if_fail(material, FALSE);
+
+	image = material->tex_image;
+	g_return_val_if_fail(image, FALSE);
+
+	scale = g3d_read_float_le(global->f);
+	parent->nb -= 4;
+
+	image->tex_scale_v = scale;
+#if DEBUG > 3
+	g_print("[3DS] scale_v: %f\n", image->tex_scale_v);
+#endif
 
 	return TRUE;
 }

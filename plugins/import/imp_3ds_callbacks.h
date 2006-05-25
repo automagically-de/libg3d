@@ -19,6 +19,8 @@ gboolean x3ds_cb_0x4160(x3ds_global_data *global, x3ds_parent_data *parent);
 gboolean x3ds_cb_0xA000(x3ds_global_data *global, x3ds_parent_data *parent);
 gboolean x3ds_cb_0xA081(x3ds_global_data *global, x3ds_parent_data *parent);
 gboolean x3ds_cb_0xA300(x3ds_global_data *global, x3ds_parent_data *parent);
+gboolean x3ds_cb_0xA354(x3ds_global_data *global, x3ds_parent_data *parent);
+gboolean x3ds_cb_0xA356(x3ds_global_data *global, x3ds_parent_data *parent);
 gboolean x3ds_cb_0xAFFF(x3ds_global_data *global, x3ds_parent_data *parent);
 
 #endif /* _IMP_3DS_CALLBACKS_H */

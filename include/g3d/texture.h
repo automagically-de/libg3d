@@ -53,6 +53,8 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
  */
 gboolean g3d_texture_prepare(G3DImage *texture);
 
+gboolean g3d_texture_flip_y(G3DImage *texture);
+
 G_END_DECLS
 
 #endif /* __G3D_TEXTURE_H__ */

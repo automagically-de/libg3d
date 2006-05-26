@@ -1,3 +1,10 @@
+Changes since version 0.0.3:
+	* imp_3ds: reorganization
+	* imp_3ds: better texture support
+	* imp_iob: better material support
+	* general: more cleanup on exit
+	* general: usual bugfixes
+
 Changes since version 0.0.2:
 	* plugins: support (partly) for object trees
 	* imp_ac3d: hierarchical object support

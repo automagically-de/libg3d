@@ -81,6 +81,7 @@ int iob_read_directory(FILE *f, guint32 nbytes, G3DModel *model,
 	void *pobject, guint32 parentid, int level, G3DContext *context)
 {
 	guint32 id, len;
+	gchar buffer[1024];
 	gint32 toread = nbytes;
 #if DEBUG > 0
 	int i;
@@ -135,8 +136,13 @@ int iob_read_directory(FILE *f, guint32 nbytes, G3DModel *model,
 				break;
 
 			case G3D_IFF_MKID('N','A','M','E'):
-				((G3DObject*)pobject)->name = g_malloc0(19);
-				fread(((G3DObject*)pobject)->name, 1, len, f);
+				fread(buffer, 1, len, f);
+				((G3DObject*)pobject)->name = g_convert(
+					buffer, len,
+					"UTF-8",
+					"ISO-8859-1",
+					NULL, NULL,
+					NULL);
 				break;
 
 			case G3D_IFF_MKID('S','H','P','2'):

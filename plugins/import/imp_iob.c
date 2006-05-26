@@ -169,8 +169,6 @@ int iob_read_directory(FILE *f, guint32 nbytes, G3DModel *model,
 				iob_read_faces(f, len, (G3DObject*)pobject, iob_edges, id);
 				break;
 
-#if 0
-			/* too slow and maybe buggy for now */
 			case G3D_IFF_MKID('C','L','S','T'):
 			case G3D_IFF_MKID('R','L','S','T'):
 			case G3D_IFF_MKID('T','L','S','T'):
@@ -179,7 +177,6 @@ int iob_read_directory(FILE *f, guint32 nbytes, G3DModel *model,
 			case G3D_IFF_MKID('T','L','S','2'):
 				iob_read_mat_lists(f, len, (G3DObject*)pobject, id);
 				break;
-#endif
 
 			case G3D_IFF_MKID('C','O','L','R'):
 				material = g_slist_nth_data(((G3DObject*)pobject)->materials,
@@ -340,7 +337,7 @@ int iob_read_mat_lists(FILE *f, int nbytes, G3DObject* object, int type)
 	else
 		nitems = g3d_read_int16_be(f);
 
-#if DEBUG > 0
+#if DEBUG > 3
 	g_print("IOB: xLST / xLS2: %d items\n", nitems);
 #endif
 	for(i = 0; i < nitems; i ++)
@@ -476,7 +473,7 @@ int iob_read_faces(FILE *f, int nbytes, G3DObject* object, int *edges,
 		face->vertex_indices[2] = v3;
 
 		face->material = g_slist_nth_data(object->materials, 0);
-		object->faces = g_slist_prepend(object->faces, face);
+		object->faces = g_slist_append(object->faces, face);
 
 #if DEBUG > 3
 		g_printerr("iob_read_faces: face: #%d (%d/%d/%d)\n", i+1,

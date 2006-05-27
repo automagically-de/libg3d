@@ -27,6 +27,9 @@ gboolean iob_cb_xLSx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	for(i = 0; i < nitems; i ++)
 	{
+		/* TODO: find material by parameters, don't create too much
+		 * materials */
+
 		/* default material + nth */
 		material = g_slist_nth_data(object->materials, i + 1);
 		if(material == NULL)

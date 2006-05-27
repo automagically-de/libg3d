@@ -37,14 +37,15 @@ LIBADD = \
 LIBTOOL += --quiet
 
 imp_3dmf_la_SOURCES = imp_3dmf.c
-imp_3ds_la_SOURCES = imp_3ds.c imp_3ds_chunks.h \
+imp_3ds_la_SOURCES = imp_3ds.c imp_3ds.h imp_3ds_chunks.h \
 	imp_3ds_callbacks.c imp_3ds_callbacks.h
 imp_ac3d_la_SOURCES = imp_ac3d.c
 imp_cob_la_SOURCES = imp_cob.c
 imp_dxf_la_SOURCES = imp_dxf.c
 imp_flt_la_SOURCES = imp_flt.c
 imp_heightfield_la_SOURCES = imp_heightfield.c
-imp_iob_la_SOURCES = imp_iob.c
+imp_iob_la_SOURCES = imp_iob.c imp_iob.h imp_iob_chunks.h \
+	imp_iob_callbacks.c imp_iob_callbacks.h
 imp_leocad_la_SOURCES = imp_leocad.c imp_leocad_library.h imp_leocad_library.c
 imp_lwo_la_SOURCES = imp_lwo.c
 imp_md2_la_SOURCES = imp_md2.c imp_md2_normals.h

@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <glib.h>
 
+#include <g3d/types.h>
+
 #define G3D_IFF_MKID(a,b,c,d) ( \
 	(((guint32)(a))<<24) | \
 	(((guint32)(b))<<16) | \
@@ -33,6 +35,33 @@
 	(((guint32)(d))    ) )
 
 G_BEGIN_DECLS
+
+/* global data */
+typedef struct {
+	G3DContext *context;
+	G3DModel *model;
+	FILE *f;
+} g3d_iff_gdata;
+
+/* local data */
+typedef struct {
+	guint32 id;
+	guint32 parent_id;
+	gpointer object;
+	gint32 level;
+	gpointer level_object;
+	gint32 nb;
+} g3d_iff_ldata;
+
+typedef gboolean (*g3d_iff_chunk_callback)(
+	g3d_iff_gdata *global, g3d_iff_ldata *local);
+
+typedef struct {
+	gchar *id;
+	gchar *description;
+	gboolean container;
+	g3d_iff_chunk_callback callback;
+} g3d_iff_chunk_info;
 
 /**
  * g3d_iff_open:
@@ -57,6 +86,14 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len);
  * Returns: real length of chunk including header and possible padding byte
  */
 int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len);
+
+gchar *g3d_iff_id_to_text(guint32 id);
+
+gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid);
+
+gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
+	g3d_iff_chunk_info *chunks);
+
 
 G_END_DECLS
 

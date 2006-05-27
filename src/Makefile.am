@@ -19,7 +19,7 @@ INCLUDES = -I$(top_builddir)/include
 libg3d_la_CFLAGS = \
 	-Wall -ansi -pedantic \
 	-fstrict-aliasing -Wstrict-aliasing \
-	@DBG_CFLAGS@ \
+	@DBG_CFLAGS@ -DDEBUG=@DEBUG@ \
 	@GLIB_CFLAGS@
 
 libg3d_la_LDFLAGS = \

@@ -111,6 +111,9 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	gint32 chunk_id, chunk_len, i;
 	x3ds_parent_data *subparent;
+	gpointer level_object;
+
+	level_object = NULL;
 
 	while(parent->nb > 0)
 	{
@@ -132,6 +135,7 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 			subparent->id = parent->id;
 			subparent->object = parent->object;
 			subparent->level = parent->level + 1;
+			subparent->level_object = level_object;
 			subparent->nb = chunk_len;
 
 			if(x3ds_chunks[i].callback)
@@ -153,6 +157,8 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 			{
 				fseek(global->f, subparent->nb, SEEK_CUR);
 			}
+
+			level_object = subparent->level_object;
 
 			g_free(subparent);
 		}

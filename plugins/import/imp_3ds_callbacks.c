@@ -3,8 +3,15 @@
 #include <g3d/read.h>
 #include <g3d/texture.h>
 #include <g3d/vector.h>
+#include <g3d/matrix.h>
 
 #include "imp_3ds_callbacks.h"
+
+#define X3DS_FLAG_TENSION       0x01
+#define X3DS_FLAG_CONTINUITY    0x02
+#define X3DS_FLAG_BIAS          0x04
+#define X3DS_FLAG_EASE_TO       0x08
+#define X3DS_FLAG_EASE_FROM     0x10
 
 /* color float */
 gboolean x3ds_cb_0x0010(x3ds_global_data *global, x3ds_parent_data *parent)
@@ -409,7 +416,7 @@ gboolean x3ds_cb_0xA081(x3ds_global_data *global, x3ds_parent_data *parent)
 gboolean x3ds_cb_0xA300(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	G3DMaterial *material;
-	gchar buffer[512];
+	gchar buffer[512], *fn;
 
 	material = (G3DMaterial *)parent->object;
 	g_return_val_if_fail(material, FALSE);
@@ -417,6 +424,14 @@ gboolean x3ds_cb_0xA300(x3ds_global_data *global, x3ds_parent_data *parent)
 	parent->nb -= x3ds_read_cstr(global->f, buffer);
 	material->tex_image = g3d_texture_load_cached(global->context,
 		global->model, buffer);
+	if(material->tex_image == NULL)
+	{
+		/* try to load lowercase filename */
+		fn = g_ascii_strdown(buffer, -1);
+		material->tex_image = g3d_texture_load_cached(global->context,
+			global->model, fn);
+		g_free(fn);
+	}
 	if(material->tex_image)
 	{
 		g3d_texture_flip_y(material->tex_image);
@@ -494,6 +509,204 @@ gboolean x3ds_cb_0xAFFF(x3ds_global_data *global, x3ds_parent_data *parent)
 	}
 
 	parent->object = material;
+
+	return TRUE;
+}
+
+/* node header */
+gboolean x3ds_cb_0xB010(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	GSList *olist;
+	G3DObject *object;
+	gchar buffer[512];
+
+	parent->nb -= x3ds_read_cstr(global->f, buffer);
+#if DEBUG > 3
+	g_printerr("[3DS] NODE_HDR: %s\n", buffer);
+#endif
+
+	/* find object by name */
+	olist = global->model->objects;
+	while(olist)
+	{
+		object = (G3DObject *)olist->data;
+		if(strcmp(object->name, buffer) == 0)
+		{
+			parent->level_object = object;
+			break;
+		}
+		olist = olist->next;
+	}
+
+	g3d_read_int16_le(global->f); /* flags 1 */
+	g3d_read_int16_le(global->f); /* flags 2 */
+	g3d_read_int16_le(global->f); /* ? */
+	parent->nb -= 6;
+
+	return TRUE;
+}
+
+/* pivot */
+gboolean x3ds_cb_0xB013(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	G3DObject *object;
+#if 0
+	gint32 i;
+#endif
+	gfloat x, y, z;
+
+	object = parent->level_object;
+	if(object == NULL) return FALSE;
+
+	x = g3d_read_float_le(global->f);
+	y = g3d_read_float_le(global->f);
+	z = g3d_read_float_le(global->f);
+	parent->nb -= 12;
+
+#if DEBUG > 3
+	g_printerr("[3DS]: PIVOT: (%.2f,%.2f,%.2f)\n", x, y, z);
+#endif
+
+	return TRUE;
+}
+
+/* position tracking tag */
+gboolean x3ds_cb_0xB020(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	G3DObject *object;
+	gint32 i, j, flags, fflags, nkeys, fnum;
+	gfloat x, y, z;
+
+	object = parent->level_object;
+	if(object == NULL) return FALSE;
+
+	flags = g3d_read_int16_le(global->f);
+	fseek(global->f, 8, SEEK_CUR);
+	nkeys = g3d_read_int32_le(global->f);
+
+	parent->nb -= 14;
+
+	for(i = 0; i < nkeys; i ++)
+	{
+		fnum = g3d_read_int32_le(global->f);
+		fflags = g3d_read_int16_le(global->f);
+		parent->nb -= 6;
+
+		if(fflags & X3DS_FLAG_TENSION)
+		{
+			g3d_read_float_le(global->f);
+			parent->nb -= 4;
+		}
+		if(fflags & X3DS_FLAG_CONTINUITY)
+		{
+			g3d_read_float_le(global->f);
+			parent->nb -= 4;
+		}
+		if(fflags & X3DS_FLAG_BIAS)
+		{
+			g3d_read_float_le(global->f);
+			parent->nb -= 4;
+		}
+		if(fflags & X3DS_FLAG_EASE_TO)
+		{
+			g3d_read_float_le(global->f);
+			parent->nb -= 4;
+		}
+		if(fflags & X3DS_FLAG_EASE_FROM)
+		{
+			g3d_read_float_le(global->f);
+			parent->nb -= 4;
+		}
+
+		x = g3d_read_float_le(global->f);
+		y = g3d_read_float_le(global->f);
+		z = g3d_read_float_le(global->f);
+		parent->nb -= 12;
+#if DEBUG > 2
+		g_printerr("[3DS]: POS_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f) (0x%X)\n",
+			fnum, x, y, z, fflags);
+#endif
+
+#define X3DS_ENABLE_POS_TRACK_TAG 0
+#if X3DS_ENABLE_POS_TRACK_TAG
+		if(fnum == 0)
+		{
+			for(j = 0; j < object->vertex_count; j ++)
+			{
+				object->vertex_data[j * 3 + 0] -= x;
+				object->vertex_data[j * 3 + 1] -= y;
+				object->vertex_data[j * 3 + 2] -= z;
+			}
+		}
+#endif
+	}
+
+	return TRUE;
+}
+
+/* rotation tracking tag */
+gboolean x3ds_cb_0xB021(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	G3DObject *object;
+	gint32 i, j, flags, nkeys, fnum;
+	gfloat x, y, z, rot;
+	gfloat matrix[16];
+
+	object = parent->level_object;
+	if(object == NULL) return FALSE;
+
+	flags = g3d_read_int16_le(global->f);
+	fseek(global->f, 8, SEEK_CUR);
+	nkeys = g3d_read_int16_le(global->f);
+	g3d_read_int16_le(global->f);
+	parent->nb -= 14;
+
+	for(i = 0; i < nkeys; i ++)
+	{
+		fnum = g3d_read_int16_le(global->f);
+		g3d_read_int32_le(global->f);
+		parent->nb -= 6;
+
+		rot = g3d_read_float_le(global->f);
+		x = g3d_read_float_le(global->f);
+		y = g3d_read_float_le(global->f);
+		z = g3d_read_float_le(global->f);
+		parent->nb -= 16;
+#if DEBUG > 3
+		g_printerr(
+			"[3DS]: ROT_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f), %.2f rad\n",
+			fnum, x, y, z, rot);
+#endif
+		if(fnum == -1)
+		{
+			g3d_matrix_identity(matrix);
+			g3d_matrix_rotate(rot, x, y, z, matrix);
+
+			for(j = 0; j < object->vertex_count; j ++)
+			{
+				g3d_vector_transform(
+					&(object->vertex_data[j * 3 + 0]),
+					&(object->vertex_data[j * 3 + 1]),
+					&(object->vertex_data[j * 3 + 2]),
+					matrix);
+			}
+		}
+	}
+
+	return TRUE;
+
+}
+
+/* node id */
+gboolean x3ds_cb_0xB030(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	gint32 id;
+
+	id = g3d_read_int16_le(global->f);
+	parent->nb -= 2;
+#if DEBUG > 3
+	g_printerr("[3DS] NODE_ID: %d\n", id);
+#endif
 
 	return TRUE;
 }

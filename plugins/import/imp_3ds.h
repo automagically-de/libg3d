@@ -19,6 +19,7 @@ typedef struct {
     gpointer object;
 	gpointer misc_object;
     gint32 level;
+	gpointer level_object;
     guint32 nb;
 } x3ds_parent_data;
 

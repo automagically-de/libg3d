@@ -86,7 +86,7 @@ gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid)
 }
 
 gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
-	g3d_iff_chunk_info *chunks)
+	g3d_iff_chunk_info *chunks, gboolean chunk_even_len)
 {
 	g3d_iff_ldata *sublocal;
 	guint32 chunk_id, chunk_len;
@@ -106,7 +106,13 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len);
 		local->nb -= 8;
 
-		if(chunk_id == 0) return FALSE;
+		if(chunk_id == 0)
+		{
+			/* skip rest of parent chunk */
+			fseek(global->f, local->nb, SEEK_CUR);
+			local->nb = 0;
+			return FALSE;
+		}
 
 		i = 0;
 		while(chunks[i].id && !g3d_iff_chunk_matches(chunk_id, chunks[i].id))
@@ -137,7 +143,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 			if(chunks[i].container)
 			{
-				g3d_iff_read_ctnr(global, sublocal, chunks);
+				g3d_iff_read_ctnr(global, sublocal, chunks, chunk_even_len);
 			}
 
 			if(sublocal->nb > 0)
@@ -160,7 +166,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 		local->nb -= chunk_len;
 
-		if(chunk_len % 2)
+		if(chunk_even_len && (chunk_len % 2))
 		{
 			fseek(global->f, 1, SEEK_CUR);
 			local->nb -= 1;

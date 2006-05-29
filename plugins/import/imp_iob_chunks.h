@@ -8,6 +8,7 @@
 static g3d_iff_chunk_info iob_chunks[] = {
 	{ "AXIS", "coordinate system",                0, NULL },
 	{ "BBOX", "bounding box data",                0, NULL },
+	{ "BRS4", "brush (4)",                        0, NULL },
 	{ "BRS5", "brush (5)",                        0, NULL },
 	{ "COLR", "color",                            0, iob_cb_COLR },
 	{ "CLS2", "color list (2)",                   0, iob_cb_xLSx },

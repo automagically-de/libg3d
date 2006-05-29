@@ -92,7 +92,7 @@ gchar *g3d_iff_id_to_text(guint32 id);
 gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid);
 
 gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
-	g3d_iff_chunk_info *chunks);
+	g3d_iff_chunk_info *chunks, gboolean chunk_even_len);
 
 
 G_END_DECLS

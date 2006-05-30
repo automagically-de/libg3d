@@ -128,8 +128,11 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		if(x3ds_chunks[i].id == chunk_id)
 		{
-			x3ds_debug(parent->level, "[0x%04X] %s (%d bytes)\n",
-				chunk_id, x3ds_chunks[i].desc, chunk_len);
+			x3ds_debug(parent->level, "[0x%04X][%c%c] %s (%d bytes)\n",
+				chunk_id,
+				x3ds_chunks[i].container ? 'c' : ' ',
+				x3ds_chunks[i].callback ? 'f' : ' ',
+				x3ds_chunks[i].desc, chunk_len);
 
 			subparent = g_new0(x3ds_parent_data, 1);
 			subparent->id = parent->id;

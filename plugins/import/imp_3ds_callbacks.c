@@ -13,9 +13,22 @@
 #define X3DS_FLAG_EASE_TO       0x08
 #define X3DS_FLAG_EASE_FROM     0x10
 
+gboolean x3ds_cb_0x0002(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	gint32 version;
+
+	version = g3d_read_int32_le(global->f);
+	parent->nb -= 4;
+#if DEBUG > 0
+	g_printerr("[3DS] M3D version %d\n", version);
+#endif
+	return TRUE;
+}
+
 /* color float */
 gboolean x3ds_cb_0x0010(x3ds_global_data *global, x3ds_parent_data *parent)
 {
+	G3DMaterial *material;
 	gfloat r, g, b;
 
 	r = g3d_read_float_le(global->f);
@@ -27,6 +40,26 @@ gboolean x3ds_cb_0x0010(x3ds_global_data *global, x3ds_parent_data *parent)
 	{
 		case 0x1200: /* SOLID_BGND */
 			g3d_context_set_bgcolor(global->context, r, g, b, 1.0);
+			break;
+
+		case 0xA010: /* ambient color */
+		case 0xA020: /* diffuse color */
+			material = (G3DMaterial *)parent->object;
+			g_return_val_if_fail(material, FALSE);
+
+			material->r = r;
+			material->g = g;
+			material->b = b;
+			break;
+
+		case 0xA030: /* specular color */
+			material = (G3DMaterial *)parent->object;
+			g_return_val_if_fail(material, FALSE);
+
+			material->specular[0] = r;
+			material->specular[1] = g;
+			material->specular[2] = b;
+			material->specular[3] = 0.25;
 			break;
 
 		default:
@@ -101,8 +134,25 @@ gboolean x3ds_cb_0x0030(x3ds_global_data *global, x3ds_parent_data *parent)
 			material->a = 1.0 - ((gfloat)percent / 100.0);
 			break;
 
+		case 0xA052: /* fallthrough */
+			/* TODO: do something here? */
+			break;
+
+		case 0xA053: /* blur */
+			/* TODO: do something here? */
+			break;
+
+		case 0xA084: /* self illumination */
+			/* TODO: do something here? */
+			break;
+
 		case 0xA200: /* texture map */
 			/* TODO: do something here? */
+			break;
+
+		case 0xA210: /* opacity map */
+			/* TODO: do something here? */
+			g_printerr("[3DS] opacity percentage: %d%%\n", percent);
 			break;
 
 		case 0xA220: /* reflection map */
@@ -416,26 +466,48 @@ gboolean x3ds_cb_0xA081(x3ds_global_data *global, x3ds_parent_data *parent)
 gboolean x3ds_cb_0xA300(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	G3DMaterial *material;
-	gchar buffer[512], *fn;
+	G3DImage *image;
+	gchar buffer[512];
 
 	material = (G3DMaterial *)parent->object;
 	g_return_val_if_fail(material, FALSE);
 
 	parent->nb -= x3ds_read_cstr(global->f, buffer);
-	material->tex_image = g3d_texture_load_cached(global->context,
-		global->model, buffer);
-	if(material->tex_image == NULL)
+
+	switch(parent->id)
 	{
-		/* try to load lowercase filename */
-		fn = g_ascii_strdown(buffer, -1);
-		material->tex_image = g3d_texture_load_cached(global->context,
-			global->model, fn);
-		g_free(fn);
-	}
-	if(material->tex_image)
-	{
-		g3d_texture_flip_y(material->tex_image);
-		material->tex_image->tex_id = ++ global->max_tex_id;
+		case 0xA200: /* texture map */
+			material->tex_image = g3d_texture_load_cached(global->context,
+				global->model, buffer);
+			if(material->tex_image)
+			{
+				g3d_texture_flip_y(material->tex_image);
+				material->tex_image->tex_id = ++ global->max_tex_id;
+			}
+			break;
+
+		case 0xA210: /* opacity map */
+			image = g3d_texture_load(global->context, buffer);
+			if(image != NULL)
+			{
+				g3d_texture_flip_y(image);
+				material->tex_image = g3d_texture_merge_alpha(
+					material->tex_image, image);
+				g3d_texture_free(image);
+			}
+			break;
+
+		case 0xA220: /* reflection map */
+			/* TODO: implement */
+			break;
+
+		case 0xA230: /* bump map */
+			/* TODO: implement */
+			break;
+
+		default:
+			g_printerr("[3DS] unhandled texture name in 0x%04X\n", parent->id);
+			break;
 	}
 
 	return TRUE;
@@ -513,6 +585,25 @@ gboolean x3ds_cb_0xAFFF(x3ds_global_data *global, x3ds_parent_data *parent)
 	return TRUE;
 }
 
+/* keyframe data header */
+gboolean x3ds_cb_0xB00A(x3ds_global_data *global, x3ds_parent_data *parent)
+{
+	gint32 rev, len;
+	gchar buffer[512];
+
+	rev = g3d_read_int16_le(global->f);
+	parent->nb -= 2;
+	parent->nb -= x3ds_read_cstr(global->f, buffer);
+	len = g3d_read_int16_le(global->f);
+	parent->nb -= 2;
+
+#if DEBUG > 0
+	g_printerr("[3DS] keyframe data: r%d, %d frames, \"%s\"\n",
+		rev, len, buffer);
+#endif
+	return TRUE;
+}
+
 /* node header */
 gboolean x3ds_cb_0xB010(x3ds_global_data *global, x3ds_parent_data *parent)
 {
@@ -570,11 +661,16 @@ gboolean x3ds_cb_0xB013(x3ds_global_data *global, x3ds_parent_data *parent)
 	return TRUE;
 }
 
+#define X3DS_ENABLE_POS_TRACK_TAG 0
+
 /* position tracking tag */
 gboolean x3ds_cb_0xB020(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	G3DObject *object;
-	gint32 i, j, flags, fflags, nkeys, fnum;
+	gint32 i, flags, fflags, nkeys, fnum;
+#if X3DS_ENABLE_POS_TRACK_TAG
+	gint32 j;
+#endif
 	gfloat x, y, z;
 
 	object = parent->level_object;
@@ -627,7 +723,6 @@ gboolean x3ds_cb_0xB020(x3ds_global_data *global, x3ds_parent_data *parent)
 			fnum, x, y, z, fflags);
 #endif
 
-#define X3DS_ENABLE_POS_TRACK_TAG 0
 #if X3DS_ENABLE_POS_TRACK_TAG
 		if(fnum == 0)
 		{

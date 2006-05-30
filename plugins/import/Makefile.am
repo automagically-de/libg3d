@@ -54,7 +54,8 @@ imp_md3_la_SOURCES = imp_md3.c
 imp_nff_la_SOURCES = imp_nff.c
 imp_obj_la_SOURCES = imp_obj.c
 imp_q3o_la_SOURCES = imp_q3o.c
-imp_r4_la_SOURCES = imp_r4.c imp_r4_chunks.h
+imp_r4_la_SOURCES = imp_r4.c imp_r4_chunks.h \
+	imp_r4_callbacks.c imp_r4_callbacks.h
 imp_vrml_la_SOURCES = imp_vrml_v1.l imp_vrml.c
 imp_vrml_la_LIBADD = ${LEXLIB}
 

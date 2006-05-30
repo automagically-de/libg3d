@@ -86,7 +86,7 @@ gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid)
 }
 
 gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
-	g3d_iff_chunk_info *chunks, gboolean chunk_even_len)
+	g3d_iff_chunk_info *chunks, gint32 modulo)
 {
 	g3d_iff_ldata *sublocal;
 	guint32 chunk_id, chunk_len;
@@ -99,18 +99,25 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 	level_object = NULL;
 
-	while(local->nb > 0)
+	while(local->nb >= 8)
 	{
 		chunk_id = 0;
 
 		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len);
 		local->nb -= 8;
 
-		if(chunk_id == 0)
+		if((chunk_id == 0) || (chunk_id == 0xFFFFFFFF))
 		{
+#if DEBUG > 0
+			g_printerr("[IFF] got invalid ID, skipping %d bytes @ 0x%08x\n",
+				local->nb, ftell(global->f));
+#endif
 			/* skip rest of parent chunk */
-			fseek(global->f, local->nb, SEEK_CUR);
-			local->nb = 0;
+			if(local->nb > 0)
+			{
+				fseek(global->f, local->nb, SEEK_CUR);
+				local->nb = 0;
+			}
 			return FALSE;
 		}
 
@@ -143,7 +150,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 			if(chunks[i].container)
 			{
-				g3d_iff_read_ctnr(global, sublocal, chunks, chunk_even_len);
+				g3d_iff_read_ctnr(global, sublocal, chunks, modulo);
 			}
 
 			if(sublocal->nb > 0)
@@ -166,14 +173,24 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 		local->nb -= chunk_len;
 
-		if(chunk_even_len && (chunk_len % 2))
+		if(chunk_len % modulo)
 		{
-			fseek(global->f, 1, SEEK_CUR);
-			local->nb -= 1;
+			fseek(global->f, modulo - chunk_len % modulo, SEEK_CUR);
+			local->nb -= chunk_len % modulo;
 		}
 
 		g3d_context_update_interface(global->context);
-	} /* nb > 0 */
+	} /* nb >= 8 */
+
+	if(local->nb > 0)
+	{
+#if DEBUG > 0
+		g_printerr("[IFF] skipping %d bytes at the end of chunk\n",
+			local->nb);
+#endif
+		fseek(global->f, local->nb, SEEK_CUR);
+		local->nb = 0;
+	}
 
 	return TRUE;
 }

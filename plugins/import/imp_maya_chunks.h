@@ -6,22 +6,23 @@
 #include "imp_maya_callbacks.h"
 
 static g3d_iff_chunk_info maya_chunks[] = {
-	{ "\x00\x10\x2e\x42", "unknown",               1, NULL }, /* FOR4 */
 	{ "AUNI", "unknown",                           0, NULL },
 	{ "BRSH", "unknown",                           1, NULL }, /* FOR4 */
 	{ "CHNG", "unknown",                           0, NULL },
 	{ "CMPD", "unknown",                           0, NULL },
 	{ "CREA", "creator",                           0, NULL },
+	{ "DBL2", "unknown",                           0, NULL },
 	{ "DBL3", "unknown",                           0, NULL },
 	{ "DBLE", "unknown",                           0, NULL },
 	{ "DCAM", "unknown",                           1, NULL }, /* FOR4 */
 	{ "DECT", "unknown",                           0, NULL },
-	{ "DMSH", "unknown",                           0, NULL },
+	{ "DMSH", "unknown",                           1, NULL }, /* FOR4 */
 	{ "DMTI", "unknown",                           0, NULL },
 	{ "DPLM", "unknown",                           0, NULL },
 	{ "DSPL", "unknown",                           0, NULL },
 	{ "FINF", "unknown",                           0, NULL },
 	{ "FLGS", "flags",                             0, NULL },
+	{ "FLT2", "unknown",                           0, NULL },
 	{ "FLT3", "unknown",                           0, NULL },
 	{ "GPID", "unknown",                           1, NULL }, /* FOR4 */
 	{ "GRPP", "unknown",                           0, NULL },
@@ -32,6 +33,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "LIS4", "unknown",                           0, NULL },
 	{ "LUNI", "unknown",                           0, NULL },
 	{ "MADE", "unknown",                           0, NULL },
+	{ "MESH", "mesh",                              0, maya_cb_MESH },
 	{ "NRBS", "unknown",                           0, NULL },
 	{ "NSRF", "unknown",                           1, NULL }, /* FOR4 */
 	{ "OBJN", "unknown",                           0, NULL },
@@ -42,9 +44,13 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "PEXE", "unknown",                           0, NULL },
 	{ "PEXF", "unknown",                           0, NULL },
 	{ "PFUV", "unknown",                           0, NULL },
+	{ "PING", "unknown",                           0, NULL },
 	{ "PLUG", "unknown",                           0, NULL },
 	{ "PMIR", "unknown",                           0, NULL },
+	{ "PMVE", "unknown",                           0, NULL },
+	{ "PPCT", "unknown",                           0, NULL },
 	{ "PSOE", "unknown",                           0, NULL },
+	{ "PSPH", "unknown",                           0, NULL },
 	{ "PSPL", "unknown",                           0, NULL },
 	{ "PTUV", "unknown",                           0, NULL },
 	{ "PTWK", "unknown",                           0, NULL },

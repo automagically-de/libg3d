@@ -32,7 +32,7 @@
 FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len)
 {
 	FILE *f;
-	guint32 form_bytes;
+	guint32 form_bytes, magic;
 
 	f = fopen(filename, "r");
 	if(f == NULL)
@@ -41,7 +41,9 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len)
 		return NULL;
 	}
 
-	if(g3d_read_int32_be(f) != G3D_IFF_MKID('F','O','R','M'))
+	magic = g3d_read_int32_be(f);
+	if((magic != G3D_IFF_MKID('F','O','R','M')) &&
+		(magic != G3D_IFF_MKID('F','O','R','4')))
 	{
 		g_warning("file %s is not an IFF file", filename);
 		fclose(f);
@@ -110,7 +112,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		{
 #if DEBUG > 0
 			g_printerr("[IFF] got invalid ID, skipping %d bytes @ 0x%08x\n",
-				local->nb, ftell(global->f));
+				local->nb, (unsigned int)ftell(global->f));
 #endif
 			/* skip rest of parent chunk */
 			if(local->nb > 0)
@@ -119,6 +121,13 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 				local->nb = 0;
 			}
 			return FALSE;
+		}
+
+		if(chunk_id == G3D_IFF_MKID('F','O','R','4'))
+		{
+			chunk_id = g3d_read_int32_be(global->f);
+			local->nb -= 4;
+			chunk_len -= 4;
 		}
 
 		i = 0;
@@ -165,8 +174,8 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		else
 		{
 			tid = g3d_iff_id_to_text(chunk_id);
-			g_printerr("[IFF] unknown chunk type \"%s\" (%d)\n", tid,
-				chunk_len);
+			g_printerr("[IFF] unknown chunk type \"%s\" (%d) @ 0x%08x\n",
+				tid, chunk_len, (unsigned int)ftell(global->f) - 8);
 			g_free(tid);
 			fseek(global->f, chunk_len, SEEK_CUR);
 		}
@@ -175,8 +184,8 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 		if(chunk_len % modulo)
 		{
-			fseek(global->f, modulo - chunk_len % modulo, SEEK_CUR);
-			local->nb -= chunk_len % modulo;
+			fseek(global->f, modulo - (chunk_len % modulo), SEEK_CUR);
+			local->nb -= (modulo - (chunk_len % modulo));
 		}
 
 		g3d_context_update_interface(global->context);

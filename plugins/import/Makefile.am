@@ -11,6 +11,7 @@ pluginimp_LTLIBRARIES = \
 	imp_iob.la \
 	imp_leocad.la \
 	imp_lwo.la \
+	imp_maya.la \
 	imp_md2.la \
 	imp_md3.la \
 	imp_nff.la \
@@ -49,6 +50,8 @@ imp_iob_la_SOURCES = imp_iob.c imp_iob.h imp_iob_chunks.h \
 	imp_iob_callbacks.c imp_iob_callbacks.h
 imp_leocad_la_SOURCES = imp_leocad.c imp_leocad_library.h imp_leocad_library.c
 imp_lwo_la_SOURCES = imp_lwo.c
+imp_maya_la_SOURCES = imp_maya.c imp_maya_chunks.h \
+	imp_maya_callbacks.c imp_maya_callbacks.h
 imp_md2_la_SOURCES = imp_md2.c imp_md2_normals.h
 imp_md3_la_SOURCES = imp_md3.c
 imp_nff_la_SOURCES = imp_nff.c

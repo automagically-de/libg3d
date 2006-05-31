@@ -41,7 +41,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	if(id != G3D_IFF_MKID('M','a','y','a'))
 	{
 		g_warning("file is not an Maya file %s", filename);
-		fclose(f);
+		if(f) fclose(f);
 		return FALSE;
 	}
 
@@ -71,7 +71,7 @@ gchar *plugin_description(void)
 
 gchar **plugin_extensions(void)
 {
-	return g_strsplit("ma:mb", ":", 0);
+	return g_strsplit("mb", ":", 0);
 }
 
 

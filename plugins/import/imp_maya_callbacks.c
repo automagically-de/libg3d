@@ -7,7 +7,7 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	G3DObject *object;
 	G3DMaterial *material;
 	G3DFace *face;
-	gint32 x1, x2, x3, x4, i;
+	gint32 x1, x2, x3, x4, i, i1, i2;
 
 	x1 = g3d_read_int16_be(global->f);
 	x2 = g3d_read_int16_be(global->f);
@@ -49,25 +49,56 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		}
 
 		x3 = g3d_read_int16_be(global->f);
+		x4 = g3d_read_int16_be(global->f);
+		local->nb -= 4;
 #if DEBUG > 0
 		g_printerr("[Maya][MESH] %d %d\n", x3, x4);
 #endif
+#if 0
+		for(i = 0; i < x4; i ++)
+		{
+			g3d_read_int32_be(global->f);
+			local->nb -= 4;
+		}
+
+		x3 = g3d_read_int16_be(global->f);
 		x4 = g3d_read_int16_be(global->f);
 		local->nb -= 4;
-
-		for(i = 0; i < x4 / 3; i ++)
+#if DEBUG > 0
+		g_printerr("[Maya][MESH] %d %d\n", x3, x4);
+#endif
+#endif
+#if 1
+		i1 = -1;
+		i2 = -1;
+		for(i = 0; i < x4 / 2; i ++)
 		{
-			face = g_new0(G3DFace, 1);
-			face->vertex_count = 3;
-			face->vertex_indices = g_new0(guint32, 3);
-			face->vertex_indices[0] = g3d_read_int32_be(global->f) & 0xFFFF;
-			face->vertex_indices[1] = g3d_read_int32_be(global->f) & 0xFFFF;
-			face->vertex_indices[2] = g3d_read_int32_be(global->f) & 0xFFFF;
-			face->material = material;
-			local->nb -= 12;
+			if(i1 == -1)
+			{
+				i1 = g3d_read_int32_be(global->f) & 0xFFFFFF;
+				i2 = g3d_read_int32_be(global->f) & 0xFFFFFF;
+				local->nb -= 8;
+			}
+			else
+			{
+				face = g_new0(G3DFace, 1);
+				face->vertex_count = 4;
+				face->vertex_indices = g_new0(guint32, 4);
+				face->vertex_indices[0] = i1;
+				face->vertex_indices[1] = i2;
+				face->vertex_indices[2] =
+					g3d_read_int32_be(global->f) & 0xFFFFFF;
+				face->vertex_indices[3] =
+					g3d_read_int32_be(global->f) & 0xFFFFFF;
+				face->material = material;
+				local->nb -= 8;
+				i1 = face->vertex_indices[3];
+				i2 = face->vertex_indices[2];
 
-			object->faces = g_slist_append(object->faces, face);
+				object->faces = g_slist_append(object->faces, face);
+			}
 		}
+#endif
 	}
 
 	return TRUE;

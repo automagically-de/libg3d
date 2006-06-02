@@ -91,7 +91,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 	g3d_iff_chunk_info *chunks, gint32 modulo)
 {
 	g3d_iff_ldata *sublocal;
-	guint32 chunk_id, chunk_len;
+	guint32 chunk_id, chunk_len, chunk_mod, chunk_type;
 	gint32 i;
 #if DEBUG > 0
 	gint32 j;
@@ -108,26 +108,46 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len);
 		local->nb -= 8;
 
-		if((chunk_id == 0) || (chunk_id == 0xFFFFFFFF))
-		{
-#if DEBUG > 0
-			g_printerr("[IFF] got invalid ID, skipping %d bytes @ 0x%08x\n",
-				local->nb, (unsigned int)ftell(global->f));
-#endif
-			/* skip rest of parent chunk */
-			if(local->nb > 0)
-			{
-				fseek(global->f, local->nb, SEEK_CUR);
-				local->nb = 0;
-			}
-			return FALSE;
-		}
+		chunk_mod = modulo;
+		chunk_type = ' ';
 
-		if(chunk_id == G3D_IFF_MKID('F','O','R','4'))
+		/* handle special chunks */
+		switch(chunk_id)
 		{
-			chunk_id = g3d_read_int32_be(global->f);
-			local->nb -= 4;
-			chunk_len -= 4;
+			case 0:
+			case 0xFFFFFFFF:
+#if DEBUG > 0
+				g_printerr(
+					"[IFF] got invalid ID, skipping %d bytes @ 0x%08x\n",
+					local->nb, (unsigned int)ftell(global->f));
+#endif
+				/* skip rest of parent chunk */
+				if(local->nb > 0)
+				{
+					fseek(global->f, local->nb, SEEK_CUR);
+					local->nb = 0;
+				}
+				return FALSE;
+				break;
+
+			case G3D_IFF_MKID('F','O','R','4'):
+				chunk_id = g3d_read_int32_be(global->f);
+				chunk_len -= 4;
+				chunk_mod = 4;
+				chunk_type = 'F';
+				local->nb -= 4;
+				break;
+
+			case G3D_IFF_MKID('L','I','S','4'):
+				chunk_id = g3d_read_int32_be(global->f);
+				chunk_len -= 4;
+				chunk_mod = 4;
+				chunk_type = 'L';
+				local->nb -= 4;
+				break;
+
+			default:
+				break;
 		}
 
 		i = 0;
@@ -139,7 +159,11 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 #if DEBUG > 0
 			for(j = 0; j < local->level; j ++) g_printerr("  ");
 			tid = g3d_iff_id_to_text(chunk_id);
-			g_printerr("[%s] %s (%d)\n", tid, chunks[i].description,
+			g_printerr("[%s][%c%c%c] %s (%d)\n", tid,
+				chunk_type,
+				chunks[i].container ? 'c' : ' ',
+				chunks[i].callback ? 'f' : ' ',
+				chunks[i].description,
 				chunk_len);
 			g_free(tid);
 #endif
@@ -182,10 +206,10 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 		local->nb -= chunk_len;
 
-		if(chunk_len % modulo)
+		if(chunk_len % chunk_mod)
 		{
-			fseek(global->f, modulo - (chunk_len % modulo), SEEK_CUR);
-			local->nb -= (modulo - (chunk_len % modulo));
+			fseek(global->f, chunk_mod - (chunk_len % chunk_mod), SEEK_CUR);
+			local->nb -= (chunk_mod - (chunk_len % chunk_mod));
 		}
 
 		g3d_context_update_interface(global->context);

@@ -86,7 +86,9 @@ gboolean x3ds_cb_0x0011(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	switch(parent->id)
 	{
+#if 0
 		case 0xA010: /* ambient color */
+#endif
 		case 0xA020: /* diffuse color */
 			material->r = (gfloat)r / 255.0;
 			material->g = (gfloat)g / 255.0;

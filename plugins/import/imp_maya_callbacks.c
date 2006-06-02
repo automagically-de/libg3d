@@ -15,10 +15,8 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	x4 = g3d_read_int16_be(global->f);
 	local->nb -= 8;
 
-#if DEBUG > 0
-	g_printerr("[Maya][MESH] %d %d %d %d @ 0x%08x\n", x1, x2, x3, x4,
+	g_debug("[Maya][MESH] %d %d %d %d @ 0x%08x\n", x1, x2, x3, x4,
 		(unsigned int)ftell(global->f));
-#endif
 
 	if(x1 == 0x6369)
 	{
@@ -40,35 +38,14 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 			object->vertex_data[i * 3 + 1] = g3d_read_float_be(global->f);
 			object->vertex_data[i * 3 + 2] = g3d_read_float_be(global->f);
 			local->nb -= 12;
-
-#if DEBUG > 1
-			if((i % 10) == 0)
-				g_printerr("\n[Maya][MESH] ");
-			g_printerr("%04.2f ", f);
-#endif
 		}
 
 		x3 = g3d_read_int16_be(global->f);
 		x4 = g3d_read_int16_be(global->f);
 		local->nb -= 4;
-#if DEBUG > 0
-		g_printerr("[Maya][MESH] %d %d\n", x3, x4);
-#endif
-#if 0
-		for(i = 0; i < x4; i ++)
-		{
-			g3d_read_int32_be(global->f);
-			local->nb -= 4;
-		}
 
-		x3 = g3d_read_int16_be(global->f);
-		x4 = g3d_read_int16_be(global->f);
-		local->nb -= 4;
-#if DEBUG > 0
-		g_printerr("[Maya][MESH] %d %d\n", x3, x4);
-#endif
-#endif
-#if 1
+		g_debug("[Maya][MESH] %d %d\n", x3, x4);
+
 		i1 = -1;
 		i2 = -1;
 		for(i = 0; i < x4 / 2; i ++)
@@ -98,9 +75,30 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 				object->faces = g_slist_append(object->faces, face);
 			}
 		}
+
+		x3 = g3d_read_int16_be(global->f);
+		x4 = g3d_read_int16_be(global->f);
+		local->nb -= 4;
+
+		g_debug("[Maya][MESH] %d %d\n", x3, x4);
+
+#if 0
+		for(i = 0; i < x4 / 4; i ++)
+		{
+			face = g_new0(G3DFace, 1);
+			face->vertex_count = 4;
+			face->vertex_indices = g_new0(guint32, 4);
+			face->vertex_indices[0] = g3d_read_int32_be(global->f) & 0xFFFFFF;
+			face->vertex_indices[1] = g3d_read_int32_be(global->f) & 0xFFFFFF;
+			face->vertex_indices[2] = g3d_read_int32_be(global->f) & 0xFFFFFF;
+			face->vertex_indices[3] = g3d_read_int32_be(global->f) & 0xFFFFFF;
+			face->material = material;
+			local->nb -= 16;
+
+			object->faces = g_slist_append(object->faces, face);
+		}
 #endif
 	}
-
 	return TRUE;
 }
 
@@ -121,10 +119,6 @@ gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local)
 			p ++;
 		}
 		while(*(p - 1) != '\0');
-
-#if DEBUG > 3
-		g_printerr("[Maya][STR ] %s\n", buffer);
-#endif
 	}
 
 	g_free(buffer);

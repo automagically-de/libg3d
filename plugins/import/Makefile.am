@@ -22,6 +22,7 @@ pluginimp_LTLIBRARIES = \
 
 AM_CFLAGS = \
 	-Wall -ansi -pedantic \
+	-DG_LOG_DOMAIN=\"LibG3D\" \
 	@DBG_CFLAGS@ -DDEBUG=@DEBUG@ \
 	@GLIB_CFLAGS@
 

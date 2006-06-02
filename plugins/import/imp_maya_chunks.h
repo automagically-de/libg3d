@@ -64,10 +64,10 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "RPLD", "unknown",                           0, NULL },
 	{ "RPRJ", "unknown",                           0, NULL },
 	{ "RTFT", "unknown",                           0, NULL },
-	{ "SCRP", "unknown",                           0, NULL },
+	{ "SCRP", "script",                            1, NULL }, /* FOR4 */
 	{ "SHAD", "unknown",                           0, NULL },
 	{ "SLCT", "unknown",                           0, NULL },
-	{ "STR ", "string",                            0, NULL },
+	{ "STR ", "string",                            0, maya_cb_STR_ },
 	{ "TUNI", "unknown",                           0, NULL },
 	{ "UVER", "minor version?",                    0, NULL },
 	{ "VERS", "version",                           0, NULL },

@@ -103,3 +103,31 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	return TRUE;
 }
+
+gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gchar *buffer, *p;
+
+	/* maximum size */
+	buffer = g_malloc(local->nb);
+
+	while(local->nb > 0)
+	{
+		p = buffer;
+		do
+		{
+			*p = g3d_read_int8(global->f);
+			local->nb --;
+			p ++;
+		}
+		while(*(p - 1) != '\0');
+
+#if DEBUG > 3
+		g_printerr("[Maya][STR ] %s\n", buffer);
+#endif
+	}
+
+	g_free(buffer);
+
+	return FALSE;
+}

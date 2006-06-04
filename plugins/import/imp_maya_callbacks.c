@@ -14,10 +14,10 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	x3 = g3d_read_int16_be(global->f);
 	x4 = g3d_read_int16_be(global->f);
 	local->nb -= 8;
-
-	g_debug("[Maya][MESH] %d %d %d %d @ 0x%08x\n", x1, x2, x3, x4,
+#if 0
+	g_debug("[Maya][MESH] %d %d %d %d @ 0x%08x", x1, x2, x3, x4,
 		(unsigned int)ftell(global->f));
-
+#endif
 	if(x1 == 0x6369)
 	{
 		object = g_new0(G3DObject, 1);
@@ -43,9 +43,9 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		x3 = g3d_read_int16_be(global->f);
 		x4 = g3d_read_int16_be(global->f);
 		local->nb -= 4;
-
-		g_debug("[Maya][MESH] %d %d\n", x3, x4);
-
+#if 0
+		g_debug("[Maya][MESH] %d %d", x3, x4);
+#endif
 		i1 = -1;
 		i2 = -1;
 		for(i = 0; i < x4 / 2; i ++)
@@ -79,9 +79,9 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		x3 = g3d_read_int16_be(global->f);
 		x4 = g3d_read_int16_be(global->f);
 		local->nb -= 4;
-
-		g_debug("[Maya][MESH] %d %d\n", x3, x4);
-
+#if 0
+		g_debug("[Maya][MESH] %d %d", x3, x4);
+#endif
 #if 0
 		for(i = 0; i < x4 / 4; i ++)
 		{

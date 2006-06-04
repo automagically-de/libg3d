@@ -25,6 +25,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <g3d/read.h>
 #include <g3d/iff.h>
 #include <g3d/context.h>
@@ -37,7 +38,7 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len)
 	f = fopen(filename, "r");
 	if(f == NULL)
 	{
-		g_warning("can't open file '%s'", filename);
+		g_critical("can't open file '%s'", filename);
 		return NULL;
 	}
 
@@ -45,7 +46,7 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len)
 	if((magic != G3D_IFF_MKID('F','O','R','M')) &&
 		(magic != G3D_IFF_MKID('F','O','R','4')))
 	{
-		g_warning("file %s is not an IFF file", filename);
+		g_critical("file %s is not an IFF file", filename);
 		fclose(f);
 		return NULL;
 	}
@@ -93,11 +94,9 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 	g3d_iff_ldata *sublocal;
 	guint32 chunk_id, chunk_len, chunk_mod, chunk_type;
 	gint32 i;
-#if DEBUG > 0
-	gint32 j;
-#endif
 	gchar *tid;
 	gpointer level_object;
+	gchar *padding = "                                   ";
 
 	level_object = NULL;
 
@@ -116,11 +115,10 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		{
 			case 0:
 			case 0xFFFFFFFF:
-#if DEBUG > 0
-				g_printerr(
-					"[IFF] got invalid ID, skipping %d bytes @ 0x%08x\n",
+				g_warning(
+					"[IFF] got invalid ID, skipping %d bytes @ 0x%08x",
 					local->nb, (unsigned int)ftell(global->f));
-#endif
+
 				/* skip rest of parent chunk */
 				if(local->nb > 0)
 				{
@@ -156,17 +154,16 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 		if(chunks[i].id)
 		{
-#if DEBUG > 0
-			for(j = 0; j < local->level; j ++) g_printerr("  ");
 			tid = g3d_iff_id_to_text(chunk_id);
-			g_printerr("[%s][%c%c%c] %s (%d)\n", tid,
+			g_debug("%s[%s][%c%c%c] %s (%d)",
+				padding + (strlen(padding) - local->level),
+				tid,
 				chunk_type,
 				chunks[i].container ? 'c' : ' ',
 				chunks[i].callback ? 'f' : ' ',
 				chunks[i].description,
 				chunk_len);
 			g_free(tid);
-#endif
 
 			sublocal = g_new0(g3d_iff_ldata, 1);
 			sublocal->parent_id = local->id;
@@ -198,7 +195,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		else
 		{
 			tid = g3d_iff_id_to_text(chunk_id);
-			g_printerr("[IFF] unknown chunk type \"%s\" (%d) @ 0x%08x\n",
+			g_warning("[IFF] unknown chunk type \"%s\" (%d) @ 0x%08x",
 				tid, chunk_len, (unsigned int)ftell(global->f) - 8);
 			g_free(tid);
 			fseek(global->f, chunk_len, SEEK_CUR);
@@ -217,10 +214,9 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 	if(local->nb > 0)
 	{
-#if DEBUG > 0
-		g_printerr("[IFF] skipping %d bytes at the end of chunk\n",
+		g_warning("[IFF] skipping %d bytes at the end of chunk",
 			local->nb);
-#endif
+
 		fseek(global->f, local->nb, SEEK_CUR);
 		local->nb = 0;
 	}

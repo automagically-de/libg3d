@@ -15,9 +15,9 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "CONS", "unknown",                           1, NULL }, /* LIS4 */
 	{ "CWFL", "unknown",                           0, NULL },
 	{ "CREA", "creator",                           0, NULL },
-	{ "DBL2", "double 2",                          0, NULL },
-	{ "DBL3", "double 3",                          0, NULL },
-	{ "DBLE", "double",                            0, NULL },
+	{ "DBL2", "double 2",                          0, maya_cb_DBL2 },
+	{ "DBL3", "double 3",                          0, maya_cb_DBL3 },
+	{ "DBLE", "double",                            0, maya_cb_DBLE },
 	{ "DCAM", "camera",                            1, NULL }, /* FOR4 */
 	{ "DECT", "delete component",                  1, NULL }, /* FOR4 */
 	{ "DELA", "unknown",                           1, NULL }, /* FOR4 */
@@ -48,6 +48,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "OBJN", "unknown",                           0, NULL },
 	{ "PAUP", "poly auto proj",                    1, NULL }, /* FOR4 */
 	{ "PBOP", "poly boolean operation",            1, NULL }, /* FOR4 */
+	{ "PBOP", "poly bevel",                        1, NULL }, /* FOR4 */
 	{ "PCRE", "poly create face",                  1, NULL }, /* FOR4 */
 	{ "PCUB", "poly cube",                         1, NULL }, /* FOR4 */
 	{ "PCYL", "poly cylinder",                     1, NULL }, /* FOR4 */

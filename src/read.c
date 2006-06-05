@@ -84,3 +84,30 @@ gfloat g3d_read_float_le(FILE *f)
 	return u.f;
 }
 
+gdouble g3d_read_double_be(FILE *f)
+{
+	union {
+		gdouble d;
+		guint8 u[8];
+	} u;
+	gint32 i;
+
+	for(i = 7; i >= 0; i --)
+		u.u[i] = g3d_read_int8(f);
+
+	return u.d;
+}
+
+gdouble g3d_read_double_le(FILE *f)
+{
+	union {
+		gdouble d;
+		guint8 u[8];
+	} u;
+	gint32 i;
+
+	for(i = 0; i < 8; i ++)
+		u.u[i] = g3d_read_int8(f);
+
+	return u.d;
+}

@@ -1,6 +1,92 @@
+#include <string.h>
+
 #include <g3d/iff.h>
 #include <g3d/material.h>
 #include <g3d/read.h>
+
+gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gint32 len, flags;
+	gdouble val1, val2;
+	gchar *var;
+	gchar *padding = "                         ";
+
+	len = local->nb - 17;
+	var = g_malloc(len);
+	fread(var, 1, len, global->f);
+	local->nb -= len;
+
+	flags = g3d_read_int8(global->f);
+	local->nb -= 1;
+
+	val1 = g3d_read_double_be(global->f);
+	val2 = g3d_read_double_be(global->f);
+	local->nb -= 16;
+
+	g_debug("%s[Maya][DBLE] %s = (%g,%g) (0x%02X)",
+		padding + (strlen(padding) - local->level) + 1,
+		var, val1, val2, flags);
+
+	g_free(var);
+
+	return TRUE;
+}
+
+gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gint32 len, flags;
+	gdouble val1, val2, val3;
+	gchar *var;
+	gchar *padding = "                         ";
+
+	len = local->nb - 25;
+	var = g_malloc(len);
+	fread(var, 1, len, global->f);
+	local->nb -= len;
+
+	flags = g3d_read_int8(global->f);
+	local->nb -= 1;
+
+	val1 = g3d_read_double_be(global->f);
+	val2 = g3d_read_double_be(global->f);
+	val3 = g3d_read_double_be(global->f);
+	local->nb -= 24;
+
+	g_debug("%s[Maya][DBLE] %s = (%g,%g,%g) (0x%02X)",
+		padding + (strlen(padding) - local->level) + 1,
+		var, val1, val2, val3, flags);
+
+	g_free(var);
+
+	return TRUE;
+}
+
+gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gint32 len, flags;
+	gdouble val;
+	gchar *var;
+	gchar *padding = "                         ";
+
+	len = local->nb - 9;
+	var = g_malloc(len);
+	fread(var, 1, len, global->f);
+	local->nb -= len;
+
+	flags = g3d_read_int8(global->f);
+	local->nb -= 1;
+
+	val = g3d_read_double_be(global->f);
+	local->nb -= 8;
+
+	g_debug("%s[Maya][DBLE] %s = %g (0x%02X)",
+		padding + (strlen(padding) - local->level) + 1,
+		var, val, flags);
+
+	g_free(var);
+
+	return TRUE;
+}
 
 gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {

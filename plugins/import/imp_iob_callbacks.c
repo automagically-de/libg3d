@@ -103,6 +103,8 @@ gboolean iob_cb_DESC(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	G3DObject *object;
 	G3DMaterial *material;
 
+	if(local->finalize) return TRUE;
+
 	object = g_new0(G3DObject, 1);
 	global->model->objects = g_slist_append(global->model->objects, object);
 

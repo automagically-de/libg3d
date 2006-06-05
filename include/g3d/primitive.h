@@ -27,6 +27,9 @@
 
 G_BEGIN_DECLS
 
+G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
+	G3DMaterial *material);
+
 /**
  * g3d_primitive_cylinder:
  * @radius: the radius of the cylinder

@@ -41,6 +41,7 @@ typedef struct {
 	G3DContext *context;
 	G3DModel *model;
 	FILE *f;
+	gpointer user_data;
 } g3d_iff_gdata;
 
 /* local data */
@@ -51,6 +52,7 @@ typedef struct {
 	gint32 level;
 	gpointer level_object;
 	gint32 nb;
+	gboolean finalize;
 } g3d_iff_ldata;
 
 typedef gboolean (*g3d_iff_chunk_callback)(

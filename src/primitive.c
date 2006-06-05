@@ -29,6 +29,73 @@
 #include <g3d/types.h>
 #include <g3d/vector.h>
 
+G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
+	G3DMaterial *material)
+{
+	G3DObject *object;
+	G3DFace *face;
+	gint32 faces[6][4] = {
+		{ 0, 1, 2, 3 },
+		{ 4, 5, 6, 7 },
+		{ 0, 1, 5, 4 },
+		{ 2, 3, 7, 6 },
+		{ 1, 2, 6, 5 },
+		{ 0, 4, 7, 3 }};
+	gint32 i, j;
+
+	object = g_new0(G3DObject, 1);
+
+	object->vertex_count = 8;
+	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+
+	object->vertex_data[0 * 3 + 0] = -(width / 2);
+	object->vertex_data[0 * 3 + 1] = -(height / 2);
+	object->vertex_data[0 * 3 + 2] = -(depth / 2);
+
+	object->vertex_data[1 * 3 + 0] = -(width / 2);
+	object->vertex_data[1 * 3 + 1] = -(height / 2);
+	object->vertex_data[1 * 3 + 2] = (depth / 2);
+
+	object->vertex_data[2 * 3 + 0] = (width / 2);
+	object->vertex_data[2 * 3 + 1] = -(height / 2);
+	object->vertex_data[2 * 3 + 2] = (depth / 2);
+
+	object->vertex_data[3 * 3 + 0] = (width / 2);
+	object->vertex_data[3 * 3 + 1] = -(height / 2);
+	object->vertex_data[3 * 3 + 2] = -(depth / 2);
+
+	object->vertex_data[4 * 3 + 0] = -(width / 2);
+	object->vertex_data[4 * 3 + 1] = (height / 2);
+	object->vertex_data[4 * 3 + 2] = -(depth / 2);
+
+	object->vertex_data[5 * 3 + 0] = -(width / 2);
+	object->vertex_data[5 * 3 + 1] = (height / 2);
+	object->vertex_data[5 * 3 + 2] = (depth / 2);
+
+	object->vertex_data[6 * 3 + 0] = (width / 2);
+	object->vertex_data[6 * 3 + 1] = (height / 2);
+	object->vertex_data[6 * 3 + 2] = (depth / 2);
+
+	object->vertex_data[7 * 3 + 0] = (width / 2);
+	object->vertex_data[7 * 3 + 1] = (height / 2);
+	object->vertex_data[7 * 3 + 2] = -(depth / 2);
+
+	for(i = 0; i < 6; i ++)
+	{
+		face = g_new0(G3DFace, 1);
+		face->vertex_count = 4;
+		face->vertex_indices = g_new0(guint32, 4);
+		for(j = 0; j < 4; j ++)
+		{
+			face->vertex_indices[j] = faces[i][j];
+		}
+		face->material = material;
+		object->faces = g_slist_append(object->faces, face);
+	}
+
+	return object;
+}
+
 G3DObject *g3d_primitive_cylinder(gfloat radius, gfloat height,
 	guint32 sides, gboolean top, gboolean bottom, G3DMaterial *material)
 {

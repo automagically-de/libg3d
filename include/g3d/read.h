@@ -120,6 +120,8 @@ gdouble g3d_read_double_be(FILE *f);
 
 gdouble g3d_read_double_le(FILE *f);
 
+gint32 g3d_read_cstr(FILE *f, gchar *buffer, gint32 max_len);
+
 G_END_DECLS
 
 #endif /* __G3D_READ_H__ */

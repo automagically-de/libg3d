@@ -2,7 +2,75 @@
 
 #include <g3d/iff.h>
 #include <g3d/material.h>
+#include <g3d/primitive.h>
 #include <g3d/read.h>
+
+#include "imp_maya_obj.h"
+#include "imp_maya_var.h"
+
+/* creator */
+gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	MayaObject *obj;
+	gint32 max_len, flags;
+	gchar *buffer;
+
+	obj = (MayaObject *)local->object;
+	if(obj)
+	{
+		/* flags ? */
+		flags = g3d_read_int8(global->f);
+		local->nb -= 1;
+
+		max_len = local->nb;
+		buffer = g_malloc(max_len + 1);
+
+		/* object name */
+		local->nb -= g3d_read_cstr(global->f, buffer, max_len);
+		obj->name = g_strdup(buffer);
+
+		/* parent name */
+		if(local->nb > 0)
+		{
+			local->nb -= g3d_read_cstr(global->f, buffer, max_len);
+		}
+
+		g_free(buffer);
+	}
+
+	return TRUE;
+}
+
+gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gint32 len, flags, ndbl, i;
+	gdouble val;
+	gchar *var;
+	gchar *padding = "                         ";
+
+	len = local->nb - 9;
+	var = g_malloc(len);
+	fread(var, 1, len, global->f);
+	local->nb -= len;
+
+	flags = g3d_read_int8(global->f);
+	local->nb -= 1;
+
+	ndbl = local->nb / 8;
+	for(i = 0; i < ndbl; i ++)
+	{
+		val = g3d_read_double_be(global->f);
+		local->nb -= 8;
+	}
+
+	g_debug("%s[Maya][DBL#] %s (%d doubles) (0x%02X)",
+		padding + (strlen(padding) - local->level) + 1,
+		var, ndbl, flags);
+
+	g_free(var);
+
+	return TRUE;
+}
 
 gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
@@ -23,7 +91,7 @@ gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	val2 = g3d_read_double_be(global->f);
 	local->nb -= 16;
 
-	g_debug("%s[Maya][DBLE] %s = (%g,%g) (0x%02X)",
+	g_debug("%s[Maya][DBL2] %s = (%g,%g) (0x%02X)",
 		padding + (strlen(padding) - local->level) + 1,
 		var, val1, val2, flags);
 
@@ -52,7 +120,7 @@ gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	val3 = g3d_read_double_be(global->f);
 	local->nb -= 24;
 
-	g_debug("%s[Maya][DBLE] %s = (%g,%g,%g) (0x%02X)",
+	g_debug("%s[Maya][DBL3] %s = (%g,%g,%g) (0x%02X)",
 		padding + (strlen(padding) - local->level) + 1,
 		var, val1, val2, val3, flags);
 
@@ -82,6 +150,9 @@ gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	g_debug("%s[Maya][DBLE] %s = %g (0x%02X)",
 		padding + (strlen(padding) - local->level) + 1,
 		var, val, flags);
+
+	if(local->object)
+		maya_var_set_double((MayaObject *)local->object, var, val);
 
 	g_free(var);
 
@@ -185,6 +256,44 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		}
 #endif
 	}
+	return TRUE;
+}
+
+/* poly cube */
+gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	MayaObject *obj;
+	G3DObject *object;
+	G3DMaterial *material;
+	gdouble w, h, d;
+
+	if(local->finalize)
+	{
+		obj = (MayaObject *)local->object;
+		g_return_val_if_fail(obj != NULL, FALSE);
+
+		w = maya_var_get_double(obj, "sw");
+		h = maya_var_get_double(obj, "sh");
+		d = maya_var_get_double(obj, "sd");
+
+		material = g3d_material_new();
+		object = g3d_primitive_cube(w, h, d, material);
+		object->materials = g_slist_append(object->materials, material);
+		global->model->objects = g_slist_append(global->model->objects,
+			object);
+
+		if(obj->name) object->name = g_strdup(obj->name);
+
+		/* destroy object */
+		maya_obj_free(obj);
+	}
+	else
+	{
+		/* create object */
+		obj = maya_obj_new();
+		local->object = obj;
+	}
+
 	return TRUE;
 }
 

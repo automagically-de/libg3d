@@ -183,6 +183,12 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 				g3d_iff_read_ctnr(global, sublocal, chunks, modulo);
 			}
 
+			if(chunks[i].container && chunks[i].callback)
+			{
+				sublocal->finalize = TRUE;
+				chunks[i].callback(global, sublocal);
+			}
+
 			if(sublocal->nb > 0)
 			{
 				fseek(global->f, sublocal->nb, SEEK_CUR);

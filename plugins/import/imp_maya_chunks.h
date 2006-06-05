@@ -6,6 +6,7 @@
 #include "imp_maya_callbacks.h"
 
 static g3d_iff_chunk_info maya_chunks[] = {
+	{ "ATTR", "unknown",                           0, NULL },
 	{ "AUNI", "unknown",                           0, NULL },
 	{ "BRSH", "brush",                             1, NULL }, /* FOR4 */
 	{ "CHNG", "changes",                           0, NULL },
@@ -14,7 +15,8 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "CONN", "unknown",                           1, NULL }, /* FOR4 */
 	{ "CONS", "unknown",                           1, NULL }, /* LIS4 */
 	{ "CWFL", "unknown",                           0, NULL },
-	{ "CREA", "creator",                           0, NULL },
+	{ "CREA", "creator",                           0, maya_cb_CREA },
+	{ "DBL#", "double #",                          0, maya_cb_DBLn },
 	{ "DBL2", "double 2",                          0, maya_cb_DBL2 },
 	{ "DBL3", "double 3",                          0, maya_cb_DBL3 },
 	{ "DBLE", "double",                            0, maya_cb_DBLE },
@@ -29,9 +31,12 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "DPLM", "layer manager",                     1, NULL }, /* FOR4 */
 	{ "DSPL", "layer ?",                           1, NULL }, /* FOR4 */
 	{ "FINF", "file information",                  0, NULL },
+	{ "FDFL", "flare ?",                           1, NULL }, /* FOR4 */
 	{ "FLGS", "flags",                             0, NULL },
 	{ "FLT2", "float 2",                           0, NULL },
 	{ "FLT3", "float 3",                           0, NULL },
+	{ "FMPT", "unknown",                           1, NULL }, /* FOR4 */
+	{ "FNLD", "unknown",                           1, NULL }, /* FOR4 */
 	{ "GPID", "group id",                          1, NULL }, /* FOR4 */
 	{ "GRPP", "group parts",                       1, NULL }, /* FOR4 */
 	{ "HEAD", "header",                            1, NULL }, /* FOR4 */
@@ -46,11 +51,12 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "NRBS", "NURBS ?",                           0, NULL },
 	{ "NSRF", "surface",                           1, NULL }, /* FOR4 */
 	{ "OBJN", "unknown",                           0, NULL },
+	{ "OBST", "unknown",                           1, NULL }, /* FOR4 */
 	{ "PAUP", "poly auto proj",                    1, NULL }, /* FOR4 */
 	{ "PBOP", "poly boolean operation",            1, NULL }, /* FOR4 */
 	{ "PBOP", "poly bevel",                        1, NULL }, /* FOR4 */
 	{ "PCRE", "poly create face",                  1, NULL }, /* FOR4 */
-	{ "PCUB", "poly cube",                         1, NULL }, /* FOR4 */
+	{ "PCUB", "poly cube",                         1, maya_cb_PCUB },
 	{ "PCYL", "poly cylinder",                     1, NULL }, /* FOR4 */
 	{ "PEXE", "poly extrude",                      1, NULL }, /* FOR4 */
 	{ "PEXF", "poly extrude face",                 1, NULL }, /* FOR4 */

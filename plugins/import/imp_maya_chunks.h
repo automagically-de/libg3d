@@ -34,7 +34,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "FDFL", "flare ?",                           1, NULL }, /* FOR4 */
 	{ "FLGS", "flags",                             0, NULL },
 	{ "FLT2", "float 2",                           0, NULL },
-	{ "FLT3", "float 3",                           0, NULL },
+	{ "FLT3", "float 3",                           0, maya_cb_FLT3 },
 	{ "FMPT", "unknown",                           1, NULL }, /* FOR4 */
 	{ "FNLD", "unknown",                           1, NULL }, /* FOR4 */
 	{ "GPID", "group id",                          1, NULL }, /* FOR4 */

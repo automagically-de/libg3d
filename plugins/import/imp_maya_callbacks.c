@@ -159,6 +159,36 @@ gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
+/* float 3 */
+gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gint32 len, flags;
+	gfloat val1, val2, val3;
+	gchar *var;
+	gchar *padding = "                         ";
+
+	len = local->nb - 13;
+	var = g_malloc(len);
+	fread(var, 1, len, global->f);
+	local->nb -= len;
+
+	flags = g3d_read_int8(global->f);
+	local->nb -= 1;
+
+	val1 = g3d_read_float_be(global->f);
+	val2 = g3d_read_float_be(global->f);
+	val3 = g3d_read_float_be(global->f);
+	local->nb -= 12;
+
+	g_debug("%s[Maya][DBL3] %s = (%g; %g; %g) (0x%02X)",
+		padding + (strlen(padding) - local->level) + 1,
+		var, val1, val2, val3, flags);
+
+	g_free(var);
+
+	return TRUE;
+}
+
 gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	G3DObject *object;

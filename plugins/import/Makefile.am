@@ -18,7 +18,8 @@ pluginimp_LTLIBRARIES = \
 	imp_obj.la \
 	imp_q3o.la \
 	imp_r4.la \
-	imp_vrml.la
+	imp_vrml.la \
+	imp_test.la
 
 AM_CFLAGS = \
 	-Wall -ansi -pedantic \
@@ -64,6 +65,7 @@ imp_r4_la_SOURCES = imp_r4.c imp_r4_chunks.h \
 	imp_r4_callbacks.c imp_r4_callbacks.h
 imp_vrml_la_SOURCES = imp_vrml_v1.l imp_vrml.c
 imp_vrml_la_LIBADD = ${LEXLIB}
+imp_test_la_SOURCES = imp_test.c
 
 # by default imp_vrml_v1.c seems to be included in package, so add .h too
 # also removes strong dependancy on flex

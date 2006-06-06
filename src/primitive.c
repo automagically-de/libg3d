@@ -21,6 +21,7 @@
 */
 
 #include <math.h>
+#include <string.h>
 
 #ifndef M_PI
 #	define M_PI 3.14159265358979323846
@@ -391,6 +392,130 @@ G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
 
 			object->faces = g_slist_append(object->faces, face);
 		}
+	}
+
+	return object;
+}
+
+G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
+	G3DMaterial *material)
+{
+	G3DObject *object;
+	G3DFace *face;
+	GSList *flist;
+	gint32 sh, sv, i;
+	gfloat x, y, z, u;
+
+	g_return_val_if_fail(vseg >= 2, NULL);
+	g_return_val_if_fail(hseg >= 3, NULL);
+
+	object = g_new0(G3DObject, 1);
+	object->vertex_count = (vseg - 1) * hseg + 2;
+	object->vertex_data = g_new0(gfloat, 3 * object->vertex_count);
+
+	for(sv = 1; sv < vseg; sv ++)
+	{
+		y = radius * cos(M_PI * sv / vseg);
+		u = radius * sin(M_PI * sv / vseg);
+		for(sh = 0; sh < hseg; sh ++)
+		{
+			x = radius * cos(M_PI * 2 * sh / hseg) * u;
+			z = radius * sin(M_PI * 2 * sh / hseg) * u;
+
+			object->vertex_data[((sv - 1) * hseg + sh) * 3 + 0] = x;
+			object->vertex_data[((sv - 1) * hseg + sh) * 3 + 1] = y;
+			object->vertex_data[((sv - 1) * hseg + sh) * 3 + 2] = z;
+
+			if(sv > 1)
+			{
+				face = g_new0(G3DFace, 1);
+				face->material = material;
+				face->vertex_count = 4;
+				face->vertex_indices = g_new0(guint32, 4);
+
+				face->vertex_indices[0] = (sv - 1) * hseg + sh;
+				face->vertex_indices[3] = (sv - 2) * hseg + sh;
+
+				if(sh != (hseg - 1))
+				{
+					face->vertex_indices[1] = (sv - 1) * hseg + sh + 1;
+					face->vertex_indices[2] = (sv - 2) * hseg + sh + 1;
+				}
+				else
+				{
+					face->vertex_indices[1] = (sv - 1) * hseg;
+					face->vertex_indices[2] = (sv - 2) * hseg;
+				}
+
+				object->faces = g_slist_append(object->faces, face);
+			} /* sv > 1 */
+		} /* hseg */
+	} /* vseg */
+
+	object->vertex_data[(object->vertex_count - 1) * 3 + 0] = 0;
+	object->vertex_data[(object->vertex_count - 1) * 3 + 1] = radius;
+	object->vertex_data[(object->vertex_count - 1) * 3 + 2] = 0;
+
+	object->vertex_data[(object->vertex_count - 2) * 3 + 0] = 0;
+	object->vertex_data[(object->vertex_count - 2) * 3 + 1] = -radius;
+	object->vertex_data[(object->vertex_count - 2) * 3 + 2] = 0;
+
+	for(sh = 0; sh < hseg; sh ++)
+	{
+		/* top */
+		face = g_new0(G3DFace, 1);
+		face->material = material;
+		face->vertex_count = 3;
+		face->vertex_indices = g_new0(guint32, 3);
+
+		face->vertex_indices[0] = object->vertex_count - 1;
+		face->vertex_indices[1] = sh;
+		face->vertex_indices[2] = (sh == (hseg - 1)) ? 0 : sh + 1;
+
+		object->faces = g_slist_append(object->faces, face);
+
+		/* bottom */
+		face = g_new0(G3DFace, 1);
+		face->material = material;
+		face->vertex_count = 3;
+		face->vertex_indices = g_new0(guint32, 3);
+
+		face->vertex_indices[2] = object->vertex_count - 2;
+		face->vertex_indices[1] = (vseg - 2) * hseg + sh;
+		face->vertex_indices[0] = (sh == (hseg - 1)) ?
+			(vseg - 2) * hseg :
+			(vseg - 2) * hseg + sh + 1;
+
+		object->faces = g_slist_append(object->faces, face);
+	}
+
+	return object;
+
+	/* still buggy */
+
+	/* generate normals */
+	flist = object->faces;
+	while(flist)
+	{
+		face = (G3DFace *)flist->data;
+		face->flags |= G3D_FLAG_FAC_NORMALS;
+		face->normals = g_new0(gfloat, face->vertex_count * 3);
+		for(i = 0; i < face->vertex_count; i ++)
+		{
+			face->normals[i * 3 + 0] =
+				object->vertex_data[face->vertex_indices[i] * 3 + 0];
+			face->normals[i * 3 + 1] =
+				object->vertex_data[face->vertex_indices[i] * 3 + 1];
+			face->normals[i * 3 + 1] =
+				object->vertex_data[face->vertex_indices[i] * 3 + 2];
+
+			g3d_vector_unify(
+				face->normals + i * 3 + 0,
+				face->normals + i * 3 + 1,
+				face->normals + i * 3 + 2);
+		}
+
+		flist = flist->next;
 	}
 
 	return object;

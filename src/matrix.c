@@ -98,11 +98,11 @@ gboolean g3d_matrix_translate(gfloat x, gfloat y, gfloat z, gfloat *rm)
 	guint32 i;
 
 	for(i = 0; i < 4; i ++)
-		rm[3 * 4 + i] =
-			rm[0 * 4 + i] * x +
-			rm[1 * 4 + i] * y +
-			rm[2 * 4 + i] * z +
-			rm[3 * 4 + i];
+		rm[i * 4 + 3] =
+			rm[i * 4 + 0] * x +
+			rm[i * 4 + 1] * y +
+			rm[i * 4 + 2] * z +
+			rm[i * 4 + 3];
 
 	return TRUE;
 }

@@ -99,11 +99,15 @@ gboolean g3d_object_scale(G3DObject *object, gfloat scale)
 	return TRUE;
 }
 
+#define G3D_OBJECT_TRANSFORM_NORMALS 0
+
 gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
 {
 	guint32 i;
+#if G3D_OBJECT_TRANSFORM_NORMALS
 	G3DFace *face;
 	GSList *fitem;
+#endif
 
 	/* transform vertices */
 	for(i = 0; i < object->vertex_count; i ++)
@@ -115,6 +119,7 @@ gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
 			matrix);
 	}
 
+#if G3D_OBJECT_TRANSFORM_NORMALS
 	fitem = object->faces;
 	while(fitem)
 	{
@@ -138,6 +143,7 @@ gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
 
 		fitem = fitem->next;
 	}
+#endif
 
 	return TRUE;
 }

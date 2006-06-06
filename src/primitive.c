@@ -404,7 +404,7 @@ G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 	G3DFace *face;
 	GSList *flist;
 	gint32 sh, sv, i;
-	gfloat x, y, z, u;
+	gdouble x, y, z, u;
 
 	g_return_val_if_fail(vseg >= 2, NULL);
 	g_return_val_if_fail(hseg >= 3, NULL);
@@ -428,25 +428,30 @@ G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 
 			if(sv > 1)
 			{
+				/* first triangle */
 				face = g_new0(G3DFace, 1);
 				face->material = material;
-				face->vertex_count = 4;
-				face->vertex_indices = g_new0(guint32, 4);
-
+				face->vertex_count = 3;
+				face->vertex_indices = g_new0(guint32, 3);
 				face->vertex_indices[0] = (sv - 1) * hseg + sh;
-				face->vertex_indices[3] = (sv - 2) * hseg + sh;
+				face->vertex_indices[1] = (sh == (hseg - 1)) ?
+					(sv - 1) * hseg :
+					(sv - 1) * hseg + sh + 1;
+				face->vertex_indices[2] = (sv - 2) * hseg + sh;
+				object->faces = g_slist_append(object->faces, face);
 
-				if(sh != (hseg - 1))
-				{
-					face->vertex_indices[1] = (sv - 1) * hseg + sh + 1;
-					face->vertex_indices[2] = (sv - 2) * hseg + sh + 1;
-				}
-				else
-				{
-					face->vertex_indices[1] = (sv - 1) * hseg;
-					face->vertex_indices[2] = (sv - 2) * hseg;
-				}
-
+				/* second triangle */
+				face = g_new0(G3DFace, 1);
+				face->material = material;
+				face->vertex_count = 3;
+				face->vertex_indices = g_new0(guint32, 3);
+				face->vertex_indices[0] = (sv - 2) * hseg + sh;
+				face->vertex_indices[1] = (sh == (hseg - 1)) ?
+					(sv - 1) * hseg :
+					(sv - 1) * hseg + sh + 1;
+				face->vertex_indices[2] = (sh == (hseg - 1)) ?
+					(sv - 2) * hseg :
+					(sv - 2) * hseg + sh + 1;
 				object->faces = g_slist_append(object->faces, face);
 			} /* sv > 1 */
 		} /* hseg */
@@ -489,10 +494,6 @@ G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 		object->faces = g_slist_append(object->faces, face);
 	}
 
-	return object;
-
-	/* still buggy */
-
 	/* generate normals */
 	flist = object->faces;
 	while(flist)
@@ -503,16 +504,16 @@ G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 		for(i = 0; i < face->vertex_count; i ++)
 		{
 			face->normals[i * 3 + 0] =
-				object->vertex_data[face->vertex_indices[i] * 3 + 0];
+				- object->vertex_data[face->vertex_indices[i] * 3 + 0];
 			face->normals[i * 3 + 1] =
-				object->vertex_data[face->vertex_indices[i] * 3 + 1];
-			face->normals[i * 3 + 1] =
-				object->vertex_data[face->vertex_indices[i] * 3 + 2];
+				- object->vertex_data[face->vertex_indices[i] * 3 + 1];
+			face->normals[i * 3 + 2] =
+				- object->vertex_data[face->vertex_indices[i] * 3 + 2];
 
 			g3d_vector_unify(
-				face->normals + i * 3 + 0,
-				face->normals + i * 3 + 1,
-				face->normals + i * 3 + 2);
+				&(face->normals[i * 3 + 0]),
+				&(face->normals[i * 3 + 1]),
+				&(face->normals[i * 3 + 2]));
 		}
 
 		flist = flist->next;

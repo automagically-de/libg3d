@@ -90,6 +90,17 @@ gboolean g3d_matrix_rotate(gfloat angle, gfloat ax, gfloat ay, gfloat az,
  */
 gboolean g3d_matrix_rotate_xyz(gfloat rx, gfloat ry, gfloat rz, gfloat *rm);
 
+/**
+ * g3d_matrix_transpose:
+ * @matrix: the original matrix
+ * @rm: the resulting matrix (may be the same structure)
+ *
+ * Transposes the matrix.
+ *
+ * Returns: TRUE on success, FALSE else
+ */
+gboolean g3d_matrix_transpose(gfloat *matrix, gfloat *rm);
+
 G_END_DECLS
 
 #endif /* __G3D_MATRIX_H__ */

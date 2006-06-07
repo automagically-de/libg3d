@@ -97,12 +97,34 @@ gboolean g3d_matrix_translate(gfloat x, gfloat y, gfloat z, gfloat *rm)
 {
 	guint32 i;
 
+#if 0
 	for(i = 0; i < 4; i ++)
 		rm[i * 4 + 3] =
 			rm[i * 4 + 0] * x +
 			rm[i * 4 + 1] * y +
 			rm[i * 4 + 2] * z +
 			rm[i * 4 + 3];
+#else
+	for(i = 0; i < 4; i ++)
+		rm[3 * 4 + i] =
+			rm[0 * 4 + i] * x +
+			rm[1 * 4 + i] * y +
+			rm[2 * 4 + i] * z +
+			rm[3 * 4 + i];
+#endif
+	return TRUE;
+}
+
+gboolean g3d_matrix_transpose(gfloat *matrix, gfloat *rm)
+{
+	gfloat tmp[16];
+	gint32 i, j;
+
+	memcpy(tmp, matrix, 16 * sizeof(gfloat));
+
+	for(i = 0; i < 4; i ++)
+		for(j = 0; j < 4; j ++)
+			rm[i * 4 + j] = tmp[j * 4 + i];
 
 	return TRUE;
 }

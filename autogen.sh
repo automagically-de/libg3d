@@ -20,8 +20,10 @@ automake --gnu --add-missing --copy
 echo "++ autoconf"
 autoconf
 
+configure_options="--enable-debug --enable-experimental --enable-gtk-doc"
+
 if [ "$1" = "-conf" ]; then
 	shift
-	echo "++ ./configure --enable-debug $@"
-	./configure --enable-debug "$@"
+	echo "++ ./configure $configure_options $@"
+	./configure $configure_options "$@"
 fi

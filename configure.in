@@ -42,6 +42,14 @@ AC_ARG_ENABLE(debug,
 AC_MSG_RESULT($DEBUG)
 AC_SUBST(DEBUG)
 
+AC_ARG_ENABLE(experimental,
+	[[  --enable-experimental   enable experimental and unfinished plugins]],
+	[if test "x$enableval" = "xyes" ; then experimental=1
+		else experimental=0; fi],
+	experimental=0)
+AM_CONDITIONAL([EXPERIMENTAL], test "x$experimental" = "x1")
+
+
 if test "$DEBUG" = "0"; then
 	DBG_CFLAGS="-O2"
 else

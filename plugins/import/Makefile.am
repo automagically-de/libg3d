@@ -11,15 +11,19 @@ pluginimp_LTLIBRARIES = \
 	imp_iob.la \
 	imp_leocad.la \
 	imp_lwo.la \
-	imp_maya.la \
 	imp_md2.la \
 	imp_md3.la \
 	imp_nff.la \
 	imp_obj.la \
 	imp_q3o.la \
+	imp_vrml.la
+
+if EXPERIMENTAL
+pluginimp_LTLIBRARIES += \
+	imp_maya.la \
 	imp_r4.la \
-	imp_vrml.la \
 	imp_test.la
+endif
 
 AM_CFLAGS = \
 	-Wall -ansi -pedantic \

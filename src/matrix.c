@@ -137,6 +137,20 @@ gboolean g3d_matrix_translate(gfloat x, gfloat y, gfloat z, gfloat *rm)
 	return TRUE;
 }
 
+gboolean g3d_matrix_scale(gfloat x, gfloat y, gfloat z, gfloat *rm)
+{
+	gfloat sm[16];
+
+	g3d_matrix_identity(sm);
+	sm[0] = x;
+	sm[5] = y;
+	sm[10] = z;
+
+	g3d_matrix_multiply(rm, sm, rm);
+
+	return TRUE;
+}
+
 gboolean g3d_matrix_transpose(gfloat *matrix)
 {
 	gfloat tmp[16];

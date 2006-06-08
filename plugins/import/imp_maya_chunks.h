@@ -7,6 +7,7 @@
 
 static g3d_iff_chunk_info maya_chunks[] = {
 	{ "ATTR", "unknown",                           0, NULL },
+	{ "AUDI", "audio",                             1, NULL }, /* FOR4 */
 	{ "AUNI", "unknown",                           0, NULL },
 	{ "BRSH", "brush",                             1, NULL }, /* FOR4 */
 	{ "CHNG", "changes",                           0, NULL },
@@ -26,7 +27,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "DELL", "unknown",                           1, NULL }, /* LIS4 */
 	{ "DISC", "unknown",                           0, NULL },
 	{ "DISL", "unknown",                           1, NULL }, /* LIS4 */
-	{ "DMSH", "mesh",                              1, NULL }, /* FOR4 */
+	{ "DMSH", "mesh",                              1, maya_cb_DMSH },
 	{ "DMTI", "material info",                     1, NULL }, /* FOR4 */
 	{ "DPLM", "layer manager",                     1, NULL }, /* FOR4 */
 	{ "DSPL", "layer ?",                           1, NULL }, /* FOR4 */
@@ -56,6 +57,9 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "PBOP", "poly boolean operation",            1, NULL }, /* FOR4 */
 	{ "PBOP", "poly bevel",                        1, NULL }, /* FOR4 */
 	{ "PCRE", "poly create face",                  1, NULL }, /* FOR4 */
+	{ "PCTA", "poly rotate ?",                     1, NULL }, /* FOR4 */
+	{ "PCTL", "poly translate ?",                  1, NULL }, /* FOR4 */
+	{ "PCTU", "poly scale ?",                      1, NULL }, /* FOR4 */
 	{ "PCUB", "poly cube",                         1, maya_cb_PCUB },
 	{ "PCYL", "poly cylinder",                     1, NULL }, /* FOR4 */
 	{ "PEXE", "poly extrude",                      1, NULL }, /* FOR4 */
@@ -69,10 +73,12 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "PPIP", "poly pipe",                         1, NULL }, /* FOR4 */
 	{ "PRNS", "unknown",                           0, NULL },
 	{ "PRNT", "unknown",                           0, NULL },
+	{ "PSEP", "poly separate",                     1, NULL }, /* FOR4 */
 	{ "PSMF", "poly smooth face",                  1, NULL }, /* FOR4 */
 	{ "PSOE", "poly soft edge",                    1, NULL }, /* FOR4 */
 	{ "PSPH", "poly sphere",                       1, NULL }, /* FOR4 */
 	{ "PSPL", "poly split",                        1, NULL }, /* FOR4 */
+	{ "PTRI", "poly triangulate",                  1, NULL }, /* FOR4 */
 	{ "PTUV", "poly tweak UV",                     1, NULL }, /* FOR4 */
 	{ "PTWK", "poly tweak",                        1, NULL }, /* FOR4 */
 	{ "PUNI", "poly unite",                        1, NULL }, /* FOR4 */
@@ -95,7 +101,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "TUNI", "unknown",                           0, NULL },
 	{ "UVER", "minor version?",                    0, NULL },
 	{ "VERS", "version",                           0, NULL },
-	{ "XFRM", "transformation",                    1, NULL }, /* FOR4 */
+	{ "XFRM", "transformation",                    1, maya_cb_XFRM },
 
 	{ NULL, NULL, 0, NULL }
 };

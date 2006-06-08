@@ -34,22 +34,31 @@
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer user_data)
 {
-	G3DObject *sphere;
+	G3DObject *sphere, *cntr;
 	G3DMaterial *material;
 	G3DTransformation *tf;
 	gfloat matrix[16];
 	gint32 i, j;
+
+	cntr = g_new0(G3DObject, 1);
+	cntr->name = g_strdup("container");
+
+	tf = g_new0(G3DTransformation, 1);
+	g3d_matrix_identity(tf->matrix);
+	g3d_matrix_scale(1.0, 1.0, 2.0, tf->matrix);
+	cntr->transformation = tf;
+	model->objects = g_slist_append(model->objects, cntr);
 
 	material = g3d_material_new();
 	model->materials = g_slist_append(model->materials, material);
 
 	/* 1 */
 	sphere = g3d_primitive_sphere(1.0, 36, 36, material);
-	model->objects = g_slist_append(model->objects, sphere);
+	cntr->objects = g_slist_append(cntr->objects, sphere);
 
 	/* 2 */
 	sphere = g3d_primitive_sphere(1.0, 6, 6, material);
-	model->objects = g_slist_append(model->objects, sphere);
+	cntr->objects = g_slist_append(cntr->objects, sphere);
 
 	tf = g_new0(G3DTransformation, 1);
 	g3d_matrix_identity(tf->matrix);
@@ -58,10 +67,11 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	/* 3 */
 	sphere = g3d_primitive_sphere(1.0, 12, 12, material);
-	model->objects = g_slist_append(model->objects, sphere);
+	cntr->objects = g_slist_append(cntr->objects, sphere);
 
 	g3d_matrix_identity(matrix);
 	g3d_matrix_translate(5, 2.0, 2.0, matrix);
+	g3d_matrix_scale(2.0, 2.0, 1.0, matrix);
 	g3d_object_transform(sphere, matrix);
 
 	return TRUE;

@@ -98,6 +98,19 @@ gboolean g3d_matrix_rotate(gfloat angle, gfloat ax, gfloat ay, gfloat az,
 gboolean g3d_matrix_rotate_xyz(gfloat rx, gfloat ry, gfloat rz, gfloat *rm);
 
 /**
+ * g3d_matrix_scale:
+ * @x: x factor
+ * @y: y factor
+ * @z: z factor
+ * @rm: resulting matrix
+ *
+ * Adds a scaling to the matrix.
+ *
+ * Returns: TRUE on success, FALSE else
+ */
+gboolean g3d_matrix_scale(gfloat x, gfloat y, gfloat z, gfloat *rm);
+
+/**
  * g3d_matrix_transpose:
  * @matrix: the matrix
  *

@@ -20,6 +20,8 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <string.h>
+
 #include <g3d/types.h>
 #include <g3d/context.h>
 #include <g3d/model.h>
@@ -338,4 +340,30 @@ void g3d_model_free(G3DModel *model)
 	g_free(model);
 }
 
+static G3DObject *objects_get_by_name(GSList *objects, const gchar *name)
+{
+	GSList *olist;
+	G3DObject *object;
+
+	olist = objects;
+	while(olist)
+	{
+		object = (G3DObject *)olist->data;
+
+		if((object->name != NULL) && (strcmp(object->name, name) == 0))
+			return object;
+
+		object = objects_get_by_name(object->objects, name);
+		if(object != NULL)
+			return object;
+
+		olist = olist->next;
+	}
+	return NULL;
+}
+
+G3DObject *g3d_model_get_object_by_name(G3DModel *model, const gchar *name)
+{
+	return objects_get_by_name(model->objects, name);
+}
 

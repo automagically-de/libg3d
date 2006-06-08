@@ -55,7 +55,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "OBST", "unknown",                           1, NULL }, /* FOR4 */
 	{ "PAUP", "poly auto proj",                    1, NULL }, /* FOR4 */
 	{ "PBOP", "poly boolean operation",            1, NULL }, /* FOR4 */
-	{ "PBOP", "poly bevel",                        1, NULL }, /* FOR4 */
+	{ "PBVL", "poly bevel",                        1, NULL }, /* FOR4 */
 	{ "PCRE", "poly create face",                  1, NULL }, /* FOR4 */
 	{ "PCTA", "poly rotate ?",                     1, NULL }, /* FOR4 */
 	{ "PCTL", "poly translate ?",                  1, NULL }, /* FOR4 */

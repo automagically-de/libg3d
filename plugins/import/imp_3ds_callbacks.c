@@ -399,20 +399,23 @@ gboolean x3ds_cb_0x4140(x3ds_global_data *global, x3ds_parent_data *parent)
 gboolean x3ds_cb_0x4160(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	gfloat matrix[16];
-	gint32 w, h;
+	gint32 i;
 
+	g3d_matrix_identity(matrix);
+	for(i = 0; i < 12; i ++)
+		matrix[i] = g3d_read_float_le(global->f);
+
+#if 0
 	for(w = 0; w < 4; w ++)
 	{
 		for(h = 0; h < 3; h ++)
 		{
-			matrix[h * 4 + w] = g3d_read_float_le(global->f);
+			matrix[w * 4 + h] = g3d_read_float_le(global->f);
 		}
 	}
+#endif
 
 	parent->nb -= 48;
-
-	matrix[12] = matrix[13] = matrix[14] = 0.0;
-	matrix[15] = 1.0;
 
 /* #define X3DS_MESH_TRANSFORM */
 #ifdef X3DS_MESH_TRANSFORM

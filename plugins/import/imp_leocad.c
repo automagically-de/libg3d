@@ -224,7 +224,7 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 								if((j % 4) == 0)
 									g_print("LeoCAD: matrix:");
 #endif
-#if 1
+#if 0
 								matrix[(j % 4) * 4 + j / 4] =
 									g3d_read_float_le(f);
 #else
@@ -347,7 +347,7 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 	if(!valid_matrix)
 	{
 		/* translation */
-#if 1
+#if 0
 		mloc[0 * 4 + 3] = offx;
 		mloc[1 * 4 + 3] = offy;
 		mloc[2 * 4 + 3] = offz;
@@ -366,6 +366,8 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 		/* combine */
 		g3d_matrix_multiply(mloc, matrix, matrix);
 	}
+
+	/*g3d_matrix_dump(matrix);*/
 
 	/* transform vertices */
 	for(i = 0; i < object->vertex_count; i ++)

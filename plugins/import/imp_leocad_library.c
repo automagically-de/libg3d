@@ -443,8 +443,13 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 
 						g3d_matrix_identity(matrix);
 						for(j = 0; j < 12; j ++)
-							matrix[(j % 3) * 4 + (j / 3)] =
+#if 1
+							matrix[(j / 3) * 4 + (j % 3)] =
 								g3d_read_float_le(bin);
+#else
+							matrix[j] = g3d_read_float_le(bin);
+#endif
+							/* g3d_matrix_dump(matrix); */
 
 						if(stud && piece->object)
 						{

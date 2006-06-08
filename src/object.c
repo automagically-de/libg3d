@@ -25,6 +25,7 @@
 
 #include <g3d/types.h>
 #include <g3d/vector.h>
+#include <g3d/matrix.h>
 #include <g3d/face.h>
 
 void g3d_object_free(G3DObject *object)
@@ -88,12 +89,23 @@ gdouble g3d_object_radius(G3DObject *object)
 gboolean g3d_object_scale(G3DObject *object, gfloat scale)
 {
 	guint32 i;
+	gfloat *matrix;
 
 	for(i = 0; i < object->vertex_count; i ++)
 	{
 		object->vertex_data[i * 3 + 0] *= scale;
 		object->vertex_data[i * 3 + 1] *= scale;
 		object->vertex_data[i * 3 + 2] *= scale;
+	}
+
+	if(object->transformation)
+	{
+		matrix = object->transformation->matrix;
+		g3d_matrix_translate(
+			- (matrix[12] - (matrix[12] * scale)),
+			- (matrix[13] - (matrix[13] * scale)),
+			- (matrix[14] - (matrix[14] * scale)),
+			matrix);
 	}
 
 	return TRUE;

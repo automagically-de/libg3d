@@ -1,3 +1,13 @@
+LIBG3D:
+
+This library loads 3D models from various file formats. Its aim is to support
+basic import functionality for as much formats as possible. More complete
+support is better, of course, and the long time goal.
+
+To help developing plugins and for general use, too, there are a lot of
+basic 3d manipulation function, including vector and matrix math, common
+file reading stuff, transformations and 3d primitive support.
+
 SUPPORTED FILETYPES:
 +-------+---+---+---+---+---------------------------------------------+
 |\ feat.| i | c | t | n | s                                           |
@@ -16,10 +26,12 @@ SUPPORTED FILETYPES:
 | .cob  | x | x |   |   |   | Caligari TrueSpace                      |
 | .dxf  | x |   |   |   |   | AutoCAD                                 |
 | .iob  | x | x |   |   |   | Impulse Turbo Silver / Imagine          |
+| .iv   | p |   |   |   |   | SGI Inventor (ascii only)               |
 | .lcd  | x | x |   |   |   | LeoCAD                                  |
 | .lw   | x | x |   |   |   | LightWave                               |
 | .lwb  | x | x |   |   |   | LightWave                               |
 | .lwo  | x | x |   |   |   | LightWave                               |
+| .mb   | p |   |   |   | x | Maya (binary)                           |
 | .md2  | x |   |   |   |   | id Software Quake II                    |
 | .md3  | x | x | x | ? |   | id Software Quake III                   |
 | .nff  | x | x |   | x |   | Neutral File Format                     |
@@ -33,8 +45,26 @@ SUPPORTED FILETYPES:
 x: implemented
 p: partly done (strange results)
 
+Wishlist:
+
+type                  docs  ex.avail. status
+-----------------------------------------------------------------------------
+.r4 (Reflections 4)   no    yes       IFF, container readable
+.flt (OpenFlight)     yes   yes       a lot to do...
+.ar (Racer)           (yes) yes       not started yet
+.wrl (VRML 2.0)       yes   yes       not started yet
+.x3d (X3D)            yes   yes       not started yet
+.max (3D Studio MAX)  no    yes       probably not (no docs, no clue)
+.blend (Blender)      (yes) yes       difficult format, low priority
+.w3d (Shockwave 3D)   no    yes       not started yet
+.c4d (Cinema 4D)      no    yes       not started yet
+.br4 (Brice 4)        no    yes       not started yet
+.x (DirectX)          ?     yes       not started yet
+.3dm (Rhino 2)        ?     yes       not started yet
+
 other model plugins:
 * heightfield: generates a landscape from an image (broken atm?)
+* test: some tests (primitives, transformation...)
 
 IMAGE PLUGINS:
 

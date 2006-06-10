@@ -55,7 +55,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	local->parent_id = id;
 	local->nb = len;
 
-	g3d_iff_read_ctnr(global, local, maya_chunks, 4);
+	g3d_iff_read_ctnr(global, local, maya_chunks, G3D_IFF_PAD4);
 
 	g_free(local);
 	g_free(global);

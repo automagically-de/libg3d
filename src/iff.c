@@ -59,11 +59,19 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len)
 	return f;
 }
 
-int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len)
+int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len, guint32 flags)
 {
 	*id = g3d_read_int32_be(f);
-	*len = g3d_read_int32_be(f);
-	return 8 + *len + (*len % 2);
+	if(flags & G3D_IFF_LEN16)
+	{
+		*len = g3d_read_int16_be(f);
+		return 6 + *len + (*len % 2);
+	}
+	else
+	{
+		*len = g3d_read_int32_be(f);
+		return 8 + *len + (*len % 2);
+	}
 }
 
 gchar *g3d_iff_id_to_text(guint32 id)
@@ -89,7 +97,7 @@ gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid)
 }
 
 gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
-	g3d_iff_chunk_info *chunks, gint32 modulo)
+	g3d_iff_chunk_info *chunks, guint32 flags)
 {
 	g3d_iff_ldata *sublocal;
 	guint32 chunk_id, chunk_len, chunk_mod, chunk_type;
@@ -100,14 +108,19 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 	level_object = NULL;
 
-	while(local->nb >= 8)
+	while(local->nb >= ((flags & G3D_IFF_LEN16) ? 6 : 8))
 	{
 		chunk_id = 0;
 
-		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len);
-		local->nb -= 8;
+		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, flags);
+		local->nb -= ((flags & G3D_IFF_LEN16) ? 6 : 8);
 
-		chunk_mod = modulo;
+		chunk_mod = flags & 0x0F;
+		if(chunk_mod == 0)
+		{
+			g_warning("[IFF] mod = 0 (flags: 0x%02X\n)", flags);
+			chunk_mod = 2;
+		}
 		chunk_type = ' ';
 
 		/* handle special chunks */
@@ -155,14 +168,15 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		if(chunks[i].id)
 		{
 			tid = g3d_iff_id_to_text(chunk_id);
-			g_debug("%s[%s][%c%c%c] %s (%d)",
+			g_debug("%s[%s][%c%c%c] %s (%d) - %d bytes left",
 				padding + (strlen(padding) - local->level),
 				tid,
 				chunk_type,
 				chunks[i].container ? 'c' : ' ',
 				chunks[i].callback ? 'f' : ' ',
 				chunks[i].description,
-				chunk_len);
+				chunk_len,
+				local->nb);
 			g_free(tid);
 
 			sublocal = g_new0(g3d_iff_ldata, 1);
@@ -180,7 +194,16 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 			if(chunks[i].container)
 			{
-				g3d_iff_read_ctnr(global, sublocal, chunks, modulo);
+				/* LWO has 16 bit length in subchunks */
+				if(flags & G3D_IFF_SUBCHUNK_LEN16)
+				{
+					g3d_iff_read_ctnr(global, sublocal, chunks,
+						flags | G3D_IFF_LEN16);
+				}
+				else
+				{
+					g3d_iff_read_ctnr(global, sublocal, chunks, flags);
+				}
 			}
 
 			if(chunks[i].container && chunks[i].callback)
@@ -216,7 +239,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		}
 
 		g3d_context_update_interface(global->context);
-	} /* nb >= 8 */
+	} /* nb >= 8/6 */
 
 	if(local->nb > 0)
 	{

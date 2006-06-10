@@ -10,7 +10,7 @@ gboolean r4_cb_RKA2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	g3d_iff_ldata *sublocal;
 
 	/* RGE1 chunk */
-	g3d_iff_readchunk(global->f, &chunk_id, &chunk_len);
+	g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, 0);
 	local->nb -= 8;
 
 	sublocal = g_new0(g3d_iff_ldata, 1);
@@ -19,7 +19,7 @@ gboolean r4_cb_RKA2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	sublocal->object = local->object;
 	sublocal->level = local->level + 1;
 	sublocal->nb = chunk_len;
-	g3d_iff_read_ctnr(global, sublocal, r4_chunks, 1);
+	g3d_iff_read_ctnr(global, sublocal, r4_chunks, G3D_IFF_PAD1);
 	g_free(sublocal);
 
 	/* more stuff... */

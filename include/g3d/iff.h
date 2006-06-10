@@ -28,6 +28,14 @@
 
 #include <g3d/types.h>
 
+#define G3D_IFF_PAD1   0x01
+#define G3D_IFF_PAD2   0x02
+#define G3D_IFF_PAD4   0x04
+#define G3D_IFF_PAD8   0x08
+
+#define G3D_IFF_SUBCHUNK_LEN16   0x10
+#define G3D_IFF_LEN16            0x20
+
 #define G3D_IFF_MKID(a,b,c,d) ( \
 	(((guint32)(a))<<24) | \
 	(((guint32)(b))<<16) | \
@@ -41,6 +49,7 @@ typedef struct {
 	G3DContext *context;
 	G3DModel *model;
 	FILE *f;
+	guint32 flags;
 	gpointer user_data;
 } g3d_iff_gdata;
 
@@ -82,19 +91,20 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len);
  * @f: the open IFF file pointer
  * @id: ID of chunk (out)
  * @len: length of chunk (excluding header) (out)
+ * @flags: flags
  *
  * Reads one chunk header from an IFF file.
  *
  * Returns: real length of chunk including header and possible padding byte
  */
-int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len);
+int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len, guint32 flags);
 
 gchar *g3d_iff_id_to_text(guint32 id);
 
 gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid);
 
 gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
-	g3d_iff_chunk_info *chunks, gint32 modulo);
+	g3d_iff_chunk_info *chunks, guint32 flags);
 
 
 G_END_DECLS

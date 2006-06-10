@@ -290,7 +290,7 @@ gboolean lwo_cb_PTAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	G3DMaterial *material, *tmat;
 	G3DFace *face;
 	GSList *mlist;
-	gint32 id;
+	gint32 id, fmax;
 	guint32 poly, tag;
 
 	obj = (LwoObject *)global->user_data;
@@ -305,13 +305,15 @@ gboolean lwo_cb_PTAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	if(id != G3D_IFF_MKID('S','U','R','F'))
 		return FALSE;
 
+	fmax = g_slist_length(object->faces) - 1;
+
 	while(local->nb > 0)
 	{
 		local->nb -= lwo_read_vx(global->f, &poly);
 		tag = g3d_read_int16_be(global->f);
 		local->nb -= 2;
 
-		face = (G3DFace *)g_slist_nth_data(object->faces, poly);
+		face = (G3DFace *)g_slist_nth_data(object->faces, fmax - poly);
 		g_return_val_if_fail(face != NULL, FALSE);
 
 		if(tag > obj->ntags)

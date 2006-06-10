@@ -51,6 +51,7 @@ typedef struct {
 	FILE *f;
 	guint32 flags;
 	gpointer user_data;
+	long int max_fpos;
 } g3d_iff_gdata;
 
 /* local data */

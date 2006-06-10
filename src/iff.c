@@ -105,8 +105,12 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 	gchar *tid;
 	gpointer level_object;
 	gchar *padding = "                                   ";
+	long int fpos;
 
 	level_object = NULL;
+
+	if(global->max_fpos == 0)
+		global->max_fpos = local->nb + 12;
 
 	while(local->nb >= ((flags & G3D_IFF_LEN16) ? 6 : 8))
 	{
@@ -238,7 +242,9 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 			local->nb -= (chunk_mod - (chunk_len % chunk_mod));
 		}
 
-		g3d_context_update_interface(global->context);
+		fpos = ftell(global->f);
+		g3d_context_update_progress_bar(global->context,
+			((gfloat)fpos / (gfloat)global->max_fpos), TRUE);
 	} /* nb >= 8/6 */
 
 	if(local->nb > 0)

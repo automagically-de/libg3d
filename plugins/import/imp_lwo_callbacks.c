@@ -5,10 +5,37 @@
 
 #include <g3d/context.h>
 #include <g3d/material.h>
+#include <g3d/texture.h>
 #include <g3d/iff.h>
 #include <g3d/read.h>
 
 #include "imp_lwo.h"
+
+gboolean lwo_cb_CLIP(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	LwoObject *obj;
+	guint32 index;
+
+	obj = (LwoObject *)global->user_data;
+	g_return_val_if_fail(obj != NULL, FALSE);
+
+	if(!local->finalize)
+	{
+		index = g3d_read_int32_be(global->f);
+		local->nb -= 4;
+
+		obj->nclips ++;
+		obj->clips = g_realloc(obj->clips, obj->nclips * sizeof(guint32));
+		obj->clipfiles = g_realloc(obj->clipfiles,
+			(obj->nclips + 1) * sizeof(gchar *));
+
+		obj->clips[obj->nclips - 1] = index;
+		obj->clipfiles[obj->nclips - 1] = g_strdup("undef");
+		obj->clipfiles[obj->nclips] = NULL;
+	}
+
+	return TRUE;
+}
 
 gboolean lwo_cb_COLR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
@@ -38,6 +65,37 @@ gboolean lwo_cb_COLR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
+/* image index */
+gboolean lwo_cb_IMAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	LwoObject *obj;
+	G3DMaterial *material;
+	guint32 index, i;
+
+	obj = (LwoObject *)global->user_data;
+	g_return_val_if_fail(obj != NULL, FALSE);
+
+	material = (G3DMaterial *)local->object;
+	g_return_val_if_fail(material != NULL, FALSE);
+
+	local->nb -= lwo_read_vx(global->f, &index);
+
+	for(i = 0; i < obj->nclips; i ++)
+	{
+		if(obj->clips[i] == index)
+			break;
+	}
+
+	if(obj->clips[i] == index)
+	{
+		material->tex_image = g3d_texture_load_cached(
+			global->context, global->model, obj->clipfiles[i]);
+	}
+
+	return TRUE;
+}
+
+/* points */
 gboolean lwo_cb_PNTS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	LwoObject *obj;
@@ -51,6 +109,12 @@ gboolean lwo_cb_PNTS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	{
 		object = lwo_create_object(global->f, global->model, global->flags);
 		obj->object = object;
+
+		if(obj->tex_vertices)
+		{
+			g_free(obj->tex_vertices);
+			obj->tex_vertices = NULL;
+		}
 	}
 	else
 	{
@@ -124,6 +188,13 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 		face->vertex_indices = g_new0(guint32, face->vertex_count);
 
+		if(obj->tex_vertices)
+		{
+			face->flags |= G3D_FLAG_FAC_TEXMAP;
+			face->tex_vertex_count = face->vertex_count;
+			face->tex_vertex_data = g_new0(gfloat, face->tex_vertex_count * 2);
+		}
+
 		for(i = 0; i < face->vertex_count; i ++)
 		{
 			if(global->flags & LWO_FLAG_LWO2)
@@ -143,6 +214,14 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 				if(face->vertex_indices[i] > object->vertex_count)
 					face->vertex_indices[i] = 0;
+			}
+
+			if(obj->tex_vertices)
+			{
+				face->tex_vertex_data[i * 2 + 0] =
+					obj->tex_vertices[face->vertex_indices[i] * 2 + 0];
+				face->tex_vertex_data[i * 2 + 1] =
+					obj->tex_vertices[face->vertex_indices[i] * 2 + 1];
 			}
 		} /* i: 0..face->vertex_count */
 
@@ -313,6 +392,25 @@ gboolean lwo_cb_SRFS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
+/* still image */
+gboolean lwo_cb_STIL(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	LwoObject *obj;
+
+	gchar buffer[512];
+
+    obj = (LwoObject *)global->user_data;
+	g_return_val_if_fail(obj != NULL, FALSE);
+
+	local->nb -= lwo_read_string(global->f, buffer);
+
+	g_free(obj->clipfiles[obj->nclips - 1]);
+	obj->clipfiles[obj->nclips - 1] = g_strdup(buffer);
+	obj->clipfiles[obj->nclips] = NULL;
+
+	return TRUE;
+}
+
 /* surface */
 gboolean lwo_cb_SURF(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
@@ -398,6 +496,7 @@ gboolean lwo_cb_TAGS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
+/* transparency */
 gboolean lwo_cb_TRAN(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	G3DMaterial *material;
@@ -422,3 +521,58 @@ gboolean lwo_cb_TRAN(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
+/* vertex mapping */
+gboolean lwo_cb_VMAP(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	LwoObject *obj;
+	guint32 index, type, dim;
+	gchar buffer[512], *tmp;
+
+	obj = (LwoObject *)global->user_data;
+	g_return_val_if_fail(obj != NULL, FALSE);
+
+	tmp = g3d_iff_id_to_text(local->parent_id);
+	g_debug("[LWO][VMAP] parent is %s", tmp);
+	g_free(tmp);
+
+	if(local->parent_id == G3D_IFF_MKID('L','W','O','2'))
+	{
+		type = g3d_read_int32_be(global->f);
+		local->nb -= 4;
+
+		dim = g3d_read_int16_be(global->f);
+		local->nb -= 2;
+
+		local->nb -= lwo_read_string(global->f, buffer);
+
+		if(type == G3D_IFF_MKID('T','X','U','V'))
+		{
+			g_debug("[LWO][VMAP] **TXUV**");
+
+			g_return_val_if_fail(obj->tex_vertices == NULL, FALSE);
+
+			obj->tex_vertices = g_new0(gfloat,
+				obj->object->vertex_count * 2);
+
+			while(local->nb > 0)
+			{
+				local->nb -= lwo_read_vx(global->f, &index);
+				g_return_val_if_fail(index < obj->object->vertex_count, FALSE);
+
+				obj->tex_vertices[index * 2 + 0] =
+					g3d_read_float_be(global->f);
+				obj->tex_vertices[index * 2 + 1] =
+					g3d_read_float_be(global->f);
+				local->nb -= 8;
+			}
+		}
+		else
+		{
+			tmp = g3d_iff_id_to_text(type);
+			g_warning("[LWO][VMAP] unhandled vertex mapping %s", tmp);
+			g_free(tmp);
+		}
+	}
+
+	return TRUE;
+}

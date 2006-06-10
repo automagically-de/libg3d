@@ -48,6 +48,8 @@
 /* plugin interface                                                          */
 /*****************************************************************************/
 
+static void lwo_fix_texfaces(G3DModel *model);
+
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer user_data)
 {
@@ -84,7 +86,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	global->user_data = obj;
 
 	local = g_new0(g3d_iff_ldata, 1);
-	local->parent_id = id;
+	local->id = id;
 	local->nb = len;
 
 	material = g3d_material_new();
@@ -94,8 +96,21 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	g3d_iff_read_ctnr(global, local, lwo_chunks,
 		G3D_IFF_PAD2 | G3D_IFF_SUBCHUNK_LEN16);
 
+	lwo_fix_texfaces(model);
+
+	/* cleanup */
 	if(obj->ntags)
 		g_strfreev(obj->tags);
+
+	if(obj->nclips)
+	{
+		g_free(obj->clips);
+		g_strfreev(obj->clipfiles);
+	}
+
+	if(obj->tex_vertices)
+		g_free(obj->tex_vertices);
+
 	g_free(obj);
 
 	g_free(local);
@@ -179,3 +194,30 @@ guint32 lwo_read_vx(FILE *f, guint *index)
 	}
 }
 
+static void lwo_fix_texfaces(G3DModel *model)
+{
+	GSList *olist, *flist;
+	G3DObject *object;
+	G3DFace *face;
+
+	olist = model->objects;
+	while(olist)
+	{
+		object = (G3DObject *)olist->data;
+		olist = olist->next;
+
+		flist = object->faces;
+		while(flist)
+		{
+			face = (G3DFace *)flist->data;
+			flist = flist->next;
+
+			if(face->flags & G3D_FLAG_FAC_TEXMAP)
+			{
+				face->tex_image = face->material->tex_image;
+				if(face->tex_image == 0)
+					g_warning("[LWO] lwo_fix_texfaces: face w/o texture");
+			}
+		}
+	}
+}

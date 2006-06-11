@@ -215,8 +215,10 @@ static void lwo_fix_texfaces(G3DModel *model)
 			if(face->flags & G3D_FLAG_FAC_TEXMAP)
 			{
 				face->tex_image = face->material->tex_image;
-				if(face->tex_image == 0)
-					g_warning("[LWO] lwo_fix_texfaces: face w/o texture");
+				if(face->tex_image == NULL)
+				{
+					face->flags &= ~G3D_FLAG_FAC_TEXMAP;
+				}
 			}
 		}
 	}

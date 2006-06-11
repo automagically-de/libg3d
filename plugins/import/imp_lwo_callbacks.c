@@ -204,6 +204,9 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 			}
 			else
 			{
+				face->vertex_indices[i] = g3d_read_int16_be(global->f);
+				local->nb -= 2;
+#if 0
 				i16 = g3d_read_int16_be(global->f);
 				local->nb -= 2;
 
@@ -211,6 +214,7 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 					face->vertex_indices[i] = - i16;
 				else
 					face->vertex_indices[i] = i16;
+#endif
 
 				if(face->vertex_indices[i] > object->vertex_count)
 					face->vertex_indices[i] = 0;
@@ -564,7 +568,7 @@ gboolean lwo_cb_VMAP(g3d_iff_gdata *global, g3d_iff_ldata *local)
 				obj->tex_vertices[index * 2 + 0] =
 					g3d_read_float_be(global->f);
 				obj->tex_vertices[index * 2 + 1] =
-					g3d_read_float_be(global->f);
+					1.0 - g3d_read_float_be(global->f);
 				local->nb -= 8;
 			}
 		}

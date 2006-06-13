@@ -27,13 +27,13 @@ gboolean maya_var_set_double(MayaObject *obj, const gchar *var, gdouble value)
 	return maya_var_set(obj, var, pval);
 }
 
-gdouble maya_var_get_double(MayaObject *obj, const gchar *var)
+gdouble maya_var_get_double(MayaObject *obj, const gchar *var, gdouble defval)
 {
 	gdouble *pval;
 
 	pval = maya_var_get(obj, var);
 	if(pval == NULL)
-		return 0;
+		return defval;
 
 	return *pval;
 }

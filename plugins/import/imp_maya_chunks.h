@@ -8,11 +8,11 @@
 static g3d_iff_chunk_info maya_chunks[] = {
 	{ "ATTR", "unknown",                           0, NULL },
 	{ "AUDI", "audio",                             1, NULL }, /* FOR4 */
-	{ "AUNI", "unknown",                           0, NULL },
+	{ "AUNI", "angle unit",                        0, NULL },
 	{ "BRSH", "brush",                             1, NULL }, /* FOR4 */
 	{ "CHNG", "changes",                           0, NULL },
 	{ "CMP#", "unknown",                           0, NULL },
-	{ "CMPD", "unknown",                           0, NULL },
+	{ "CMPD", "compound",                          0, maya_cb_CMPD },
 	{ "CONN", "unknown",                           1, NULL }, /* FOR4 */
 	{ "CONS", "unknown",                           1, NULL }, /* LIS4 */
 	{ "CWFL", "unknown",                           0, NULL },
@@ -31,7 +31,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "DMTI", "material info",                     1, NULL }, /* FOR4 */
 	{ "DPLM", "layer manager",                     1, NULL }, /* FOR4 */
 	{ "DSPL", "layer ?",                           1, NULL }, /* FOR4 */
-	{ "FINF", "file information",                  0, NULL },
+	{ "FINF", "file information",                  0, maya_cb_STR_ },
 	{ "FDFL", "flare ?",                           1, NULL }, /* FOR4 */
 	{ "FLGS", "flags",                             0, NULL },
 	{ "FLT2", "float 2",                           0, NULL },
@@ -44,8 +44,8 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "ICON", "icon",                              0, NULL },
 	{ "INCL", "includes",                          0, NULL },
 	{ "INFO", "information",                       0, NULL },
-	{ "LUNI", "unknown",                           0, NULL },
-	{ "MADE", "unknown",                           0, NULL },
+	{ "LUNI", "length unit",                       0, NULL },
+	{ "MADE", "creation date",                     0, NULL },
 	{ "MATR", "unknown",                           0, NULL },
 	{ "MESH", "mesh",                              0, maya_cb_MESH },
 	{ "NPLN", "unknown",                           0, NULL },
@@ -98,7 +98,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "SLCT", "unknown",                           0, NULL }, /* evil ;) */
 	{ "STR ", "string",                            0, maya_cb_STR_ },
 	{ "TGEO", "transform geometry",                1, NULL }, /* FOR4 */
-	{ "TUNI", "unknown",                           0, NULL },
+	{ "TUNI", "time unit",                         0, NULL },
 	{ "UVER", "minor version?",                    0, NULL },
 	{ "VERS", "version",                           0, NULL },
 	{ "XFRM", "transformation",                    1, maya_cb_XFRM },

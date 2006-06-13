@@ -10,6 +10,48 @@
 #include "imp_maya_obj.h"
 #include "imp_maya_var.h"
 
+/* compound? */
+gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gint32 flags, i;
+	gdouble *val;
+	gchar *var;
+	gchar *padding = "                    ";
+
+	if(local->nb < 26)
+	{
+		g_warning("[Maya][CMPD] size: %d", local->nb);
+		return FALSE;
+	}
+
+	/* var */
+	var = g_new0(gchar, local->nb - 25);
+	fread(var, 1, local->nb - 25, global->f);
+	local->nb -= (local->nb - 25);
+
+	/* flags ? */
+	flags = g3d_read_int8(global->f);
+	local->nb -= 1;
+
+	val = g_new0(gdouble, 3);
+
+	for(i = 0; i < 3; i ++)
+	{
+		val[i] = g3d_read_double_be(global->f);
+		local->nb -= 8;
+	}
+
+	g_debug("%s[Maya][CMPD] %s = [%g %g %g]",
+		padding + (strlen(padding) - local->level) + 1,
+		var,
+		val[0], val[1], val[2]);
+
+	g_free(val);
+	g_free(var);
+
+	return TRUE;
+}
+
 /* creator */
 gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
@@ -354,9 +396,9 @@ gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		obj = (MayaObject *)local->object;
 		g_return_val_if_fail(obj != NULL, FALSE);
 
-		w = maya_var_get_double(obj, "sw");
-		h = maya_var_get_double(obj, "sh");
-		d = maya_var_get_double(obj, "sd");
+		w = maya_var_get_double(obj, "sw", 1.0);
+		h = maya_var_get_double(obj, "sh", 1.0);
+		d = maya_var_get_double(obj, "sd", 1.0);
 
 		material = g3d_material_new();
 		object = g3d_primitive_cube(w, h, d, material);

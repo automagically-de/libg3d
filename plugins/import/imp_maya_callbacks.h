@@ -3,6 +3,7 @@
 
 #include <g3d/iff.h>
 
+gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local);

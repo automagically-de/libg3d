@@ -86,7 +86,7 @@ gboolean lwo_cb_IMAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 			break;
 	}
 
-	if(obj->clips[i] == index)
+	if((i < obj->nclips) && (obj->clips[i] == index))
 	{
 		material->tex_image = g3d_texture_load_cached(
 			global->context, global->model, obj->clipfiles[i]);

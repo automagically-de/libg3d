@@ -15,6 +15,7 @@ gboolean x3ds_cb_0x4110(x3ds_global_data *global, x3ds_parent_data *parent);
 gboolean x3ds_cb_0x4120(x3ds_global_data *global, x3ds_parent_data *parent);
 gboolean x3ds_cb_0x4130(x3ds_global_data *global, x3ds_parent_data *parent);
 gboolean x3ds_cb_0x4140(x3ds_global_data *global, x3ds_parent_data *parent);
+gboolean x3ds_cb_0x4150(x3ds_global_data *global, x3ds_parent_data *parent);
 gboolean x3ds_cb_0x4160(x3ds_global_data *global, x3ds_parent_data *parent);
 
 gboolean x3ds_cb_0xA000(x3ds_global_data *global, x3ds_parent_data *parent);

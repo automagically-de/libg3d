@@ -13,12 +13,15 @@ gboolean r4_cb_RKA2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, 0);
 	local->nb -= 8;
 
+	g_debug(" [RGE1][  s] unknown (%d)", chunk_len);
+
 	sublocal = g_new0(g3d_iff_ldata, 1);
 	sublocal->parent_id = local->id;
 	sublocal->id = chunk_id;
 	sublocal->object = local->object;
 	sublocal->level = local->level + 1;
-	sublocal->nb = chunk_len;
+	sublocal->nb = chunk_len - 8;
+	local->nb -= sublocal->nb;
 	g3d_iff_read_ctnr(global, sublocal, r4_chunks, G3D_IFF_PAD1);
 	g_free(sublocal);
 

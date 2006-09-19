@@ -172,7 +172,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 		if(chunks[i].id)
 		{
 			tid = g3d_iff_id_to_text(chunk_id);
-			g_debug("%s[%s][%c%c%c] %s (%d) - %d bytes left",
+			g_debug("%s[%s][%c%c%c] %s (%d) @ 0x%08x - %d bytes left",
 				padding + (strlen(padding) - local->level),
 				tid,
 				chunk_type,
@@ -180,6 +180,8 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 				chunks[i].callback ? 'f' : ' ',
 				chunks[i].description,
 				chunk_len,
+				(unsigned int)(ftell(global->f) -
+					((chunk_type == ' ') ? 8 : 12)),
 				local->nb);
 			g_free(tid);
 

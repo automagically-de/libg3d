@@ -39,11 +39,14 @@ gboolean g3d_vector_unify(gfloat *nx, gfloat *ny, gfloat *nz)
 	gfloat r;
 
 	r = sqrt(*nx * *nx + *ny * *ny + *nz * *nz);
-	if(r < 0.000001) return FALSE;
-
-	*nx /= r;
-	*ny /= r;
-	*nz /= r;
+	if(r == 0.0F)
+		*nx = *ny = *nz = 0.0F;
+	else
+	{
+		*nx /= r;
+		*ny /= r;
+		*nz /= r;
+	}
 
 	return TRUE;
 }

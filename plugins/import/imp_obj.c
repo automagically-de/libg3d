@@ -29,7 +29,7 @@
 #include <g3d/types.h>
 #include <g3d/material.h>
 
-static G3DObject *obj_createobject(G3DModel *model, const gchar *name);
+static G3DObject *obj_createobject(GSList **olist, const gchar *name);
 static gboolean obj_tryloadmat(G3DModel *model, const gchar *filename);
 static G3DMaterial *obj_usemat(G3DModel *model, const gchar *matname);
 
@@ -57,7 +57,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	strcat(matfile, "mtl");
 	obj_tryloadmat(model, matfile);
 
-	object = obj_createobject(model, "(default)");
+	object = obj_createobject(&(model->objects), "(default)");
 
 	while(!feof(f))
 	{
@@ -70,7 +70,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 				case '#':
 				case '\n': continue; break;
 
-				case 'g': /* object */
+				case 'g': /* group */
 					if(strlen(line) == 1)
 					{
 					}
@@ -78,7 +78,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 					{
 						material = obj_usemat(model, oname);
 #if 0
-						object = obj_createobject(model, oname);
+						object = obj_createobject(&(model->objects), oname);
+#endif
+#if 0
 						v_off += v_cnt;
 						v_cnt = 1;
 #endif
@@ -86,6 +88,30 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 					else g_printerr("parse error in line: %s\n", line);
 					break;
 
+#if 0
+				case 'o': /* object */
+					if(strlen(line) == 1)
+					{
+						object = obj_createobject(
+							object ? &(object->objects) : &(model->objects),
+							"(unnamed object)");
+						v_off += v_cnt;
+						v_cnt = 1;
+					}
+					else if(sscanf(line, "o %s", oname) == 1)
+					{
+						object = obj_createobject(
+							object ? &(object->objects) : &(model->objects),
+							oname);
+						v_off += v_cnt;
+						v_cnt = 1;
+					}
+					else
+					{
+						g_warning("[OBJ] parse error in line: %s", line);
+					}
+					break;
+#endif
 				case 'v': /* vertex */
 					if(strncmp(line, "vn ", 3) == 0)
 					{
@@ -99,7 +125,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 					{
 						if(object == NULL)
 						{
-							object = obj_createobject(model, "(noname)");
+							object = obj_createobject(
+								&(model->objects), "(noname)");
 						}
 						object->vertex_count++;
 						object->vertex_data = g_realloc(object->vertex_data,
@@ -193,14 +220,14 @@ char **plugin_extensions(void)
 
 /*****************************************************************************/
 
-G3DObject *obj_createobject(G3DModel *model, const char *name)
+G3DObject *obj_createobject(GSList **olist, const char *name)
 {
 	G3DObject *object;
 	G3DMaterial *material = g3d_material_new();
 
 	object = g_new0(G3DObject, 1);
 	object->name = g_strdup(name);
-	model->objects = g_slist_append(model->objects, object);
+	*olist = g_slist_append(*olist, object);
 	object->materials = g_slist_append(object->materials, material);
 	return object;
 }

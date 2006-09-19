@@ -45,7 +45,7 @@ static x3ds_chunk_desc x3ds_chunks[] = {
 
 	{ 0x3000, "default view",               0, NULL },
 	{ 0x3D3D, "mesh",                       1, NULL },
-    { 0x3D3E, "mesh version",               0, NULL },
+	{ 0x3D3E, "mesh version",               0, NULL },
 
 	{ 0x4000, "named object",               1, x3ds_cb_0x4000 },
 	{ 0x4100, "triangle object",            1, NULL },
@@ -54,7 +54,7 @@ static x3ds_chunk_desc x3ds_chunks[] = {
 	{ 0x4120, "face array",                 1, x3ds_cb_0x4120 },
 	{ 0x4130, "mesh mat group",             0, x3ds_cb_0x4130 },
 	{ 0x4140, "texture vertices",           0, x3ds_cb_0x4140 },
-	{ 0x4150, "smooth group",               0, NULL },
+	{ 0x4150, "smooth group",               0, x3ds_cb_0x4150 },
 	{ 0x4160, "mesh matrix",                0, x3ds_cb_0x4160 },
 	{ 0x4165, "mesh color",                 0, NULL },
 	{ 0x4170, "texture info",               0, NULL },

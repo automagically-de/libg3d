@@ -64,12 +64,14 @@ int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len, guint32 flags)
 	*id = g3d_read_int32_be(f);
 	if(flags & G3D_IFF_LEN16)
 	{
-		*len = g3d_read_int16_be(f);
+		*len = (flags & G3D_IFF_LE) ?
+			g3d_read_int16_le(f) : g3d_read_int16_be(f);
 		return 6 + *len + (*len % 2);
 	}
 	else
 	{
-		*len = g3d_read_int32_be(f);
+		*len = (flags & G3D_IFF_LE) ?
+			g3d_read_int32_le(f) : g3d_read_int32_be(f);
 		return 8 + *len + (*len % 2);
 	}
 }

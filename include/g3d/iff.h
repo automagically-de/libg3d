@@ -35,6 +35,7 @@
 
 #define G3D_IFF_SUBCHUNK_LEN16   0x10
 #define G3D_IFF_LEN16            0x20
+#define G3D_IFF_LE               0x40 /* little endian */
 
 #define G3D_IFF_MKID(a,b,c,d) ( \
 	(((guint32)(a))<<24) | \

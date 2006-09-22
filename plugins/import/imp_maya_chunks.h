@@ -46,7 +46,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "INFO", "information",                       0, NULL },
 	{ "LUNI", "length unit",                       0, NULL },
 	{ "MADE", "creation date",                     0, NULL },
-	{ "MATR", "unknown",                           0, NULL },
+	{ "MATR", "matrix",                            0, maya_cb_MATR },
 	{ "MESH", "mesh",                              0, maya_cb_MESH },
 	{ "NPLN", "unknown",                           0, NULL },
 	{ "NRBS", "NURBS ?",                           0, NULL },

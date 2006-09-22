@@ -46,7 +46,11 @@ gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		var,
 		val[0], val[1], val[2]);
 
-	g_free(val);
+	if(local->object)
+		maya_var_set((MayaObject *)local->object, var, val);
+	else
+		g_free(val);
+
 	g_free(var);
 
 	return TRUE;
@@ -299,6 +303,59 @@ gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	g_debug("%s[Maya][DBL3] %s = (%g; %g; %g) (0x%02X)",
 		padding + (strlen(padding) - local->level) + 1,
 		var, val[0], val[1], val[2], flags);
+
+	if(local->object)
+		maya_var_set((MayaObject *)local->object, var, val);
+	else
+		g_free(val);
+
+	g_free(var);
+
+	return TRUE;
+}
+
+/* matrix */
+gboolean maya_cb_MATR(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gint32 flags, i;
+	gfloat *val;
+	gchar *var;
+	gchar *padding = "                    ";
+
+	if(local->nb <= 129)
+	{
+		g_warning("[Maya][MATR] matrix size: %d", local->nb);
+		return FALSE;
+	}
+
+	/* var */
+	var = g_new0(gchar, local->nb - 129);
+	fread(var, 1, local->nb - 129, global->f);
+	local->nb -= (local->nb - 129);
+
+	/* flags ? */
+	flags = g3d_read_int8(global->f);
+	local->nb -= 1;
+
+	val = g_new0(gfloat, 16);
+
+	for(i = 0; i < 16; i ++)
+	{
+		val[i] = (gfloat)g3d_read_double_be(global->f);
+		local->nb -= 8;
+	}
+
+	g_debug("%s[Maya][MATR] %s = \n"
+		"%f %f %f %f\n"
+		"%f %f %f %f\n"
+		"%f %f %f %f\n"
+		"%f %f %f %f",
+		padding + (strlen(padding) - local->level) + 1,
+		var,
+		val[0 * 4 + 0], val[1 * 4 + 0], val[2 * 4 + 0], val[3 * 4 + 0],
+		val[0 * 4 + 1], val[1 * 4 + 1], val[2 * 4 + 1], val[3 * 4 + 1],
+		val[0 * 4 + 2], val[1 * 4 + 2], val[2 * 4 + 2], val[3 * 4 + 2],
+		val[0 * 4 + 3], val[1 * 4 + 3], val[2 * 4 + 3], val[3 * 4 + 3]);
 
 	if(local->object)
 		maya_var_set((MayaObject *)local->object, var, val);

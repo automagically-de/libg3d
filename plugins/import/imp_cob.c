@@ -1,4 +1,4 @@
-/* $Id: imp_cob.c,v 1.1.2.3 2006/01/23 17:03:06 dahms Exp $ */
+/* $Id$ */
 
 /*
     libg3d - 3D object loading library

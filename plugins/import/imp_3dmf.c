@@ -1,4 +1,4 @@
-/* $Id: imp_3dmf.c,v 1.1.2.5 2006/01/23 17:03:05 dahms Exp $ */
+/* $Id$ */
 
 /*
     libg3d - 3D object loading library

@@ -27,6 +27,7 @@ SUPPORTED FILETYPES:
 | .dxf  | x |   |   |   |   | AutoCAD                                 |
 | .iob  | x | x |   |   |   | Impulse Turbo Silver / Imagine          |
 | .iv   | p |   |   |   |   | SGI Inventor (ascii only)               |
+| .joe  | x |   | x | x |   | VDrift v3 .joe car models               |
 | .lcd  | x | x |   |   |   | LeoCAD                                  |
 | .lw   | x | x |   |   |   | LightWave                               |
 | .lwb  | x | x |   |   |   | LightWave                               |

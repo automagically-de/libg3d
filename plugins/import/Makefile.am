@@ -20,6 +20,7 @@ pluginimp_LTLIBRARIES = \
 
 if EXPERIMENTAL
 pluginimp_LTLIBRARIES += \
+	imp_ar.la \
 	imp_flt.la \
 	imp_maya.la \
 	imp_r4.la \
@@ -50,6 +51,7 @@ imp_3dmf_la_SOURCES = imp_3dmf.c
 imp_3ds_la_SOURCES = imp_3ds.c imp_3ds.h imp_3ds_chunks.h \
 	imp_3ds_callbacks.c imp_3ds_callbacks.h
 imp_ac3d_la_SOURCES = imp_ac3d.c
+imp_ar_la_SOURCES = imp_ar.c
 imp_cob_la_SOURCES = imp_cob.c
 imp_dxf_la_SOURCES = imp_dxf.c
 imp_flt_la_SOURCES = imp_flt.c

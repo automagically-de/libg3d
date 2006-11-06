@@ -451,14 +451,16 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 				ntver = g3d_read_int32_le(f);
 				tex_vertices = g_new0(gfloat, ntver * 2);
 				dlen -= 4;
+				len -= 4;
 
 				printf("D: %d texture vertices\n", ntver);
 
-				for(i = 0; i < ntver; i ++)
+				for(i = 0; (i < ntver) && (len > 0); i ++)
 				{
 					tex_vertices[i * 2 + 0] = g3d_read_float_le(f);
 					tex_vertices[i * 2 + 1] = g3d_read_float_le(f);
 					dlen -= 8;
+					len -= 8;
 				}
 				break;
 
@@ -487,6 +489,10 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 				break;
 
 			default:
+				printf("D: skipping tag '%c%c%c%c @ 0x%08x'\n",
+					(id << 24) & 0xFF, (id << 16) & 0xFF,
+					(id << 8) & 0xFF, id & 0xFF,
+					(guint32)ftell(f));
 				fseek(f, len, SEEK_CUR);
 				dlen -= len;
 				break;

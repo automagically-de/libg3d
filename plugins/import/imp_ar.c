@@ -52,25 +52,40 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 {
 	FILE *f;
 	GSList *dir, *item;
+	G3DMaterial *material;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
+	/* default material */
+	material = g3d_material_new();
+	material->name = g_strdup("default material");
+	model->materials = g_slist_append(model->materials, material);
+
+	if(g_strcasecmp(filename + (strlen(filename) - 4), ".dof") == 0)
 	{
-		g_printerr("AR: failed to read '%s'\n", filename);
-		return FALSE;
+		/* single DOF file */
+		ar_load_dof(context, model, filename);
 	}
-
-	dir = ar_read_directory(f);
-	for(item = dir; item != NULL; item = item->next)
+	else
 	{
-		ar_decompress_to_file(f, (ArDirEntry *)item->data);
-		if(g_strcasecmp(((ArDirEntry *)item->data)->name, "body.dof") == 0)
+		/* compressed AR archive */
+		f = fopen(filename, "rb");
+		if(f == NULL)
 		{
-			ar_load_dof(context, model, ((ArDirEntry *)item->data)->name);
+			g_printerr("AR: failed to read '%s'\n", filename);
+			return FALSE;
 		}
-	}
 
-	fclose(f);
+		dir = ar_read_directory(f);
+		for(item = dir; item != NULL; item = item->next)
+		{
+			ar_decompress_to_file(f, (ArDirEntry *)item->data);
+			if(g_strcasecmp(((ArDirEntry *)item->data)->name, "body.dof") == 0)
+			{
+				ar_load_dof(context, model, ((ArDirEntry *)item->data)->name);
+			}
+		}
+
+		fclose(f);
+	}
 
 	return TRUE;
 }
@@ -83,7 +98,7 @@ gchar *plugin_description(void)
 
 gchar **plugin_extensions(void)
 {
-	return g_strsplit("ar", ":", 0);
+	return g_strsplit("ar:dof", ":", 0);
 }
 
 /*****************************************************************************/
@@ -236,7 +251,7 @@ gboolean ar_decompress_to_file(FILE *f, ArDirEntry *dirent)
 	printf("D: starting decompression part\n");
 #endif
 
-	/* decomress stuff */
+	/* decompress stuff */
 	while(1)
 	{
 		srcsize = g3d_read_int16_le(f);
@@ -340,6 +355,8 @@ G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
 					{
 						material->tex_image =
 							g3d_texture_load_cached(context, model, tmp);
+						if(material->tex_image)
+							material->tex_image->tex_id = g_str_hash(tmp);
 					}
 					g_free(tmp);
 				}
@@ -361,7 +378,9 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 	G3DObject *object, *pobj;
 	G3DFace *face;
 	G3DMaterial *material;
-	gint32 id, len, dlen, nverts, nind, i;
+	GSList *item;
+	gint32 id, len, dlen, nverts, ntver, nind, i, j, index;
+	gfloat *tex_vertices = NULL;
 
 	id = g3d_read_int32_be(f);
 	dlen = g3d_read_int32_le(f);
@@ -375,9 +394,11 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 	object = g_new0(G3DObject, 1);
 	object->name = g_strdup_printf("object @ 0x%08x", (guint32)ftell(f));
 
-	/* default material */
+	/* parent object for material references */
 	pobj = (G3DObject *)g_slist_nth_data(model->objects, 0);
-	material = (G3DMaterial *)g_slist_nth_data(pobj->materials, 0);
+
+	/* default material */
+	material = (G3DMaterial *)g_slist_nth_data(model->materials, 0);
 
 	do
 	{
@@ -395,13 +416,22 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 				g3d_read_int32_le(f);
 				/* paint flags */
 				g3d_read_int32_le(f);
+
 				/* material ref */
-				g3d_read_int32_le(f);
+				i = g3d_read_int32_le(f);
+				material = g_slist_nth_data(pobj->materials, i);
+				if(material == NULL)
+					material = (G3DMaterial *)g_slist_nth_data(
+						model->materials, 0);
+
 				dlen -= 12;
 				break;
 
 			case G3D_IFF_MKID('V','E','R','T'):
 				nverts = g3d_read_int32_le(f);
+
+				printf("D: %d vertices\n", nverts);
+
 				dlen -= 4;
 				if(nverts > 0)
 				{
@@ -414,6 +444,21 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 						object->vertex_data[i * 3 + 2] = g3d_read_float_le(f);
 						dlen -= 12;
 					}
+				}
+				break;
+
+			case G3D_IFF_MKID('T', 'V','E','R'):
+				ntver = g3d_read_int32_le(f);
+				tex_vertices = g_new0(gfloat, ntver * 2);
+				dlen -= 4;
+
+				printf("D: %d texture vertices\n", ntver);
+
+				for(i = 0; i < ntver; i ++)
+				{
+					tex_vertices[i * 2 + 0] = g3d_read_float_le(f);
+					tex_vertices[i * 2 + 1] = g3d_read_float_le(f);
+					dlen -= 8;
 				}
 				break;
 
@@ -448,6 +493,30 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 		}
 	}
 	while((dlen > 0) && (id != G3D_IFF_MKID('G','E','N','D')));
+
+	/* fix faces with normals and texture vertices */
+	for(item = object->faces; item != NULL; item = item->next)
+	{
+		face = (G3DFace *)item->data;
+
+		if(tex_vertices != NULL)
+		{
+			face->tex_image = material->tex_image;
+			face->tex_vertex_count = 3;
+			face->tex_vertex_data = g_new0(gfloat, 3 * 2);
+			for(j = 0; j < 3; j ++)
+			{
+				index = face->vertex_indices[j];
+				face->tex_vertex_data[j * 2 + 0] = tex_vertices[index * 2 + 0];
+				face->tex_vertex_data[j * 2 + 1] = tex_vertices[index * 2 + 1];
+			}
+			if(face->tex_image != NULL)
+				face->flags |= G3D_FLAG_FAC_TEXMAP;
+		}
+	}
+
+	if(tex_vertices != NULL)
+		g_free(tex_vertices);
 
 	return object;
 }

@@ -26,6 +26,9 @@
 
 #include <g3d/types.h>
 #include <g3d/read.h>
+#include <g3d/iff.h>
+#include <g3d/texture.h>
+#include <g3d/material.h>
 
 #define AR_FLAG_COPIED    0x80
 #define AR_FLAG_COMPRESS  0x40
@@ -38,6 +41,8 @@ typedef struct {
 
 GSList *ar_read_directory(FILE *f);
 gboolean ar_decompress_to_file(FILE *f, ArDirEntry *dirent);
+G3DObject *ar_load_dof(G3DContext *context, G3DModel *model,
+	const gchar *filename);
 
 /*****************************************************************************/
 /* plugin interface                                                          */
@@ -59,6 +64,10 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	for(item = dir; item != NULL; item = item->next)
 	{
 		ar_decompress_to_file(f, (ArDirEntry *)item->data);
+		if(g_strcasecmp(((ArDirEntry *)item->data)->name, "body.dof") == 0)
+		{
+			ar_load_dof(context, model, ((ArDirEntry *)item->data)->name);
+		}
 	}
 
 	fclose(f);
@@ -132,7 +141,7 @@ guint8 *ar_decompress_chunk(guint8 *src, guint16 srcsize, guint16 *dstsize)
 	{
 		*dstsize = srcsize - 1;
 		dst = g_new0(guint8, *dstsize);
-		memcpy(dst, src, *dstsize);
+		memcpy(dst, src + 1, *dstsize);
 		return dst;
 	}
 
@@ -145,6 +154,7 @@ guint8 *ar_decompress_chunk(guint8 *src, guint16 srcsize, guint16 *dstsize)
 			/* get new command */
 			cmd = (src[i] << 8) + src[i + 1];
 			i += 2;
+			bit = 16;
 		}
 
 		if(cmd & 0x8000)
@@ -168,7 +178,7 @@ guint8 *ar_decompress_chunk(guint8 *src, guint16 srcsize, guint16 *dstsize)
 				size = (src[i] << 8) + src[i + 1] + 16;
 				*dstsize += size;
 				dst = g_realloc(dst, *dstsize);
-				i ++;
+				i += 2;
 				for(k = 0; k < size; k ++)
 					dst[j + k] = src[i];
 				i ++;
@@ -250,3 +260,277 @@ gboolean ar_decompress_to_file(FILE *f, ArDirEntry *dirent)
 
 	return TRUE;
 }
+
+gchar *ar_read_string(FILE *f, gint32 *dlen)
+{
+	gint32 len;
+	gchar *text;
+
+	len = g3d_read_int16_le(f);
+	*dlen -= 2;
+
+	text = g_new0(gchar, len + 1);
+	fread(text, 1, len, f);
+	*dlen -= len;
+
+	return text;
+}
+
+G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
+{
+	G3DMaterial *material;
+	gint32 id, len, dlen, i, ntex;
+	gchar *tmp;
+
+	id = g3d_read_int32_be(f);
+	if(id != G3D_IFF_MKID('M','A','T','0'))
+		return NULL;
+
+	material = g3d_material_new();
+
+	dlen = g3d_read_int32_le(f);
+	do
+	{
+		id = g3d_read_int32_be(f);
+		if(id != G3D_IFF_MKID('M','E','N','D'))
+			len = g3d_read_int32_le(f);
+
+		switch(id)
+		{
+			case G3D_IFF_MKID('M','E','N','D'):
+				break;
+
+			case G3D_IFF_MKID('M','H','D','R'):
+				material->name = ar_read_string(f, &dlen);
+				tmp = ar_read_string(f, &dlen);
+				g_free(tmp);
+				break;
+
+			case G3D_IFF_MKID('M','C','O','L'):
+				/* ambient */
+				material->r = g3d_read_float_le(f);
+				material->g = g3d_read_float_le(f);
+				material->b = g3d_read_float_le(f);
+				material->a = g3d_read_float_le(f);
+				dlen -= 16;
+				/* diffuse */
+				fseek(f, 16, SEEK_CUR);
+				dlen -= 16;
+				/* specular */
+				material->specular[0] = g3d_read_float_le(f);
+				material->specular[1] = g3d_read_float_le(f);
+				material->specular[2] = g3d_read_float_le(f);
+				material->specular[3] = g3d_read_float_le(f);
+				dlen -= 16;
+				/* emission */
+				fseek(f, 16, SEEK_CUR);
+				dlen -= 16;
+				/* shininess */
+				material->shininess = g3d_read_float_le(f);
+				dlen -= 4;
+				break;
+
+			case G3D_IFF_MKID('M','T','E','X'):
+				ntex = g3d_read_int32_le(f);
+				dlen -= 4;
+				for(i = 0; i < ntex; i ++)
+				{
+					tmp = ar_read_string(f, &dlen);
+					if(i == 0)
+					{
+						material->tex_image =
+							g3d_texture_load_cached(context, model, tmp);
+					}
+					g_free(tmp);
+				}
+				break;
+
+			default:
+				fseek(f, len, SEEK_CUR);
+				dlen -= len;
+				break;
+		}
+	}
+	while((dlen > 0) && (id != G3D_IFF_MKID('M','E','N','D')));
+
+	return material;
+}
+
+G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
+{
+	G3DObject *object, *pobj;
+	G3DFace *face;
+	G3DMaterial *material;
+	gint32 id, len, dlen, nverts, nind, i;
+
+	id = g3d_read_int32_be(f);
+	dlen = g3d_read_int32_le(f);
+
+	if(id != G3D_IFF_MKID('G','O','B','1'))
+	{
+		fseek(f, dlen, SEEK_CUR);
+		return NULL;
+	}
+
+	object = g_new0(G3DObject, 1);
+	object->name = g_strdup_printf("object @ 0x%08x", (guint32)ftell(f));
+
+	/* default material */
+	pobj = (G3DObject *)g_slist_nth_data(model->objects, 0);
+	material = (G3DMaterial *)g_slist_nth_data(pobj->materials, 0);
+
+	do
+	{
+		id = g3d_read_int32_be(f);
+		if(id != G3D_IFF_MKID('G','E','N','D'))
+			len = g3d_read_int32_le(f);
+
+		switch(id)
+		{
+			case G3D_IFF_MKID('G','E','N','D'):
+				break;
+
+			case G3D_IFF_MKID('G','H','D','R'):
+				/* flags */
+				g3d_read_int32_le(f);
+				/* paint flags */
+				g3d_read_int32_le(f);
+				/* material ref */
+				g3d_read_int32_le(f);
+				dlen -= 12;
+				break;
+
+			case G3D_IFF_MKID('V','E','R','T'):
+				nverts = g3d_read_int32_le(f);
+				dlen -= 4;
+				if(nverts > 0)
+				{
+					object->vertex_count = nverts;
+					object->vertex_data = g_new0(gfloat, nverts * 3);
+					for(i = 0; i < nverts; i ++)
+					{
+						object->vertex_data[i * 3 + 0] = g3d_read_float_le(f);
+						object->vertex_data[i * 3 + 1] = g3d_read_float_le(f);
+						object->vertex_data[i * 3 + 2] = g3d_read_float_le(f);
+						dlen -= 12;
+					}
+				}
+				break;
+
+			case G3D_IFF_MKID('I','N','D','I'):
+				nind = g3d_read_int32_le(f);
+				dlen -= 4;
+				len -= 4;
+
+				printf("D: %d indices in %d bytes\n", nind, len);
+
+				for(i = 0; i < nind; i += 3)
+				{
+					face = g_new0(G3DFace, 1);
+					face->material = material;
+					face->vertex_count = 3;
+					face->vertex_indices = g_new0(guint32, 3);
+
+					face->vertex_indices[0] = g3d_read_int16_le(f);
+					face->vertex_indices[1] = g3d_read_int16_le(f);
+					face->vertex_indices[2] = g3d_read_int16_le(f);
+					dlen -= 6;
+					len -= 6;
+
+					object->faces = g_slist_append(object->faces, face);
+				}
+				break;
+
+			default:
+				fseek(f, len, SEEK_CUR);
+				dlen -= len;
+				break;
+		}
+	}
+	while((dlen > 0) && (id != G3D_IFF_MKID('G','E','N','D')));
+
+	return object;
+}
+
+G3DObject *ar_load_dof(G3DContext *context, G3DModel *model,
+	const gchar *filename)
+{
+	FILE *f;
+	gint32 id, dlen, len, nmat, nobj, i;
+	G3DObject *object, *cobj;
+	G3DMaterial *material;
+
+	f = fopen(filename, "rb");
+	if(f == NULL)
+	{
+		g_warning("failed to read '%s'\n", filename);
+		return NULL;
+	}
+
+	/* file is little-endian, but read IDs as big-endian to use
+	 * G3D_IFF_MKID to compare */
+
+	id = g3d_read_int32_be(f);
+	if(id != G3D_IFF_MKID('D','O','F','1'))
+	{
+		g_warning("%s is not a DOF1 file\n", filename);
+		fclose(f);
+		return NULL;
+	}
+	dlen = g3d_read_int32_le(f);
+
+	object = g_new0(G3DObject, 1);
+	object->name = g_strdup(filename);
+	model->objects = g_slist_append(model->objects, object);
+
+	do
+	{
+		id = g3d_read_int32_be(f);
+		if(id != G3D_IFF_MKID('E','D','O','F'))
+			len = g3d_read_int32_le(f);
+		dlen -= 8;
+
+		switch(id)
+		{
+			case G3D_IFF_MKID('E','D','O','F'):
+				/* end of DOF */
+				break;
+
+			case G3D_IFF_MKID('M','A','T','S'):
+				nmat = g3d_read_int32_le(f);
+				for(i = 0; i < nmat; i ++)
+				{
+					material = ar_dof_load_mat(context, model, f);
+					if(material)
+						object->materials = g_slist_append(object->materials,
+							material);
+				}
+				dlen -= len;
+				break;
+
+			case G3D_IFF_MKID('G','E','O','B'):
+				nobj = g3d_read_int32_le(f);
+				for(i = 0; i < nobj; i ++)
+				{
+					cobj = ar_dof_load_obj(context, model, f);
+					if(cobj)
+						object->objects =
+							g_slist_append(object->objects, cobj);
+				}
+				dlen -= len;
+				break;
+
+			default:
+				fseek(f, len, SEEK_CUR);
+				dlen -= len;
+				g_print("DOF: unknown ID '%c%c%c%c'\n",
+					(id >> 24) & 0xFF, (id >> 16) & 0xFF,
+					(id >> 8) & 0xFF, id  & 0xFF);
+				break;
+		}
+	}
+	while((dlen > 0) && (id != G3D_IFF_MKID('E','D','O','F')) && (!feof(f)));
+
+	return object;
+}
+

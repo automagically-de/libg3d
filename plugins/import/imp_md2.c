@@ -67,8 +67,11 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	if(idver != 8)
 	{
 		g_printerr("file '%s' has wrong version (%d)\n", filename, idver);
+#define CLOSE_ON_WRONG_VERSION
+#ifdef CLOSE_ON_WRONG_VERSION
 		fclose(f);
 		return FALSE;
+#endif
 	}
 
 	object = g_new0(G3DObject, 1);

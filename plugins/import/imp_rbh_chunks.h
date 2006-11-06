@@ -8,7 +8,7 @@
 static g3d_iff_chunk_info rbh_chunks[] = {
 	{ "RBHH", "RBH header",                        0, rbh_cb_RBHH },
 	{ "BODY", "body",                              0, rbh_cb_BODY },
-	{ "RELC", "unknown",                           0, NULL },
+	{ "RELC", "unknown",                           0, rbh_cb_RELC },
 
 	{ NULL, NULL, 0, NULL }
 };

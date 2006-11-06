@@ -20,6 +20,7 @@ pluginimp_LTLIBRARIES = \
 if EXPERIMENTAL
 pluginimp_LTLIBRARIES += \
 	imp_flt.la \
+	imp_joe.la \
 	imp_maya.la \
 	imp_r4.la \
 	imp_rbh.la \
@@ -55,6 +56,7 @@ imp_flt_la_SOURCES = imp_flt.c
 imp_heightfield_la_SOURCES = imp_heightfield.c
 imp_iob_la_SOURCES = imp_iob.c imp_iob.h imp_iob_chunks.h \
 	imp_iob_callbacks.c imp_iob_callbacks.h
+imp_joe_la_SOURCES = imp_joe.c
 imp_leocad_la_SOURCES = imp_leocad.c imp_leocad_library.h imp_leocad_library.c
 imp_lwo_la_SOURCES = imp_lwo.c imp_lwo.h imp_lwo_chunks.h \
 	imp_lwo_callbacks.c imp_lwo_callbacks.h

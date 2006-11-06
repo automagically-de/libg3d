@@ -29,6 +29,10 @@
 #include <g3d/iff.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
+#include <g3d/matrix.h>
+
+G3DObject *joe_load_object(G3DContext *context, const gchar *filename,
+	G3DModel *model);
 
 /*****************************************************************************/
 /* plugin interface                                                          */
@@ -36,6 +40,58 @@
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer plugin_data)
+{
+	G3DObject *object;
+
+	if(g_strcasecmp(filename + strlen(filename) - 3, "car") == 0)
+	{
+		/* .car file */
+		joe_load_object(context, "body.joe", model);
+		joe_load_object(context, "interior.joe", model);
+		joe_load_object(context, "glass.joe", model);
+
+		/* TODO: tires */
+		/*
+		object = joe_load_object(context, "wheel_front.joe", model);
+		object->transformation = g_new0(G3DTransformation, 1);
+		g3d_matrix_identity(object->transformation->matrix);
+		g3d_matrix_translate(1.28, -0.48, 0.76,
+			object->transformation->matrix);
+
+		*/
+		object = joe_load_object(context, "wheel_front.joe", model);
+		/*
+		object->transformation = g_new0(G3DTransformation, 1);
+		g3d_matrix_identity(object->transformation->matrix);
+		g3d_matrix_translate(1.28, -0.35, -0.60,
+			object->transformation->matrix);
+		*/
+		return TRUE;
+	}
+	else
+	{
+		/* .joe file */
+		return (joe_load_object(context, filename, model) != NULL);
+	}
+
+	return TRUE;
+}
+
+gchar *plugin_description(void)
+{
+	return g_strdup(
+		"Import plugin for VDrift .joe files\n");
+}
+
+gchar **plugin_extensions(void)
+{
+	return g_strsplit("joe:car", ":", 0);
+}
+
+/*****************************************************************************/
+
+G3DObject *joe_load_object(G3DContext *context, const gchar *filename,
+	G3DModel *model)
 {
 	FILE *f;
 	gchar *basename, *texname;
@@ -53,17 +109,20 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	f = fopen(filename, "rb");
 	if(f == NULL)
 	{
-		g_printerr("JOE: failed to read '%s'", filename);
-		return FALSE;
+		g_printerr("JOE: failed to read '%s'\n", filename);
+		return NULL;
 	}
 
 	magic = g3d_read_int32_be(f);
 	if(magic != G3D_IFF_MKID('I','D','P','2'))
 	{
-		g_printerr("JOE: wrong magic in '%s'", filename);
+		g_printerr("JOE: wrong magic in '%s'\n", filename);
 		fclose(f);
-		return FALSE;
+		return NULL;
 	}
+
+	/* base file name for object name & texture loading */
+	basename = g_path_get_basename(filename);
 
 	/* version 3 */
 
@@ -75,18 +134,17 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	/* create object */
 	object = g_new0(G3DObject, 1);
-	object->name = g_strdup("default object");
+	object->name = g_strdup(basename);
 	model->objects = g_slist_append(model->objects, object);
 
 	/* load texture image */
-	basename = g_path_get_basename(filename);
 	memcpy(basename + strlen(basename) - 3, "png", 3);
 	texname = g_strdup_printf("textures/%s", basename);
-	g_free(basename);
 	image = g3d_texture_load_cached(context, model, texname);
-	image->tex_id = 2;
 	if(image == NULL)
-		g_warning("JOE: failed to load texture '%s'", texname);
+		g_warning("JOE: failed to load texture '%s'\n", texname);
+	else
+		image->tex_id = g_str_hash(texname);
 	g_free(texname);
 
 	/* create default material */
@@ -171,7 +229,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		{
 			face = (G3DFace *)item->data;
 
-			face->flags |= ( G3D_FLAG_FAC_NORMALS | G3D_FLAG_FAC_TEXMAP );
+			face->flags |= G3D_FLAG_FAC_NORMALS;
+			if(image != NULL) face->flags |= G3D_FLAG_FAC_TEXMAP;
+
 			face->normals = g_new0(gfloat, 3 * 3);
 			face->tex_image = image;
 			face->tex_vertex_count = 3;
@@ -206,21 +266,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 	}
 
+	/* clean up */
+	g_free(basename);
 	fclose(f);
 
-	return TRUE;
+	return object;
 }
-
-gchar *plugin_description(void)
-{
-	return g_strdup(
-		"Import plugin for VDrift .joe files\n");
-}
-
-gchar **plugin_extensions(void)
-{
-	return g_strsplit("joe", ":", 0);
-}
-
-/*****************************************************************************/
-

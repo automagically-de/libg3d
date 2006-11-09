@@ -44,7 +44,7 @@ gchar *ar_dof_read_string(FILE *f, gint32 *dlen)
 G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
 {
 	G3DMaterial *material;
-	gint32 id, len, dlen, i, ntex;
+	gint32 id, len, dlen, i, ntex, trans = 0, blend = 0;
 	gchar *tmp;
 
 	id = g3d_read_int32_be(f);
@@ -112,6 +112,47 @@ G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
 				}
 				break;
 
+			case G3D_IFF_MKID('M','T','R','A'):
+				/* transparency */
+				trans = g3d_read_int32_le(f);
+				/* blend mode */
+				blend = g3d_read_int32_le(f);
+
+				printf("D: MTRA: %s: trans: 0x%04x, blend: 0x%04x\n",
+					(material->name ? material->name : "unnamed"),
+					trans, blend);
+
+				dlen -= 8;
+				break;
+
+			case G3D_IFF_MKID('M','C','F','L'):
+				/* creation flags */
+				g3d_read_int32_le(f);
+				dlen -= 4;
+				break;
+
+			case G3D_IFF_MKID('M','U','V','W'):
+				/* u offset */
+				g3d_read_int32_le(f);
+				/* v offset */
+				g3d_read_int32_le(f);
+				dlen -= 8;
+
+				/* u tiling */
+				g3d_read_int32_le(f);
+				/* v tiling */
+				g3d_read_int32_le(f);
+				dlen -= 8;
+
+				/* angle */
+				g3d_read_float_le(f);
+				/* blur */
+				g3d_read_float_le(f);
+				/* blur offset */
+				g3d_read_int32_le(f);
+				dlen -= 12;
+				break;
+
 			default:
 				fseek(f, len, SEEK_CUR);
 				dlen -= len;
@@ -119,6 +160,14 @@ G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
 		}
 	}
 	while((dlen > 0) && (id != G3D_IFF_MKID('M','E','N','D')));
+
+	if(material->tex_image != NULL)
+	{
+		if(blend == 1)
+			material->tex_image->tex_env = G3D_TEXENV_BLEND;
+		else
+			material->tex_image->tex_env = G3D_TEXENV_DECAL;
+	}
 
 	return material;
 }

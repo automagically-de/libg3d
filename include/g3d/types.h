@@ -31,7 +31,14 @@ G_BEGIN_DECLS
  * G3DImage
  *****************************************************************************/
 
-#define G3D_FLAG_IMG_GREYSCALE  (1L << 1)
+#define G3D_FLAG_IMG_GREYSCALE       (1L << 1)
+
+typedef enum {
+	G3D_TEXENV_BLEND,
+	G3D_TEXENV_DECAL,
+	G3D_TEXENV_MODULATE,
+	G3D_TEXENV_REPLACE
+} G3DTexEnv;
 
 typedef struct {
 	gchar *name;
@@ -42,6 +49,7 @@ typedef struct {
 	guint8 *pixeldata;
 
 	guint32 tex_id;
+	G3DTexEnv tex_env;
 	gfloat tex_scale_u;
 	gfloat tex_scale_v;
 } G3DImage;

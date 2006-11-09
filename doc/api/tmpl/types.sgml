@@ -36,6 +36,7 @@ All types used in libg3d
 @flags: 
 @pixeldata: 
 @tex_id: 
+@tex_env: 
 @tex_scale_u: 
 @tex_scale_v: 
 

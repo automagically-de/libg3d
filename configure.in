@@ -2,7 +2,7 @@
 AC_INIT(configure.in)
 AC_CONFIG_AUX_DIR(config)
 
-VERSION=0.0.4
+VERSION=0.0.5
 PACKAGE=libg3d
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)

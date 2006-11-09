@@ -47,6 +47,7 @@ IFF file helper functions
 @f: 
 @id: 
 @len: 
+@flags: 
 @Returns: 
 
 

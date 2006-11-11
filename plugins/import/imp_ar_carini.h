@@ -20,14 +20,16 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _IMP_AR_H
-#define _IMP_AR_H
+#ifndef _IMP_AR_CARINI_H
+#define _IMP_AR_CARINI_H
 
-typedef struct {
-	gchar *name;
-	guint32 offset;
-	guint32 size;
-} ArDirEntry;
+#include <glib.h>
 
-#endif /* _IMP_AR_H */
+GHashTable *ar_carini_load(void);
+void ar_carini_free(GHashTable *ht);
+gfloat ar_carini_get_float(GHashTable *ht, gchar *path);
+gboolean ar_carini_get_position(GHashTable *ht, gchar *prefix,
+	gfloat *x, gfloat *y, gfloat *z);
+
+#endif /* _IMP_AR_CARINI_H */
 

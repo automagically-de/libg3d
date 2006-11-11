@@ -53,7 +53,8 @@ imp_3ds_la_SOURCES = imp_3ds.c imp_3ds.h imp_3ds_chunks.h \
 imp_ac3d_la_SOURCES = imp_ac3d.c
 imp_ar_la_SOURCES = imp_ar.c imp_ar.h \
 	imp_ar_decompress.c imp_ar_decompress.h \
-	imp_ar_dof.c imp_ar_dof.h
+	imp_ar_dof.c imp_ar_dof.h \
+	imp_ar_carini.c imp_ar_carini.h
 imp_cob_la_SOURCES = imp_cob.c
 imp_dxf_la_SOURCES = imp_dxf.c
 imp_flt_la_SOURCES = imp_flt.c

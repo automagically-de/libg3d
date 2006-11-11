@@ -1,4 +1,4 @@
-/* $Id: $ */
+/* $Id$ */
 
 /*
     libg3d - 3D object loading library

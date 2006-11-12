@@ -64,6 +64,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 		/* wheels */
 		object = joe_load_object(context, "wheel_front.joe", model);
+		joe_object_flip_x(object);
 		value = g_hash_table_lookup(cardata, "wheel-FL.position");
 		if(value != NULL)
 		{
@@ -74,7 +75,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 
 		object = joe_load_object(context, "wheel_front.joe", model);
-		joe_object_flip_x(object);
 		value = g_hash_table_lookup(cardata, "wheel-FR.position");
 		if(value != NULL)
 		{
@@ -85,6 +85,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 
 		object = joe_load_object(context, "wheel_rear.joe", model);
+		joe_object_flip_x(object);
 		value = g_hash_table_lookup(cardata, "wheel-RL.position");
 		if(value != NULL)
 		{
@@ -95,7 +96,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 
 		object = joe_load_object(context, "wheel_rear.joe", model);
-		joe_object_flip_x(object);
 		value = g_hash_table_lookup(cardata, "wheel-RR.position");
 		if(value != NULL)
 		{

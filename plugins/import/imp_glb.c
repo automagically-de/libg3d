@@ -28,6 +28,7 @@
 #include <g3d/read.h>
 #include <g3d/material.h>
 #include <g3d/iff.h>
+#include <g3d/vector.h>
 
 G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 	G3DModel *model);
@@ -64,9 +65,10 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 	G3DMaterial *material;
 	G3DFace *face;
 	FILE *f;
-	guint32 magic, otype;
-	gint32 i, msize, namelen, datalen, nvertices, nindices;
+	guint32 magic, otype, index;
+	gint32 i, j, msize, namelen, datalen, nvertices, nindices;
 	gchar *name;
+	gfloat *normals = NULL;
 
 	f = fopen(filename, "rb");
 	if(f == NULL)
@@ -152,7 +154,8 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 
 			g3d_read_int8(f); /* LODs */
 			g3d_read_int8(f); /* reflectance */
-			g3d_read_int8(f); /* emissivity */
+			/* emissivity */
+			material->shininess = (gfloat)g3d_read_int8(f) / 255.0;
 			g3d_read_int8(f); /* static friction */
 			g3d_read_int8(f); /* dynamic friction */
 			g3d_read_int8(f); /* unused */
@@ -179,6 +182,7 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 		{
 			object->vertex_count = nvertices;
 			object->vertex_data = g_new0(gfloat, nvertices * 3);
+			normals = g_new0(gfloat, nvertices * 3);
 
 			for(i = 0; i < nvertices; i ++)
 			{
@@ -194,9 +198,13 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 #endif
 
 				/* normal */
-				g3d_read_float_be(f);
-				g3d_read_float_be(f);
-				g3d_read_float_be(f);
+				normals[i * 3 + 0] = glb_get_float(f);
+				normals[i * 3 + 1] = glb_get_float(f);
+				normals[i * 3 + 2] = glb_get_float(f);
+				g3d_vector_unify(
+					normals + i * 3 + 0,
+					normals + i * 3 + 1,
+					normals + i * 3 + 2);
 
 				/* texture coordinates */
 				g3d_read_float_be(f);
@@ -211,9 +219,18 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 				face = g_new0(G3DFace, 1);
 				face->vertex_count = 3;
 				face->vertex_indices = g_new0(guint32, 3);
-				face->vertex_indices[0] = g3d_read_int32_be(f);
-				face->vertex_indices[1] = g3d_read_int32_be(f);
-				face->vertex_indices[2] = g3d_read_int32_be(f);
+				face->normals = g_new0(gfloat, 3 * 3);
+				face->flags |= G3D_FLAG_FAC_NORMALS;
+				for(j = 0; j < 3; j ++)
+				{
+					face->vertex_indices[j] = g3d_read_int32_be(f);
+
+					/* set normals */
+					index = face->vertex_indices[j];
+					face->normals[j * 3 + 0] = normals[index * 3 + 0];
+					face->normals[j * 3 + 1] = normals[index * 3 + 1];
+					face->normals[j * 3 + 2] = normals[index * 3 + 2];
+				}
 				face->material = g_slist_nth_data(object->materials, 0);
 				object->faces = g_slist_append(object->faces, face);
 			}

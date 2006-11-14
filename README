@@ -22,9 +22,13 @@ SUPPORTED FILETYPES:
 | .3ds  | x | x | p |   |   | 3D Studio                               |
 | .ac   | x | x | x |   | x | AC3D                                    |
 | .acc  | x | x | x |   | x | AC3D with triangle strips (TORCS)       |
+| .ar   | x |   |   |   | x | Racer container files                   |
 | .b3d  | x | x |   |   |   | ?? (3D MetaFile format)                 |
+| .car  | x |   |   |   | x | VDrift car description                  |
 | .cob  | x | x |   |   |   | Caligari TrueSpace                      |
+| .dof  | x | x | p | x |   | Racer model files                       |
 | .dxf  | x |   |   |   |   | AutoCAD                                 |
+| .flt  | p |   |   |   |   | OpenFlight (in Progress, experimental)  |
 | .iob  | x | x |   |   |   | Impulse Turbo Silver / Imagine          |
 | .iv   | p |   |   |   |   | SGI Inventor (ascii only)               |
 | .joe  | x |   | x | x |   | VDrift v3 .joe car models               |
@@ -40,6 +44,7 @@ SUPPORTED FILETYPES:
 | .prj  | x | ? |   |   |   | 3D Studio                               |
 | .q3o  | x | x | x |   |   | Quick3D Object                          |
 | .q3s  | x | x | x |   |   | Quick3D Scene                           |
+| .r4   | p |   |   |   |   | Reflections 4 (experimental)            |
 | .wrl  | x | x |   |   |   | VRML World (VRML 1 only and incomplete) |
 +-------+---+---+---+---+---------------------------------------------+
 
@@ -50,9 +55,7 @@ Wishlist:
 
 type                  docs  ex.avail. status
 -----------------------------------------------------------------------------
-.r4 (Reflections 4)   no    yes       IFF, container readable
 .flt (OpenFlight)     yes   yes       a lot to do...
-.ar (Racer)           (yes) yes       not started yet
 .wrl (VRML 2.0)       yes   yes       not started yet
 .x3d (X3D)            yes   yes       not started yet
 .max (3D Studio MAX)  no    yes       probably not (no docs, no clue)
@@ -66,6 +69,7 @@ type                  docs  ex.avail. status
 other model plugins:
 * heightfield: generates a landscape from an image (broken atm?)
 * test: some tests (primitives, transformation...)
+* rbh: experimental, maybe Discworld Noir models (or no 3D at all ;))
 
 IMAGE PLUGINS:
 

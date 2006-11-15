@@ -4,8 +4,10 @@ pluginimp_LTLIBRARIES = \
 	imp_3dmf.la \
 	imp_3ds.la \
 	imp_ac3d.la \
+	imp_ar.la \
 	imp_cob.la \
 	imp_dxf.la \
+	imp_glb.la \
 	imp_heightfield.la \
 	imp_iob.la \
 	imp_joe.la \
@@ -20,9 +22,7 @@ pluginimp_LTLIBRARIES = \
 
 if EXPERIMENTAL
 pluginimp_LTLIBRARIES += \
-	imp_ar.la \
 	imp_flt.la \
-	imp_glb.la \
 	imp_maya.la \
 	imp_r4.la \
 	imp_rbh.la \

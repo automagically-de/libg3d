@@ -1,9 +1,21 @@
+
+(Version 0.0.4 was not released)
+
 Changes since version 0.0.3:
 	* imp_3ds: reorganization
 	* imp_3ds: better texture support
 	* imp_iob: better material support
 	* general: more cleanup on exit
 	* general: usual bugfixes
+	* imp_ar: new Racer (ar, dof) plugin
+	* imp_joe: new VDrift (joe, car) plugin
+	* imp_glb: new UltimateStunts (glb) plugin
+	* API: extended G3DImage structure:
+		- introduced tex_env parameter to let texture image request
+		  a special handling
+		- recompilation of existing applications is required
+	* plugins: some plugins now only compile if --enable-experimental
+	  is added to ./configure
 
 Changes since version 0.0.2:
 	* plugins: support (partly) for object trees

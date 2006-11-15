@@ -41,6 +41,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	FILE *f;
 	guint16 opcode, rlen;
 	FltOpcode *oi;
+	FltGlobalData *gd;
+	FltLocalData *ld;
 
 	f = fopen(filename, "rb");
 	if(f == NULL)
@@ -49,21 +51,52 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		return FALSE;
 	}
 
+	gd = g_new0(FltGlobalData, 1);
+	gd->context = context;
+	gd->model = model;
+	gd->f = f;
+
 	while(!feof(f))
 	{
+		/* get record information */
 		opcode = g3d_read_int16_be(f);
 		rlen = g3d_read_int16_be(f);
 
-		if(opcode != 0)
+		/* create local data */
+		ld = g_new0(FltLocalData, 1);
+		ld->opcode = opcode;
+		ld->nb = rlen - 4;
+
+		if(opcode == 0)
 		{
-			oi = flt_opcode_info(opcode);
-			if(oi != NULL)
-				printf("FLT: %s (%d, %d bytes)\n", oi->description, opcode,
-					rlen);
-			else
-				printf("FLT: unknown opcode (%d, %d bytes)\n", opcode, rlen);
+			/* end of file or error */
+			break;
 		}
 
+		oi = flt_opcode_info(opcode);
+		if(oi != NULL)
+		{
+			if((oi->callback == NULL) || (DEBUG > 2))
+				printf("FLT: %s (%d, %d bytes)\n", oi->description, opcode,
+					rlen);
+
+			/* handle record */
+			if(oi->callback != NULL)
+				oi->callback(gd, ld);
+		}
+		else
+			printf("FLT: unknown opcode (%d, %d bytes)\n", opcode, rlen);
+
+		if(ld->nb > 0)
+		{
+			/* skip remaining bytes */
+			fseek(f, ld->nb, SEEK_CUR);
+		}
+
+		/* free local data */
+		g_free(ld);
+
+#if 0
 		switch(opcode)
 		{
 			case 0:
@@ -98,8 +131,10 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 					fseek(f, rlen - 4, SEEK_CUR);
 				break;
 		}
+#endif
 	}
 
+	g_free(gd);
 	fclose(f);
 
 	return TRUE;

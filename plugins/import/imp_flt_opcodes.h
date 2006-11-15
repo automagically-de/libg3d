@@ -3,22 +3,24 @@
 
 #include <glib.h>
 
+#include "imp_flt_callbacks.h"
+
 typedef struct {
 	guint32 opcode;
 	gchar *description;
 	gboolean container;
-	gpointer callback;
+	FltCallbackFunc callback;
 } FltOpcode;
 
 static FltOpcode flt_opcodes[] = {
 	{    1, "header",                              0, NULL },
 	{    2, "group",                               0, NULL },
 
-	{    4, "object",                              0, NULL },
-	{    5, "face",                                0, NULL },
+	{    4, "object",                              0, flt_cb_0004 },
+	{    5, "face",                                0, flt_cb_0005 },
 
-	{   10, "push level",                          0, NULL },
-	{   11, "pop level",                           0, NULL },
+	{   10, "push level",                          0, flt_cb_0010 },
+	{   11, "pop level",                           0, flt_cb_0011 },
 
 	{   14, "degree of freedom",                   0, NULL },
 
@@ -52,7 +54,7 @@ static FltOpcode flt_opcodes[] = {
 	{   69, "vertex with color and normal",        0, NULL },
 	{   70, "vertex with color, normal and UV",    0, NULL },
 	{   71, "vertex with color and UV",            0, NULL },
-	{   72, "vertex list",                         0, NULL },
+	{   72, "vertex list",                         0, flt_cb_0072 },
 	{   73, "level of detail",                     0, NULL },
 	{   74, "bounding box",                        0, NULL },
 

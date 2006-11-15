@@ -26,6 +26,9 @@
 #include <g3d/read.h>
 #include <g3d/material.h>
 
+#include "imp_flt_opcodes.h"
+
+FltOpcode *flt_opcode_info(guint32 opcode);
 gboolean flt_read_color_palette(FILE *f, gint32 len, G3DModel *model);
 gboolean flt_read_texture_palette(FILE *f, gint32 len, G3DModel *model);
 gboolean flt_read_material_palette(FILE *f, gint32 len, G3DModel *model);
@@ -37,6 +40,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 {
 	FILE *f;
 	guint16 opcode, rlen;
+	FltOpcode *oi;
 
 	f = fopen(filename, "rb");
 	if(f == NULL)
@@ -49,6 +53,16 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	{
 		opcode = g3d_read_int16_be(f);
 		rlen = g3d_read_int16_be(f);
+
+		if(opcode != 0)
+		{
+			oi = flt_opcode_info(opcode);
+			if(oi != NULL)
+				printf("FLT: %s (%d, %d bytes)\n", oi->description, opcode,
+					rlen);
+			else
+				printf("FLT: unknown opcode (%d, %d bytes)\n", opcode, rlen);
+		}
 
 		switch(opcode)
 		{
@@ -76,8 +90,10 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 				break;
 
 			default:
+#if 0
 				g_print("FLT: op 0x%04x (%u, %u bytes)\n",
 					opcode, opcode, rlen);
+#endif
 				if(rlen > 4)
 					fseek(f, rlen - 4, SEEK_CUR);
 				break;
@@ -102,6 +118,18 @@ gchar **plugin_extensions(G3DContext *context)
 /*
  * FLT specific
  */
+
+FltOpcode *flt_opcode_info(guint32 opcode)
+{
+	guint32 i;
+
+	for(i = 0; flt_opcodes[i].opcode != 0; i ++)
+	{
+		if(flt_opcodes[i].opcode == opcode)
+			return &(flt_opcodes[i]);
+	}
+	return NULL;
+}
 
 gboolean flt_read_color_palette(FILE *f, gint32 len, G3DModel *model)
 {

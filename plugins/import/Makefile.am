@@ -58,7 +58,8 @@ imp_ar_la_SOURCES = imp_ar.c imp_ar.h \
 	imp_ar_carini.c imp_ar_carini.h
 imp_cob_la_SOURCES = imp_cob.c
 imp_dxf_la_SOURCES = imp_dxf.c
-imp_flt_la_SOURCES = imp_flt.c imp_flt_opcodes.h \
+imp_flt_la_SOURCES = imp_flt.c imp_flt.h \
+	imp_flt_opcodes.h \
 	imp_flt_callbacks.c imp_flt_callbacks.h
 imp_glb_la_SOURCES = imp_glb.c
 imp_heightfield_la_SOURCES = imp_heightfield.c

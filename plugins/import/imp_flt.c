@@ -29,11 +29,6 @@
 #include "imp_flt_opcodes.h"
 
 FltOpcode *flt_opcode_info(guint32 opcode);
-gboolean flt_read_color_palette(FILE *f, gint32 len, G3DModel *model);
-gboolean flt_read_texture_palette(FILE *f, gint32 len, G3DModel *model);
-gboolean flt_read_material_palette(FILE *f, gint32 len, G3DModel *model);
-gboolean flt_read_vertex_palette(FILE *f, gint32 len, G3DModel *model);
-gboolean flt_read_light_source_palette(FILE *f, gint32 len, G3DModel *model);
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer user_data)
@@ -81,7 +76,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		if(oi != NULL)
 		{
 			pad = g_strnfill(gd->level, ' ');
-			if((oi->callback == NULL) || (DEBUG > 0))
+			if((oi->callback == NULL) || (DEBUG > 2))
 				printf("FLT:%s* %s (%d, %d bytes)\n", pad, oi->description,
 					opcode,	rlen);
 			g_free(pad);
@@ -102,43 +97,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		/* free local data */
 		object = ld->object;
 		g_free(ld);
-
-#if 0
-		switch(opcode)
-		{
-			case 0:
-				break;
-
-			case 32: /* color palette record */
-				flt_read_color_palette(f, rlen - 4, model);
-				break;
-
-			case 64: /* texture palette record */
-				flt_read_texture_palette(f, rlen - 4, model);
-				break;
-
-			case 67: /* vertex palette record */
-				flt_read_vertex_palette(f, rlen - 4, model);
-				break;
-
-			case 102: /* light source palette record */
-				flt_read_light_source_palette(f, rlen - 4, model);
-				break;
-
-			case 113: /* material palette record */
-				flt_read_material_palette(f, rlen - 4, model);
-				break;
-
-			default:
-#if 0
-				g_print("FLT: op 0x%04x (%u, %u bytes)\n",
-					opcode, opcode, rlen);
-#endif
-				if(rlen > 4)
-					fseek(f, rlen - 4, SEEK_CUR);
-				break;
-		}
-#endif
 	}
 
 	g_queue_free(gd->oqueue);
@@ -174,135 +132,28 @@ FltOpcode *flt_opcode_info(guint32 opcode)
 	return NULL;
 }
 
-gboolean flt_read_color_palette(FILE *f, gint32 len, G3DModel *model)
+guint32 flt_read_typed_index(FILE *f, guint32 type, gint32 *len)
 {
-#if 0
-	guint32 i;
-	G3DMaterial *material;
+	guint32 val = 0;
 
-	for(i = 0; i < 1024; i ++)
+	switch(type)
 	{
-		material = g3d_material_new();
-
-		material->a = g3d_read_int8(f) / 255.0;
-		material->r = g3d_read_int8(f) / 255.0;
-		material->g = g3d_read_int8(f) / 255.0;
-		material->b = g3d_read_int8(f) / 255.0;
-		material->name = g_strdup_printf(
-			"color #%u: %+1.2f,%+1.2f,%+1.2f,%+1.2f",
-			i, material->r, material->g, material->b, material->a);
-
-		len -= 4;
-
-		model->materials = g_slist_append(model->materials, material);
+		case 1:
+			val = g3d_read_int8(f);
+			*len -= 1;
+			break;
+		case 2:
+			val = g3d_read_int16_be(f);
+			*len -= 2;
+			break;
+		case 4:
+			val = g3d_read_int32_be(f);
+			*len -= 4;
+			break;
+		default:
+			g_warning("FLT: unknown index type %d\n", type);
+			break;
 	}
-#endif
-
-	/* TODO: color names */
-
-	if(len > 0)
-		fseek(f, len, SEEK_CUR);
-
-	return TRUE;
+	return val;
 }
 
-gboolean flt_read_texture_palette(FILE *f, gint32 len, G3DModel *model)
-{
-	gchar filename[200];
-	guint32 pi, locx, locy;
-
-	fread(filename, 1, 200, f);
-	len -= 200;
-
-	pi = g3d_read_int32_be(f);
-	locx = g3d_read_int32_be(f);
-	locy = g3d_read_int32_be(f);
-	len -= 12;
-
-	g_print("FLT: texture file '%s' (%u @ %u,%u)\n", filename, pi, locx, locy);
-
-	if(len > 0)
-		fseek(f, len, SEEK_CUR);
-
-	return TRUE;
-}
-
-gboolean flt_read_material_palette(FILE *f, gint32 len, G3DModel *model)
-{
-	guint32 index, flags;
-	gchar name[12];
-	G3DMaterial *material;
-
-	index = g3d_read_int32_be(f);
-	len -= 4;
-	if(index != g_slist_length(model->materials))
-	{
-		g_print("FLT: index (%d) != g_slist_length(model->materials)\n",
-			index);
-	}
-
-	material = g3d_material_new();
-	fread(name, 1, 12, f);
-	len -= 12;
-	material->name = g_strndup(name, 12);
-	flags = g3d_read_int32_be(f);
-	len -= 4;
-
-	/* ambient */
-	material->r = g3d_read_float_be(f);
-	material->g = g3d_read_float_be(f);
-	material->b = g3d_read_float_be(f);
-	len -= 12;
-	/* diffuse */
-	g3d_read_float_be(f);
-	g3d_read_float_be(f);
-	g3d_read_float_be(f);
-	len -= 12;
-	/* specular */
-	material->specular[0] = g3d_read_float_be(f);
-	material->specular[1] = g3d_read_float_be(f);
-	material->specular[2] = g3d_read_float_be(f);
-	len -= 12;
-	/* emissive */
-	g3d_read_float_be(f);
-	g3d_read_float_be(f);
-	g3d_read_float_be(f);
-	len -= 12;
-	/* shininess */
-	/* FIXME: divide by 128.0? */
-	material->shininess = g3d_read_float_be(f);
-	len -= 4;
-	/* alpha */
-	material->a = g3d_read_float_be(f);
-	len -= 4;
-
-	model->materials = g_slist_append(model->materials, material);
-
-	/* 4 bytes reserved */
-
-	if(len > 0)
-		fseek(f, len, SEEK_CUR);
-
-	return TRUE;
-}
-
-gboolean flt_read_vertex_palette(FILE *f, gint32 len, G3DModel *model)
-{
-	guint32 vlen;
-
-	vlen = g3d_read_int32_be(f);
-
-	g_print("FLT: vertex palette length: %u\n", vlen);
-
-	return TRUE;
-}
-
-gboolean flt_read_light_source_palette(FILE *f, gint32 len, G3DModel *model)
-{
-	/* TODO: */
-
-	if(len > 0)
-		fseek(f, len, SEEK_CUR);
-
-	return TRUE;
-}

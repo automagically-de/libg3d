@@ -31,8 +31,7 @@ static FltOpcode flt_opcodes[] = {
 	{   23, "continuation",                        0, NULL },
 
 	{   31, "comment",                             0, NULL },
-	{   32, "color palette",                       0, NULL },
-
+	{   32, "color palette",                       0, flt_cb_0032 },
 	{   33, "long ID",                             0, NULL },
 
 	{   49, "matrix",                              0, NULL },
@@ -51,7 +50,7 @@ static FltOpcode flt_opcodes[] = {
 
 	{   67, "vertex palette",                      0, NULL },
 	{   68, "vertex with color",                   0, NULL },
-	{   69, "vertex with color and normal",        0, NULL },
+	{   69, "vertex with color and normal",        0, flt_cb_0069 },
 	{   70, "vertex with color, normal and UV",    0, NULL },
 	{   71, "vertex with color and UV",            0, NULL },
 	{   72, "vertex list",                         0, flt_cb_0072 },
@@ -66,10 +65,9 @@ static FltOpcode flt_opcodes[] = {
 	{   81, "rotate and/or scale to point",        0, NULL },
 	{   82, "put",                                 0, NULL },
 	{   83, "eyepoint and trackplane palette",     0, NULL },
-
 	{   84, "mesh",                                0, NULL },
-	{   85, "local vertex pool",                   0, NULL },
-	{   86, "mesh primitive",                      0, NULL },
+	{   85, "local vertex pool",                   0, flt_cb_0085 },
+	{   86, "mesh primitive",                      0, flt_cb_0086 },
 	{   87, "road segment",                        0, NULL },
 	{   88, "road zone",                           0, NULL },
 	{   89, "morph vertex list",                   0, NULL },

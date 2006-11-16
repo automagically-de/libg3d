@@ -27,6 +27,10 @@ gboolean flt_cb_0004(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0010(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0011(FltGlobalData *gd, FltLocalData *ld);
+gboolean flt_cb_0032(FltGlobalData *gd, FltLocalData *ld);
+gboolean flt_cb_0069(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0072(FltGlobalData *gd, FltLocalData *ld);
+gboolean flt_cb_0085(FltGlobalData *gd, FltLocalData *ld);
+gboolean flt_cb_0086(FltGlobalData *gd, FltLocalData *ld);
 
 #endif /* _IMP_FLT_CALLBACKS_H */

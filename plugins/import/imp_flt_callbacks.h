@@ -9,6 +9,7 @@ typedef struct {
 	G3DContext *context;
 	G3DModel *model;
 	FILE *f;
+	guint32 level;
 } FltGlobalData;
 
 typedef struct {

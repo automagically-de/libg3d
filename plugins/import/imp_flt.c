@@ -43,6 +43,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	FltOpcode *oi;
 	FltGlobalData *gd;
 	FltLocalData *ld;
+	gchar *pad;
 
 	f = fopen(filename, "rb");
 	if(f == NULL)
@@ -76,9 +77,11 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		oi = flt_opcode_info(opcode);
 		if(oi != NULL)
 		{
-			if((oi->callback == NULL) || (DEBUG > 2))
-				printf("FLT: %s (%d, %d bytes)\n", oi->description, opcode,
-					rlen);
+			pad = g_strnfill(gd->level, ' ');
+			if((oi->callback == NULL) || (DEBUG > 0))
+				printf("FLT:%s* %s (%d, %d bytes)\n", pad, oi->description,
+					opcode,	rlen);
+			g_free(pad);
 
 			/* handle record */
 			if(oi->callback != NULL)

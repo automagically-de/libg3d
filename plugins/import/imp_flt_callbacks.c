@@ -57,12 +57,15 @@ gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld)
 /* push level */
 gboolean flt_cb_0010(FltGlobalData *gd, FltLocalData *ld)
 {
+	gd->level ++;
 	return TRUE;
 }
 
 /* pop level */
 gboolean flt_cb_0011(FltGlobalData *gd, FltLocalData *ld)
 {
+	if(gd->level > 0)
+		gd->level --;
 	return TRUE;
 }
 

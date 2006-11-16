@@ -14,7 +14,7 @@ typedef struct {
 
 static FltOpcode flt_opcodes[] = {
 	{    1, "header",                              0, NULL },
-	{    2, "group",                               0, NULL },
+	{    2, "group",                               0, flt_cb_0002 },
 
 	{    4, "object",                              0, flt_cb_0004 },
 	{    5, "face",                                0, flt_cb_0005 },

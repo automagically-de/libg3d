@@ -10,6 +10,7 @@ typedef struct {
 	G3DModel *model;
 	FILE *f;
 	guint32 level;
+	GQueue *oqueue;
 } FltGlobalData;
 
 typedef struct {
@@ -21,6 +22,7 @@ typedef struct {
 typedef gboolean (*FltCallbackFunc)(FltGlobalData *gd, FltLocalData *ld);
 
 /* callback functions */
+gboolean flt_cb_0002(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0004(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0010(FltGlobalData *gd, FltLocalData *ld);

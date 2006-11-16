@@ -43,6 +43,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	FltOpcode *oi;
 	FltGlobalData *gd;
 	FltLocalData *ld;
+	G3DObject *object = NULL;
 	gchar *pad;
 
 	f = fopen(filename, "rb");
@@ -56,6 +57,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	gd->context = context;
 	gd->model = model;
 	gd->f = f;
+	gd->oqueue = g_queue_new();
 
 	while(!feof(f))
 	{
@@ -67,6 +69,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		ld = g_new0(FltLocalData, 1);
 		ld->opcode = opcode;
 		ld->nb = rlen - 4;
+		ld->object = object;
 
 		if(opcode == 0)
 		{
@@ -97,6 +100,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 
 		/* free local data */
+		object = ld->object;
 		g_free(ld);
 
 #if 0
@@ -137,6 +141,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 #endif
 	}
 
+	g_queue_free(gd->oqueue);
 	g_free(gd);
 	fclose(f);
 

@@ -1,0 +1,4 @@
+Libg3d is a glib based library for loading and manipulating 3D objects. It
+supports a wide range of file formats for 3D objects and textures.  Thanks to
+it plugin interface it is easily expandable. The code has been split off the
+g3dviewer project which now depends on this library.

@@ -1,0 +1,3 @@
+There have been written some plugins allowing to import models from (mostly)
+free car simulation games. Other import plugins have been restructured and
+expanded. The usual big fixes and cleanup have taken place, too.

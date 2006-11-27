@@ -61,6 +61,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	while(!feof(f))
 	{
+		memset(line, 0, 2048);
 		fgets(line, 2048, f);
 		g_strchomp(line);
 		if(strlen(line) > 0)
@@ -138,6 +139,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 					}
 					else g_printerr("parse error in line: %s\n", line);
 					break;
+
 				case 'f': /* face */
 					if(strncmp("f ", line, 2) == 0)
 					{
@@ -167,13 +169,22 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 						if(face->vertex_count < 3)
 							continue;
 
+#if DEBUG > 3
+						printf("D: OBJ: v_cnt = %d, v_off = %d\n",
+							v_cnt, v_off);
+#endif
+
 						/* read vertices */
 						face->vertex_indices = g_new0(guint32, num_v - 1);
 						for(i = 1; i < num_v; i ++)
 						{
-							guint32 index = strtoul(vstrs[i], NULL, 10);
+							gint32 index = strtol(vstrs[i], NULL, 10);
 
-							face->vertex_indices[i - 1] = index - v_off;
+							if(index < 0)
+								face->vertex_indices[i - 1] =
+									v_cnt + index - v_off + 1;
+							else
+								face->vertex_indices[i - 1] = index - v_off;
 						}
 						g_strfreev(vstrs);
 						object->faces = g_slist_prepend(object->faces, face);

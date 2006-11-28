@@ -39,7 +39,7 @@ struct ac3d_transform {
 
 static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gchar *line, struct ac3d_transform *transform, guint32 flags,
-	GSList **objectlist);
+	GSList **objectlist, gint32 *rowcnt);
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer user_data)
@@ -50,6 +50,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	guint32 version, ti1, flags = 0;
 	G3DMaterial *material;
 	gfloat tf1, tf2, tf3, tf4, tf5, tf6, trans;
+	gint32 rowcnt = 0;
 
 	setlocale(LC_NUMERIC, "C");
 
@@ -60,7 +61,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		return FALSE;
 	}
 
+	rowcnt ++;
 	fgets(buffer, 2048, f);
+
 	if(strncmp(buffer, "AC3D", 4) != 0)
 	{
 		g_printerr("file '%s' is not a AC3D model", filename);
@@ -84,6 +87,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	while(fgets(buffer, 2048, f))
 	{
+		rowcnt ++;
 		if(strncmp(buffer, "MATERIAL", 8) == 0)
 		{
 			material = g3d_material_new();
@@ -117,7 +121,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		{
 			transform = g_new0(struct ac3d_transform, 1);
 			ac3d_read_object(f, context, model, buffer, transform, flags,
-				&(model->objects));
+				&(model->objects), &rowcnt);
 		}
 		else
 		{
@@ -165,7 +169,7 @@ static gchar *ac3d_remove_quotes(gchar *text)
 
 static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gchar *line, struct ac3d_transform *parent_transform, guint32 flags,
-	GSList **objectlist)
+	GSList **objectlist, gint32 *rowcnt)
 {
 	struct ac3d_transform *transform;
 	G3DObject *object;
@@ -197,6 +201,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 
 	while(fgets(buffer, 2048, f))
 	{
+		*rowcnt += 1;
 		if(strncmp(buffer, "kids", 4) == 0)
 		{
 			/* final line of object */
@@ -208,9 +213,10 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 			for(i = 0; i < nkids; i ++)
 			{
 				/* read kids */
+				*rowcnt += 1;
 				fgets(buffer, 2048, f);
 				kidsread = ac3d_read_object(f, context, model, buffer,
-					transform, flags, &(object->objects));
+					transform, flags, &(object->objects), rowcnt);
 				objectcount += kidsread;
 			}
 
@@ -267,6 +273,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 				{
 					if(fgets(buffer, 2048, f))
 					{
+						*rowcnt += 1;
 						if(sscanf(buffer, "%f %f %f",
 							&(object->vertex_data[i * 3 + 0]),
 							&(object->vertex_data[i * 3 + 1]),
@@ -301,6 +308,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 			{
 				if(!fgets(buffer, 2048, f))
 					return 0;
+				*rowcnt += 1;
 
 				if(sscanf(buffer, "refs %u", &ti1) == 1)
 				{
@@ -327,6 +335,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 						{
 							if(!fgets(buffer, 2048, f))
 								return 0;
+							*rowcnt += 1;
 
 							if(sscanf(buffer, "%u %f %f",
 								&(face->vertex_indices[i]),
@@ -388,6 +397,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 								fgets(buffer, 2048, f);
 								sscanf(buffer, "%u %f %f", &i3, &u3, &v3);
 
+								*rowcnt += 3;
 								i += 3;
 							}
 							else
@@ -401,6 +411,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 								v2 = v3;
 
 								fgets(buffer, 2048, f);
+								*rowcnt += 1;
 								sscanf(buffer, "%u %f %f", &i3, &u3, &v3);
 
 								i ++;
@@ -488,7 +499,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 		else
 		{
 #if DEBUG > 0
-			g_print("AC3D: unhandled line: %s\n", buffer);
+			g_print("AC3D: unhandled line %d: %s\n", *rowcnt, buffer);
 #endif
 		}
 	}

@@ -183,6 +183,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gfloat texrepu = 1.0, texrepv = 1.0, texoffu = 0.0, texoffv = 0.0;
 	gfloat texscaleu = 1.0, texscalev = 1.0;
 	gfloat crease = 0.0;
+	guint32 len;
 	gchar *filename;
 	gint32 kidsread, objectcount = 0;
 	static guint32 texid = 1;
@@ -493,8 +494,21 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 		{
 			if(sscanf(buffer, "crease %f", &crease) != 1)
 			{
-				g_warning("error reading crease line (%s)", buffer);
+				g_warning("AC3D: error reading crease line (%i): %s",
+					*rowcnt, buffer);
 			}
+		}
+		else if(strncmp(buffer, "data ", 5) == 0)
+		{
+			/* object data */
+			if(sscanf(buffer, "data %u", &len) != 1)
+			{
+				g_warning("AC3D: error in data line (%i): %s",
+					*rowcnt, buffer);
+			}
+			/* object data on next line */
+			fgets(buffer, 2048, f);
+			*rowcnt += 1;
 		}
 		else
 		{

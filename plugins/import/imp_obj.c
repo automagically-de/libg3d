@@ -63,7 +63,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	{
 		memset(line, 0, 2048);
 		fgets(line, 2048, f);
-		g_strchomp(line);
+		/* remove leading and trailing whitespace characters */
+		g_strstrip(line);
 		if(strlen(line) > 0)
 		{
 			switch(line[0])

@@ -105,6 +105,9 @@ gchar *g3d_iff_id_to_text(guint32 id);
 
 gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid);
 
+gpointer g3d_iff_handle_chunk(g3d_iff_gdata *global, g3d_iff_ldata *plocal,
+	g3d_iff_chunk_info *chunks, guint32 flags);
+
 gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 	g3d_iff_chunk_info *chunks, guint32 flags);
 

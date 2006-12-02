@@ -98,15 +98,87 @@ gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid)
 	return (id & 0xFF) == tid[3];
 }
 
+g3d_iff_chunk_info *g3d_iff_get_chunk_info(g3d_iff_chunk_info *chunks,
+	guint32 chunk_id)
+{
+	guint32 i = 0;
+
+	while(chunks[i].id && !g3d_iff_chunk_matches(chunk_id, chunks[i].id))
+		i ++;
+
+	if(chunks[i].id)
+		return &(chunks[i]);
+
+	return NULL;
+}
+
+void g3d_iff_debug_chunk(g3d_iff_chunk_info *info, guint32 chunk_id,
+	guint32 chunk_len, gchar chunk_type, guint32 pos, guint32 level)
+{
+	gchar *tid;
+	gchar *padding = "                                   ";
+
+	tid = g3d_iff_id_to_text(chunk_id);
+	g_debug("%s(%d)[%s][%c%c%c] %s (%d) @ 0x%08x - %d bytes left",
+		padding + (strlen(padding) - level), level,
+		tid,
+		chunk_type,
+		info->container ? 'c' : ' ',
+		info->callback ? 'f' : ' ',
+		info->description,
+		chunk_len,
+		pos,
+		chunk_len);
+	g_free(tid);
+}
+
+gpointer g3d_iff_handle_chunk(g3d_iff_gdata *global, g3d_iff_ldata *plocal,
+	g3d_iff_chunk_info *chunks, guint32 flags)
+{
+	gpointer object = NULL;
+	guint32 chunk_id, chunk_len;
+	g3d_iff_ldata *sublocal;
+	g3d_iff_chunk_info *info;
+
+	/* read info for one chunk */
+	g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, 0);
+	plocal->nb -= 8;
+
+	sublocal = g_new0(g3d_iff_ldata, 1);
+	sublocal->parent_id = plocal->id;
+	sublocal->id = chunk_id;
+	sublocal->level = plocal->level + 1;
+	sublocal->nb = chunk_len;
+	plocal->nb -= sublocal->nb;
+
+	/* call function */
+	info = g3d_iff_get_chunk_info(chunks, chunk_id);
+	if(info)
+	{
+		g3d_iff_debug_chunk(info, chunk_id, chunk_len, 'X',
+			(guint32)(ftell(global->f) - 8), plocal->level);
+
+		if(info->callback)
+			info->callback(global, sublocal);
+
+		if(sublocal->nb > 0)
+			fseek(global->f, sublocal->nb, SEEK_CUR);
+	}
+
+	object = sublocal->object;
+	g_free(sublocal);
+
+	return object;
+}
+
 gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 	g3d_iff_chunk_info *chunks, guint32 flags)
 {
 	g3d_iff_ldata *sublocal;
+	g3d_iff_chunk_info *info;
 	guint32 chunk_id, chunk_len, chunk_mod, chunk_type;
-	gint32 i;
 	gchar *tid;
 	gpointer level_object;
-	gchar *padding = "                                   ";
 	long int fpos;
 
 	level_object = NULL;
@@ -167,25 +239,13 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 				break;
 		}
 
-		i = 0;
-		while(chunks[i].id && !g3d_iff_chunk_matches(chunk_id, chunks[i].id))
-			i ++;
+		info = g3d_iff_get_chunk_info(chunks, chunk_id);
 
-		if(chunks[i].id)
+		if(info)
 		{
-			tid = g3d_iff_id_to_text(chunk_id);
-			g_debug("%s[%s][%c%c%c] %s (%d) @ 0x%08x - %d bytes left",
-				padding + (strlen(padding) - local->level),
-				tid,
-				chunk_type,
-				chunks[i].container ? 'c' : ' ',
-				chunks[i].callback ? 'f' : ' ',
-				chunks[i].description,
-				chunk_len,
-				(unsigned int)(ftell(global->f) -
-					((chunk_type == ' ') ? 8 : 12)),
-				local->nb);
-			g_free(tid);
+			g3d_iff_debug_chunk(info, chunk_id, chunk_len, chunk_type,
+				(guint32)(ftell(global->f) - ((chunk_type == ' ') ? 8 : 12)),
+				local->level);
 
 			sublocal = g_new0(g3d_iff_ldata, 1);
 			sublocal->parent_id = local->id;
@@ -195,12 +255,12 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 			sublocal->level_object = level_object;
 			sublocal->nb = chunk_len;
 
-			if(chunks[i].callback)
+			if(info->callback)
 			{
-				chunks[i].callback(global, sublocal);
+				info->callback(global, sublocal);
 			}
 
-			if(chunks[i].container)
+			if(info->container)
 			{
 				/* LWO has 16 bit length in subchunks */
 				if(flags & G3D_IFF_SUBCHUNK_LEN16)
@@ -214,10 +274,10 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 				}
 			}
 
-			if(chunks[i].container && chunks[i].callback)
+			if(info->container && info->callback)
 			{
 				sublocal->finalize = TRUE;
-				chunks[i].callback(global, sublocal);
+				info->callback(global, sublocal);
 			}
 
 			if(sublocal->nb > 0)

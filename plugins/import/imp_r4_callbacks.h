@@ -6,10 +6,12 @@
 gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean r4_cb_GMAT(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean r4_cb_LGH3(g3d_iff_gdata *global, g3d_iff_ldata *local);
+gboolean r4_cb_PKTM(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean r4_cb_RKA2(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean r4_cb_ROBJ(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean r4_cb_SURF(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean r4_cb_TXM1(g3d_iff_gdata *global, g3d_iff_ldata *local);
+gboolean r4_cb_TXO1(g3d_iff_gdata *global, g3d_iff_ldata *local);
 
 #endif /* _G3D_R4_CALLBACKS_H */

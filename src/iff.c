@@ -147,6 +147,7 @@ gpointer g3d_iff_handle_chunk(g3d_iff_gdata *global, g3d_iff_ldata *plocal,
 	sublocal = g_new0(g3d_iff_ldata, 1);
 	sublocal->parent_id = plocal->id;
 	sublocal->id = chunk_id;
+	sublocal->object = plocal->object;
 	sublocal->level = plocal->level + 1;
 	sublocal->nb = chunk_len;
 	plocal->nb -= sublocal->nb;
@@ -165,7 +166,7 @@ gpointer g3d_iff_handle_chunk(g3d_iff_gdata *global, g3d_iff_ldata *plocal,
 			fseek(global->f, sublocal->nb, SEEK_CUR);
 	}
 
-	object = sublocal->object;
+	object = sublocal->level_object;
 	g_free(sublocal);
 
 	return object;

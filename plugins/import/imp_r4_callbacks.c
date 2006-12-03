@@ -5,6 +5,25 @@
 
 #include "imp_r4_chunks.h"
 
+static void hexdump(FILE *f, guint32 len, gchar *prefix)
+{
+	guint32 i;
+	guint8 byte;
+
+	for(i = 0; i < len; i ++)
+	{
+		byte = g3d_read_int8(f);
+		if(((i % 16) == 0) && (i != 0))
+			printf("\n");
+		if(((i % 16) == 0) && (i != (len - 1)))
+			printf("%s: ", (prefix ? prefix : ""));
+		printf("%02x", byte);
+		if((i % 4) == 3)
+			printf(" ");
+	}
+	printf("\n");
+}
+
 /* triangles */
 gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
@@ -67,6 +86,14 @@ gboolean r4_cb_GMAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		else
 			global->model->materials = g_slist_append(global->model->materials,
 				material);
+
+		if(local->id == G3D_IFF_MKID('G','M','A','T'))
+		{
+			material->r = g3d_read_float_be(global->f);
+			material->g = g3d_read_float_be(global->f);
+			material->b = g3d_read_float_be(global->f);
+			local->nb -= 12;
+		}
 	}
 
 	return TRUE;
@@ -219,6 +246,9 @@ gboolean r4_cb_SURx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	/* GMAT or GMA1 */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
+
+	hexdump(global->f, local->nb, "R4: SURF");
+	local->nb = 0;
 
 	return TRUE;
 }

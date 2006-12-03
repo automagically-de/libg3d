@@ -71,7 +71,7 @@ gchar *plugin_description(void)
 
 gchar **plugin_extensions(void)
 {
-	return g_strsplit("r4", ":", 0);
+	return g_strsplit("r4:r3", ":", 0);
 }
 
 

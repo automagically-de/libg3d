@@ -1,6 +1,7 @@
 #include <g3d/iff.h>
 #include <g3d/read.h>
 #include <g3d/material.h>
+#include <g3d/matrix.h>
 
 #include "imp_r4_chunks.h"
 
@@ -43,8 +44,8 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-/* material */
-gboolean r4_cb_GMAT(g3d_iff_gdata *global, g3d_iff_ldata *local)
+/* material: GMAT, GMA0 */
+gboolean r4_cb_GMAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	G3DMaterial *material;
 	gpointer object;
@@ -68,17 +69,53 @@ gboolean r4_cb_GMAT(g3d_iff_gdata *global, g3d_iff_ldata *local)
 				material);
 	}
 
-	/* skip remaining bytes */
-	if(local->nb)
+	return TRUE;
+}
+
+/* coordinate system */
+gboolean r4_cb_KSYS(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gfloat x, y, z, f;
+	G3DObject *object;
+	G3DTransformation *transform;
+	gint32 i, j;
+
+	x = g3d_read_float_be(global->f);
+	y = g3d_read_float_be(global->f);
+	z = g3d_read_float_be(global->f);
+	local->nb -= 12;
+
+#if DEBUG > 0
+	printf("R4: KSYS: %f, %f, %f\n", x, y, z);
+#endif
+
+	object = (G3DObject *)local->object;
+	if(object)
 	{
-		fseek(global->f, local->nb, SEEK_CUR);
-		local->nb = 0;
+		transform = g_new0(G3DTransformation, 1);
+		g3d_matrix_identity(transform->matrix);
+		g3d_matrix_translate(x, y, z, transform->matrix);
+
+		object->transformation = transform;
+
+		/* matrix parts */
+		for(j = 0; j < 3; j ++)
+			for(i = 0; i < 3; i ++)
+				transform->matrix[j * 4 + i] = g3d_read_float_be(global->f);
+		local->nb -= 36;
+
+		/* scale part */
+		f = g3d_read_float_be(global->f);
+		local->nb -= 4;
+#if 0
+		g3d_matrix_scale(f, f, f, transform->matrix);
+#endif
 	}
 
 	return TRUE;
 }
 
-/* ?? */
+/* light */
 gboolean r4_cb_LGH3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	/* RGE1 */
@@ -123,7 +160,8 @@ gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	if(name && local->object)
 	{
 		g_free(((G3DObject *)local->object)->name);
-		((G3DObject *)local->object)->name = g_strdup(name);
+		((G3DObject *)local->object)->name = g_convert(name, -1,
+			"UTF-8", "ISO-8859-1", NULL, NULL, NULL);
 	}
 
 	/* KSYS */
@@ -142,8 +180,8 @@ gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-/* camera related */
-gboolean r4_cb_RKA2(g3d_iff_gdata *global, g3d_iff_ldata *local)
+/* camera related: RKA2, RKA3 */
+gboolean r4_cb_RKAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	/* handle RGE1 chunk */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
@@ -176,10 +214,10 @@ gboolean r4_cb_ROBJ(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-/* surface */
-gboolean r4_cb_SURF(g3d_iff_gdata *global, g3d_iff_ldata *local)
+/* surface: SURF, SUR1 */
+gboolean r4_cb_SURx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
-	/* GMAT */
+	/* GMAT or GMA1 */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
 
 	return TRUE;

@@ -16,7 +16,7 @@ static void hexdump(FILE *f, guint32 len, gchar *prefix)
 		if(((i % 16) == 0) && (i != 0))
 			printf("\n");
 		if(((i % 16) == 0) && (i != (len - 1)))
-			printf("%s: ", (prefix ? prefix : ""));
+			printf("%s: %06x: ", (prefix ? prefix : ""), i);
 		printf("%02x", byte);
 		if((i % 4) == 3)
 			printf(" ");
@@ -30,6 +30,7 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	G3DObject *object;
 	G3DFace *face;
 	guint32 ntris, i;
+	guint8 u, max_u = 0;
 
 	object = g_new0(G3DObject, 1);
 	object->name = g_strdup("(default)");
@@ -58,6 +59,23 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		face->vertex_indices[2] = g3d_read_int32_be(global->f);
 		local->nb -= 12;
 		object->faces = g_slist_append(object->faces, face);
+	}
+
+	/* flags/index of material? */
+	for(i = 0; i < ntris; i ++)
+	{
+		u = g3d_read_int8(global->f);
+		local->nb --;
+		if(u > max_u)
+			max_u = u;
+	}
+	printf("R4: DRE2: max. flag: %d\n", max_u);
+
+	if(local->nb > 0)
+	{
+		printf("R4: DRE2: %d bytes remaining\n", local->nb);
+		hexdump(global->f, local->nb, "R4: DRE2");
+		local->nb = 0;
 	}
 
 	return TRUE;

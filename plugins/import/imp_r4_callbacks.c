@@ -2,6 +2,7 @@
 #include <g3d/read.h>
 #include <g3d/material.h>
 #include <g3d/matrix.h>
+#include <g3d/vector.h>
 
 #include "imp_r4_chunks.h"
 
@@ -22,6 +23,27 @@ static void hexdump(FILE *f, guint32 len, gchar *prefix)
 			printf(" ");
 	}
 	printf("\n");
+}
+
+static void dump_remaining(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+#if DEBUG > 0
+	gchar *id, *prefix;
+
+	id = g3d_iff_id_to_text(local->id);
+	prefix = g_strdup_printf("R4: %s", id);
+
+	if(local->nb > 0)
+	{
+		printf("R4: %s: %d bytes remaining @ 0x%08x\n", id, local->nb,
+			(guint32)ftell(global->f));
+		hexdump(global->f, local->nb, prefix);
+		local->nb = 0;
+	}
+
+	g_free(prefix);
+	g_free(id);
+#endif
 }
 
 /* triangles */
@@ -69,13 +91,18 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		if(u > max_u)
 			max_u = u;
 	}
-	printf("R4: DRE2: max. flag: %d\n", max_u);
 
-	if(local->nb > 0)
+#if DEBUG > 0
+	printf("R4: DRE2: max. flag: %d\n", max_u);
+#endif
+
+	dump_remaining(global, local);
+
+	/* remove transformation if set */
+	if(object->transformation)
 	{
-		printf("R4: DRE2: %d bytes remaining\n", local->nb);
-		hexdump(global->f, local->nb, "R4: DRE2");
-		local->nb = 0;
+		g_free(object->transformation);
+		object->transformation = NULL;
 	}
 
 	return TRUE;
@@ -114,6 +141,8 @@ gboolean r4_cb_GMAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		}
 	}
 
+	dump_remaining(global, local);
+
 	return TRUE;
 }
 
@@ -130,7 +159,7 @@ gboolean r4_cb_KSYS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	z = g3d_read_float_be(global->f);
 	local->nb -= 12;
 
-#if DEBUG > 0
+#if DEBUG > 2
 	printf("R4: KSYS: %f, %f, %f\n", x, y, z);
 #endif
 
@@ -152,10 +181,19 @@ gboolean r4_cb_KSYS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		/* scale part */
 		f = g3d_read_float_be(global->f);
 		local->nb -= 4;
-#if 0
 		g3d_matrix_scale(f, f, f, transform->matrix);
-#endif
 	}
+
+	return TRUE;
+}
+
+/* sphere */
+gboolean r4_cb_KUG1(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	/* RGE1 */
+	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
+
+	dump_remaining(global, local);
 
 	return TRUE;
 }
@@ -187,6 +225,16 @@ gboolean r4_cb_PKTM(g3d_iff_gdata *global, g3d_iff_ldata *local)
 			object->vertex_data[i * 3 + 1] = g3d_read_float_be(global->f);
 			object->vertex_data[i * 3 + 2] = g3d_read_float_be(global->f);
 			local->nb -= 12;
+
+			/* transform vertices */
+			if(object->transformation)
+			{
+				g3d_vector_transform(
+					object->vertex_data + i * 3 + 0,
+					object->vertex_data + i * 3 + 1,
+					object->vertex_data + i * 3 + 2,
+					object->transformation->matrix);
+			}
 		}
 	}
 
@@ -222,6 +270,8 @@ gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		local->nb = 0;
 	}
 
+	dump_remaining(global, local);
+
 	return TRUE;
 }
 
@@ -252,7 +302,7 @@ gboolean r4_cb_ROBJ(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	local->level_object = g_strdup(buffer);
 
-#if DEBUG > 0
+#if DEBUG > 2
 	g_printerr("[R4] ROBJ: %s\n", buffer);
 #endif
 
@@ -265,8 +315,7 @@ gboolean r4_cb_SURx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	/* GMAT or GMA1 */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
 
-	hexdump(global->f, local->nb, "R4: SURF");
-	local->nb = 0;
+	dump_remaining(global, local);
 
 	return TRUE;
 }
@@ -277,6 +326,8 @@ gboolean r4_cb_TXM1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	/* SURF */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
 
+	dump_remaining(global, local);
+
 	return TRUE;
 }
 
@@ -285,6 +336,8 @@ gboolean r4_cb_TXO1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	/* RGE1 */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
+
+	dump_remaining(global, local);
 
 	return TRUE;
 }

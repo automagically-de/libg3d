@@ -46,6 +46,17 @@ static void dump_remaining(g3d_iff_gdata *global, g3d_iff_ldata *local)
 #endif
 }
 
+#if DEBUG > 0
+static void flagstat_register(guint8 flags, guint32 *flagstats)
+{
+	guint32 i;
+
+	for(i = 0; i < 8; i ++)
+		if(flags & (1 << i))
+			flagstats[i] ++;
+}
+#endif
+
 /* triangles */
 gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
@@ -53,6 +64,9 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	G3DFace *face;
 	guint32 ntris, i;
 	guint8 u, max_u = 0;
+#if DEBUG > 0
+	guint32 flagstats[8];
+#endif
 
 	object = g_new0(G3DObject, 1);
 	object->name = g_strdup("(default)");
@@ -69,6 +83,9 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	/* read triangles */
 	ntris = g3d_read_int32_be(global->f);
+#if DEBUG > 0
+	printf("R4: DRE2: %d triangles\n", ntris);
+#endif
 	local->nb -= 4;
 	for(i = 0; i < ntris; i ++)
 	{
@@ -84,13 +101,24 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	}
 
 	/* flags/index of material? */
+	for(i = 0; i < 8; i ++)
+		flagstats[i] = 0;
+
 	for(i = 0; i < ntris; i ++)
 	{
 		u = g3d_read_int8(global->f);
 		local->nb --;
 		if(u > max_u)
 			max_u = u;
+#if DEBUG > 0
+		flagstat_register(u, flagstats);
+#endif
 	}
+
+#if DEBUG > 0
+	for(i = 0; i < 8; i ++)
+		printf("R4: DRE2: flag 2^%d: %u\n", i, flagstats[i]);
+#endif
 
 #if DEBUG > 0
 	printf("R4: DRE2: max. flag: %d\n", max_u);

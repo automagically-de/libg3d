@@ -25,6 +25,29 @@
 
 #include <g3d/g3d.h>
 
+#if 0
+#define DEBUG_MEM 1
+#endif
+
+#ifdef DEBUG_MEM
+static gpointer (*def_malloc)(gsize size) = NULL;
+
+static void break_here(gsize size)
+{
+	g_printerr("I'm here (%d bytes)\n", size);
+}
+
+static gpointer malloc_debug(gsize size)
+{
+	if(size == 84)
+	{
+		break_here(size);
+	}
+
+	return def_malloc(size);
+}
+#endif
+
 int main(int argc, char *argv[])
 {
 	G3DContext *context;
@@ -33,8 +56,12 @@ int main(int argc, char *argv[])
 	GSList *oitem;
 	guint32 i;
 
+#ifdef DEBUG_MEM
 	atexit(g_mem_profile);
+	def_malloc = glib_mem_profiler_table->malloc;
+	glib_mem_profiler_table->malloc = malloc_debug;
 	g_mem_set_vtable(glib_mem_profiler_table);
+#endif
 
 	context = g3d_context_new();
 

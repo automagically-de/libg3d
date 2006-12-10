@@ -43,11 +43,13 @@ static void plugins_free_plugin(G3DPlugin *plugin)
 }
 
 #define PLUGIN_GET_SYMBOL(symbol, pointer) \
-	if(g_module_symbol(plugin->module, symbol, \
-		(gpointer *)&(pointer)) != TRUE) \
-		pointer = NULL; \
-	/* else \
-		g_print("%s: symbol %s found\n", plugin->name, symbol); */
+	do { \
+		gpointer tmpptr; \
+		if(g_module_symbol(plugin->module, symbol, &tmpptr) != TRUE) \
+			pointer = NULL; \
+		else \
+			pointer = tmpptr; \
+	} while(0);
 
 static gboolean plugins_loaddirectory(G3DContext *context,
 	const gchar *dirname)

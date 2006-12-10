@@ -43,6 +43,15 @@ AC_SUBST(LIBXML2_LIBS)
 fi
 AM_CONDITIONAL([HAVE_LIBXML2], test "x$have_libxml2" = "xtrue")
 
+# libmagic
+AC_CHECK_HEADER([magic.h], have_magic_h=true)
+AC_CHECK_LIB([magic], [magic_open], have_magic_open=true)
+if test "x$have_magic_h" = "xtrue" && test "x$have_magic_open" = "xtrue"; then
+have_libmagic=true
+AC_DEFINE([USE_LIBMAGIC], 1, [use libmagic for file type detection])
+fi
+AM_CONDITIONAL([USE_LIBMAGIC], test "x$have_libmagic" = "xtrue")
+
 # Debug level (verbosity & optimization)
 AC_MSG_CHECKING([for debug level])
 AC_ARG_ENABLE(debug, 

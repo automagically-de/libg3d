@@ -1,0 +1,59 @@
+# $Id$
+
+# 3D Studio
+0             leshort      0x4d4d                  3ds
+
+# 3D Metafiles
+0             string       3DMF                    3dmf
+
+# AC3D
+0             string       AC3D                    ac
+
+# Caligari Truespace
+0             string       Caligari                cob
+
+# DXF (FIXME: some files are not detected)
+0             search/20    0\nSECTION              dxf
+0             search/20    0\r\nSECTION            dxf
+
+# IFF (Interchange File Format)
+0             string       FORM
+>8            string       TDDD                    iob
+>8            string       LWOB                    lwo
+>8            string       LWO2                    lwo
+>8            string       REFL                    r4
+
+0             string       FOR4
+>8            string       Maya                    maya
+
+# LeoCAD
+0             string       LeoCAD                  leocad
+
+# MD2 / VDrift
+0             string       IDP2
+>4            lelong       0x03                    joe
+>4            lelong       0x08                    md2
+
+# MD3
+0             string       IDP3                    md3
+
+# Neutral File Format (FIXME: text based without a real magic...)
+
+# OpenFlight
+0             beshort      0x0001
+>2            beshort      0x0144                  flt
+
+# Quick3D
+0             string       quick3D                 q3o
+
+# Racer
+0             string       AR01                    racer
+0             string       DOF1                    racer
+
+# Ultimate Stunts
+0             string       \000GLB                 glb
+
+# VRML
+0             search/20    VRML\ V                 vrml
+
+# Wavefront Object (FIXME: text based without a real magic...)

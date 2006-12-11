@@ -7,5 +7,5 @@ Name: libg3d
 Version: @VERSION@
 Description: 3D object loading library
 Requires: glib-2.0
-Libs: -L${libdir} -lg3d -lm
+Libs: -L${libdir} -lg3d -lm @MAGIC_LIBS@
 Cflags: -I${includedir}

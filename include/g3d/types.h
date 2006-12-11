@@ -25,6 +25,12 @@
 
 #include <glib.h>
 
+#include <g3d/config.h>
+
+#ifdef USE_LIBMAGIC
+#include <magic.h>
+#endif
+
 G_BEGIN_DECLS
 
 /*****************************************************************************
@@ -152,6 +158,9 @@ typedef gboolean (* G3DUpdateProgressBarFunc)(gfloat percentage,
 
 typedef struct {
 	GSList *plugins;
+#ifdef USE_LIBMAGIC
+	magic_t magic_cookie;
+#endif
 
 	GHashTable *exts_import;
 	GHashTable *exts_image;

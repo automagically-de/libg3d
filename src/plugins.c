@@ -155,6 +155,81 @@ static gboolean plugins_loaddirectory(G3DContext *context,
 
 #undef PLUGIN_GET_SYMBOL
 
+#ifdef USE_LIBMAGIC
+
+static gboolean plugins_magic_init(G3DContext *context)
+{
+	context->magic_cookie = magic_open(
+		MAGIC_SYMLINK
+#if DEBUG > 2
+		| MAGIC_DEBUG
+#endif
+		);
+
+	if(context->magic_cookie == NULL)
+	{
+		g_printerr("E: magic_open() failed\n");
+		return FALSE;
+	}
+
+	if(magic_load(context->magic_cookie, MAGIC_FILENAME) != 0)
+	{
+		g_printerr("E: magic_load() failed: %s (%d)\n",
+			magic_error(context->magic_cookie),
+			magic_errno(context->magic_cookie));
+		magic_close(context->magic_cookie);
+		context->magic_cookie = NULL;
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static void plugins_magic_cleanup(G3DContext *context)
+{
+	if(context->magic_cookie != NULL)
+		magic_close(context->magic_cookie);
+	context->magic_cookie = NULL;
+}
+
+static G3DPlugin *plugins_magic_lookup(G3DContext *context,
+	const gchar *filename)
+{
+	gchar *name;
+	const gchar *type;
+	GSList *item;
+	G3DPlugin *tp, *plugin = NULL;
+
+	if(context->magic_cookie == NULL)
+		return NULL;
+
+	type = magic_file(context->magic_cookie, filename);
+	if((type == NULL) || (strlen(type) == 0))
+		return NULL;
+
+	name = g_strdup_printf("imp_%s.la", type);
+	for(item = context->plugins; item != NULL; item = item->next)
+	{
+		tp = (G3DPlugin *)item->data;
+		if(tp->type != G3D_PLUGIN_IMPORT)
+			continue;
+
+		if(strcmp(name, tp->name) == 0)
+			plugin = tp;
+	}
+	g_free(name);
+
+#if DEBUG > 0
+	if(plugin != NULL)
+		g_print("D: libmagic detected plugin %s for %s\n",
+			plugin->name, filename);
+#endif
+
+	return plugin;
+}
+
+#endif /* USE_LIBMAGIC */
+
 gboolean g3d_plugins_init(G3DContext *context)
 {
 	context->exts_import = g_hash_table_new(g_str_hash, g_str_equal);
@@ -162,6 +237,10 @@ gboolean g3d_plugins_init(G3DContext *context)
 
 	plugins_loaddirectory(context, PLUGIN_DIR "/image");
 	plugins_loaddirectory(context, PLUGIN_DIR "/import");
+
+#ifdef USE_LIBMAGIC
+	plugins_magic_init(context);
+#endif
 
 	return TRUE;
 }
@@ -178,6 +257,10 @@ void g3d_plugins_cleanup(G3DContext *context)
 	GSList *plist;
 	G3DPlugin *plugin;
 	gchar **pext;
+
+#ifdef USE_LIBMAGIC
+	plugins_magic_cleanup(context);
+#endif
 
 	plist = context->plugins;
 	while(plist)
@@ -242,22 +325,31 @@ gchar *g3d_plugins_get_filetype(const gchar *filename)
 gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
 {
-	G3DPlugin *plugin;
+	G3DPlugin *plugin = NULL;
 	gchar *lcext, *basename, *dirname;
 	gboolean retval;
 
-	lcext = g3d_plugins_get_filetype(filename);
-	if(lcext == NULL)
-		return FALSE;
+#ifdef USE_LIBMAGIC
+	plugin = plugins_magic_lookup(context, filename);
+#endif
 
-	plugin = g_hash_table_lookup(context->exts_import, lcext);
 	if(plugin == NULL)
 	{
-		g_warning("no handler for filetype '.%s' found", lcext);
+		/* try to get type by extension */
+		lcext = g3d_plugins_get_filetype(filename);
+		if(lcext == NULL)
+			return FALSE;
+
+		plugin = g_hash_table_lookup(context->exts_import, lcext);
+
 		g_free(lcext);
+	}
+
+	if(plugin == NULL)
+	{
+		g_warning("no handler for file '%s' found", filename);
 		return FALSE;
 	}
-	g_free(lcext);
 
 	if(plugin->loadmodel_func == NULL)
 	{

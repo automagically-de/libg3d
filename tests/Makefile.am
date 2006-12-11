@@ -8,4 +8,5 @@ AM_CFLAGS = \
 
 test_lib_DEPENDENCIES = ../src/libg3d.la
 test_lib_SOURCES = test_lib.c
-test_lib_LDADD = ../src/libg3d.la -lm @GLIB_LIBS@
+test_lib_LDADD = ../src/libg3d.la -lm @GLIB_LIBS@ @MAGIC_LIBS@
+

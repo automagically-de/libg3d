@@ -44,6 +44,10 @@ fi
 AM_CONDITIONAL([HAVE_LIBXML2], test "x$have_libxml2" = "xtrue")
 
 # libmagic
+AC_ARG_ENABLE(libmagic,
+	[[  --disable-libmagic      disable file type detection using libmagic]],
+	[if test "$enableval" = "no" ; then disable_libmagic=true ; fi])
+if test "x$disable_libmagic" != "xtrue" ; then
 AC_CHECK_HEADER([magic.h], have_magic_h=true)
 AC_CHECK_LIB([magic], [magic_open], have_magic_open=true)
 if test "x$have_magic_h" = "xtrue" && test "x$have_magic_open" = "xtrue"; then
@@ -51,8 +55,7 @@ have_libmagic=true
 AC_DEFINE([USE_LIBMAGIC], 1, [use libmagic for file type detection])
 AC_DEFINE_DIR([MAGIC_FILENAME], libdir/$PACKAGE/libg3d.magic, [magic file])
 MAGIC_LIBS=-lmagic
-else
-MAGIC_LIBS=
+fi
 fi
 AC_SUBST(MAGIC_LIBS)
 #AM_CONDITIONAL([USE_LIBMAGIC], test "x$have_libmagic" = "xtrue")

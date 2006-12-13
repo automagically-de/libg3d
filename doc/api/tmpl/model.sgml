@@ -69,3 +69,13 @@ Model manipulation functions
 @model: 
 
 
+<!-- ##### FUNCTION g3d_model_get_object_by_name ##### -->
+<para>
+
+</para>
+
+@model: 
+@name: 
+@Returns: 
+
+

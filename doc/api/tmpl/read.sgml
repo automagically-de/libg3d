@@ -80,3 +80,32 @@ Binary file reading helper functions
 @Returns: 
 
 
+<!-- ##### FUNCTION g3d_read_double_be ##### -->
+<para>
+
+</para>
+
+@f: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_read_double_le ##### -->
+<para>
+
+</para>
+
+@f: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_read_cstr ##### -->
+<para>
+
+</para>
+
+@f: 
+@buffer: 
+@max_len: 
+@Returns: 
+
+

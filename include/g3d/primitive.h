@@ -27,6 +27,20 @@
 
 G_BEGIN_DECLS
 
+/* FIXME: rename to _box or something */
+
+/**
+ * g3d_primitive_cube:
+ * @width: the width of the cube
+ * @height: the height of the cube
+ * @depth: the depth of the cube
+ * @material: the material to use for all faces
+ *
+ * Generates an object containing a cube.
+ *
+ * returns: the cube object
+ */
+
 G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
 	G3DMaterial *material);
 
@@ -68,7 +82,7 @@ G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
  * @radius: radius
  * @vseg: number of vertical segments
  * @hseg: number of horizontal segments
- * @materal: material to use for faces
+ * @material: material to use for faces
  *
  * Generates an object containing a sphere.
  *

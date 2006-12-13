@@ -19,9 +19,14 @@ G3DModel
 <FILE>context</FILE>
 g3d_context_new
 g3d_context_free
-g3d_context_set_bgcolor
+
 g3d_context_update_interface
+g3d_context_set_update_interface_func
+
 g3d_context_update_progress_bar
+g3d_context_set_update_progress_bar_func
+
+g3d_context_set_bgcolor
 g3d_context_set_set_bgcolor_func
 </SECTION>
 
@@ -33,6 +38,7 @@ g3d_model_check
 g3d_model_center
 g3d_model_clear
 g3d_model_free
+g3d_model_get_object_by_name
 </SECTION>
 
 <SECTION>
@@ -62,7 +68,11 @@ g3d_material_free
 <SECTION>
 <FILE>texture</FILE>
 g3d_texture_load_cached
+g3d_texture_load
+g3d_texture_free
 g3d_texture_prepare
+g3d_texture_flip_y
+g3d_texture_merge_alpha
 </SECTION>
 
 <SECTION>
@@ -89,6 +99,9 @@ g3d_plugins_get_image_extensions
 G3D_IFF_MKID
 g3d_iff_open
 g3d_iff_readchunk
+g3d_iff_handle_chunk
+g3d_iff_read_ctnr
+g3d_iff_id_to_text
 </SECTION>
 
 <SECTION>
@@ -100,12 +113,17 @@ g3d_read_int32_be
 g3d_read_int32_le
 g3d_read_float_be
 g3d_read_float_le
+g3d_read_double_be
+g3d_read_double_le
+g3d_read_cstr
 </SECTION>
 
 <SECTION>
 <FILE>primitive</FILE>
+g3d_primitive_cube
 g3d_primitive_cylinder
 g3d_primitive_tube
+g3d_primitive_sphere
 </SECTION>
 
 <SECTION>
@@ -115,6 +133,9 @@ g3d_matrix_multiply
 g3d_matrix_translate
 g3d_matrix_rotate
 g3d_matrix_rotate_xyz
+g3d_matrix_scale
+g3d_matrix_transpose
+g3d_matrix_dump
 </SECTION>
 
 <SECTION>

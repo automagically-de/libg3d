@@ -17,6 +17,18 @@ primitive
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### FUNCTION g3d_primitive_cube ##### -->
+<para>
+
+</para>
+
+@width: 
+@height: 
+@depth: 
+@material: 
+@Returns: 
+
+
 <!-- ##### FUNCTION g3d_primitive_cylinder ##### -->
 <para>
 
@@ -42,6 +54,18 @@ primitive
 @sides: 
 @top: 
 @bottom: 
+@material: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_primitive_sphere ##### -->
+<para>
+
+</para>
+
+@radius: 
+@vseg: 
+@hseg: 
 @material: 
 @Returns: 
 

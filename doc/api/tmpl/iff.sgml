@@ -51,3 +51,36 @@ IFF file helper functions
 @Returns: 
 
 
+<!-- ##### FUNCTION g3d_iff_handle_chunk ##### -->
+<para>
+
+</para>
+
+@global: 
+@plocal: 
+@chunks: 
+@flags: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_iff_read_ctnr ##### -->
+<para>
+
+</para>
+
+@global: 
+@local: 
+@chunks: 
+@flags: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_iff_id_to_text ##### -->
+<para>
+
+</para>
+
+@id: 
+@Returns: 
+
+

@@ -47,6 +47,22 @@ typedef enum {
 	G3D_TEXENV_REPLACE
 } G3DTexEnv;
 
+/**
+ * G3DImage:
+ * @name: name of image
+ * @width: width of image in pixels
+ * @height: height of image in pixels
+ * @depth: depth of image in bits
+ * @flags: flags
+ * @pixeldata: the binary image data
+ * @tex_id: the OpenGL texture id, should be unique model-wide
+ * @tex_env: texture environment flags
+ * @tex_scale_u: factor scaling texture width, should be 1.0 for most cases
+ * @tex_scale_v: factor scaling texture height, should be 1.0 for most cases
+ *
+ * Object containing a two-dimensional pixel image.
+ */
+
 typedef struct {
 	gchar *name;
 	guint32 width;
@@ -67,6 +83,21 @@ typedef struct {
 
 #define G3D_FLAG_MAT_TWOSIDE    (1L << 0)
 
+/**
+ * G3DMaterial:
+ * @name: name of material
+ * @r: red component of color
+ * @g: green component of color
+ * @b: blue component of color
+ * @a: alpha component of color
+ * @shininess: shiny color
+ * @specular: specular color
+ * @flags: flags
+ * @tex_image: texture image (optional, may be NULL)
+ *
+ * A material object.
+ */
+
 typedef struct {
 	gchar *name;
 	gfloat r, g, b, a;
@@ -83,6 +114,22 @@ typedef struct {
 
 #define G3D_FLAG_FAC_NORMALS    (1L << 0)
 #define G3D_FLAG_FAC_TEXMAP     (1L << 1)
+
+/**
+ * G3DFace:
+ * @vertex_count: number of vertices
+ * @vertex_indices: indices of vertices in #G3DObject
+ * @material: material to use for surface
+ * @flags: flags
+ * @normals: optional normal array (one vector - 3 #gfloat values - for each
+ *   vertex)
+ * @tex_image: optional texture image
+ * @tex_vertex_count: number of texture vertices, should be 0 or match
+ *   vertex_count
+ * @tex_vertex_data: array of texture vertices
+ *
+ * An object representing a surface.
+ */
 
 typedef struct {
 	guint32 vertex_count;
@@ -103,6 +150,15 @@ typedef struct {
  * G3DTransformation
  *****************************************************************************/
 
+/**
+ * G3DTransformation:
+ *
+ * @matrix: the transformation matrix
+ * @flags: flags
+ *
+ * A three-dimensional matrix transformation object.
+ */
+
 typedef struct {
 	gfloat matrix[16];
 	guint32 flags;
@@ -112,6 +168,21 @@ typedef struct {
 /*****************************************************************************
  * G3DObject
  *****************************************************************************/
+
+/**
+ * G3DObject:
+ * @name: name of object
+ * @materials: list of materials
+ * @faces: list of faces
+ * @objects: list of sub-objects
+ * @transformation: optional transformation
+ * @hide: flag to disable object rendering
+ * @vertex_count: number of vertices
+ * @vertex_data: vertex vector data
+ *
+ * A three-dimensional object.
+ */
+
 typedef struct {
 	gchar *name;
 
@@ -129,11 +200,13 @@ typedef struct {
 	guint32 vertex_count;
 	gfloat *vertex_data;
 
-	/* texture stuff: temporary storage, should be in G3DFace items */
+	/*< private >*/
+	/* FIXME: texture stuff: temporary storage, should be in G3DFace items */
 	guint32 tex_vertex_count;
 	gfloat *tex_vertex_data;
 	G3DImage *tex_image;
 
+	/*< private >*/
 	/* some fields to speed up rendering, should not be used by plugins */
 	/* FIXME: remove from API (replace with user_data pointer?) */
 	gfloat *_normals;
@@ -157,11 +230,22 @@ typedef gboolean (* G3DUpdateInterfaceFunc)(gpointer user_data);
 typedef gboolean (* G3DUpdateProgressBarFunc)(gfloat percentage,
 	gboolean show, gpointer user_data);
 
-typedef struct {
-	GSList *plugins;
 #ifdef USE_LIBMAGIC
-	magic_t magic_cookie;
+#define MAGIC_PTR_TYPE magic_t
+#else
+#define MAGIC_PTR_TYPE void *
 #endif
+
+/**
+ * G3DContext:
+ *
+ * Internal stuff for libg3d.
+ */
+
+typedef struct {
+	/*< private >*/
+	GSList *plugins;
+	MAGIC_PTR_TYPE magic_cookie;
 
 	GHashTable *exts_import;
 	GHashTable *exts_image;

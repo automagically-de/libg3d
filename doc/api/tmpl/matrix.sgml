@@ -74,3 +74,33 @@ Matrix manipulation and calculation
 @Returns: 
 
 
+<!-- ##### FUNCTION g3d_matrix_scale ##### -->
+<para>
+
+</para>
+
+@x: 
+@y: 
+@z: 
+@rm: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_matrix_transpose ##### -->
+<para>
+
+</para>
+
+@matrix: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_matrix_dump ##### -->
+<para>
+
+</para>
+
+@matrix: 
+@Returns: 
+
+

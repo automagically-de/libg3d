@@ -28,12 +28,49 @@ Texture loading and manipulation
 @Returns: 
 
 
+<!-- ##### FUNCTION g3d_texture_load ##### -->
+<para>
+
+</para>
+
+@context: 
+@filename: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_texture_free ##### -->
+<para>
+
+</para>
+
+@texture: 
+
+
 <!-- ##### FUNCTION g3d_texture_prepare ##### -->
 <para>
 
 </para>
 
 @texture: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_texture_flip_y ##### -->
+<para>
+
+</para>
+
+@texture: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_texture_merge_alpha ##### -->
+<para>
+
+</para>
+
+@image: 
+@aimage: 
 @Returns: 
 
 

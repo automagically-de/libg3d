@@ -103,6 +103,16 @@ All types used in libg3d
 @hide: 
 @vertex_count: 
 @vertex_data: 
+@tex_vertex_count: 
+@tex_vertex_data: 
+@tex_image: 
+@_normals: 
+@_materials: 
+@_num_faces: 
+@_indices: 
+@_flags: 
+@_tex_images: 
+@_tex_coords: 
 
 <!-- ##### USER_FUNCTION G3DSetBgColorFunc ##### -->
 <para>
@@ -142,6 +152,14 @@ All types used in libg3d
 
 </para>
 
+@plugins: 
+@exts_image: 
+@set_bgcolor_func: 
+@set_bgcolor_data: 
+@update_interface_func: 
+@update_interface_data: 
+@update_progress_bar_func: 
+@update_progress_bar_data: 
 
 <!-- ##### STRUCT G3DModel ##### -->
 <para>

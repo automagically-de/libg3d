@@ -161,14 +161,29 @@ static gboolean plugins_magic_init(G3DContext *context)
 {
 	context->magic_cookie = magic_open(
 		MAGIC_SYMLINK
+#if 0
+		| MAGIC_CHECK
+#endif
 #if DEBUG > 2
 		| MAGIC_DEBUG
 #endif
 		);
 
+	g_printerr("D: checking and loading %s\n", MAGIC_FILENAME);
+
 	if(context->magic_cookie == NULL)
 	{
 		g_printerr("E: magic_open() failed\n");
+		return FALSE;
+	}
+
+	if(magic_compile(context->magic_cookie, MAGIC_FILENAME) != 0)
+	{
+		g_printerr("E: magic_compile() failed: %s (%d)\n",
+			magic_error(context->magic_cookie),
+			magic_errno(context->magic_cookie));
+		magic_close(context->magic_cookie);
+		context->magic_cookie = NULL;
 		return FALSE;
 	}
 

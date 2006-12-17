@@ -20,6 +20,8 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <sys/param.h>	/* PATH_MAX */
+
 #include <string.h>
 #include <unistd.h>
 
@@ -343,6 +345,7 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	G3DPlugin *plugin = NULL;
 	gchar *lcext, *basename, *dirname;
 	gboolean retval;
+	gchar *olddir;
 
 #ifdef USE_LIBMAGIC
 	plugin = plugins_magic_lookup(context, filename);
@@ -375,6 +378,9 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	basename = g_path_get_basename(filename);
 	dirname = g_path_get_dirname(filename);
 
+	olddir = g_get_current_dir();
+	/* TODO: since glib 2.8 there is a g_chdir() wrapper, use it if
+	 * for some reason a glib >= 2.8 is required */
 	chdir(dirname);
 
 	retval = plugin->loadmodel_func(context, basename, model,
@@ -382,6 +388,9 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 
 	g_free(basename);
 	g_free(dirname);
+
+	chdir(olddir);
+	g_free(olddir);
 
 	return retval;
 }

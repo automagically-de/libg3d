@@ -179,6 +179,9 @@ static gboolean plugins_magic_init(G3DContext *context)
 		return FALSE;
 	}
 
+/* don't compile it for now, this just generates a libg3d.magic.mgc in the
+ * current directory */
+#if 0
 	if(magic_compile(context->magic_cookie, MAGIC_FILENAME) != 0)
 	{
 		g_printerr("E: magic_compile() failed: %s (%d)\n",
@@ -188,6 +191,7 @@ static gboolean plugins_magic_init(G3DContext *context)
 		context->magic_cookie = NULL;
 		return FALSE;
 	}
+#endif
 
 	if(magic_load(context->magic_cookie, MAGIC_FILENAME) != 0)
 	{

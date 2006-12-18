@@ -29,6 +29,7 @@ SUPPORTED FILETYPES:
 | .dof  | x | x | p | x |   | Racer model files                       |
 | .dxf  | x |   |   |   |   | AutoCAD                                 |
 | .flt  | p |   |   |   |   | OpenFlight (in Progress, experimental)  |
+| .glb  | x | x |   | x |   | UltimateStunts models                   |
 | .iob  | x | x |   |   |   | Impulse Turbo Silver / Imagine          |
 | .iv   | p |   |   |   |   | SGI Inventor (ascii only)               |
 | .joe  | x |   | x | x |   | VDrift v3 .joe car models               |
@@ -39,12 +40,15 @@ SUPPORTED FILETYPES:
 | .mb   | p |   |   |   | x | Maya (binary)                           |
 | .md2  | x |   |   |   |   | id Software Quake II                    |
 | .md3  | x | x | x | ? |   | id Software Quake III                   |
+| .mon  | p |   |   |   |   | Monzoom (Reflections) (experimental)    |
 | .nff  | x | x |   | x |   | Neutral File Format                     |
 | .obj  | x | x |   |   |   | Alias Wavefront Maya                    |
 | .prj  | x | ? |   |   |   | 3D Studio                               |
 | .q3o  | x | x | x |   |   | Quick3D Object                          |
 | .q3s  | x | x | x |   |   | Quick3D Scene                           |
+| .r3   | p |   |   |   |   | Reflections 3 (experimental)            |
 | .r4   | p |   |   |   |   | Reflections 4 (experimental)            |
+| .stl  | p |   |   |   |   | Standard Tessellation Language          |
 | .wrl  | x | x |   |   |   | VRML World (VRML 1 only and incomplete) |
 +-------+---+---+---+---+---------------------------------------------+
 
@@ -52,6 +56,8 @@ x: implemented
 p: partly done (strange results)
 
 Wishlist:
+
+also see http://homepage.gna.org/libg3d/references.html
 
 type                  docs  ex.avail. status
 -----------------------------------------------------------------------------
@@ -67,7 +73,7 @@ type                  docs  ex.avail. status
 .3dm (Rhino 2)        ?     yes       not started yet
 
 other model plugins:
-* heightfield: generates a landscape from an image (broken atm?)
+* heightfield: generates a landscape from an image
 * test: some tests (primitives, transformation...)
 * rbh: experimental, maybe Discworld Noir models (or no 3D at all ;))
 

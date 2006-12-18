@@ -1,0 +1,7 @@
+* short term
+	* documentation of API
+
+* planned for version 0.1.x
+	* create an abstraction of file operations to support direct loading of
+	  files from memory buffers and archives
+

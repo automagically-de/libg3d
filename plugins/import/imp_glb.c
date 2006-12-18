@@ -27,6 +27,7 @@
 #include <g3d/types.h>
 #include <g3d/read.h>
 #include <g3d/material.h>
+#include <g3d/texture.h>
 #include <g3d/iff.h>
 #include <g3d/vector.h>
 
@@ -68,7 +69,7 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 	guint32 magic, otype, index;
 	gint32 i, j, msize, namelen, datalen, nvertices, nindices;
 	gchar *name;
-	gfloat *normals = NULL;
+	gfloat *normals = NULL, *texcoords = NULL;
 
 	f = fopen(filename, "rb");
 	if(f == NULL)
@@ -168,10 +169,22 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 			{
 				name = g_new0(gchar, namelen + 1);
 				fread(name, 1, namelen, f);
-				/* TODO: texture stuff */
-#if DEBUG > 0
+#if DEBUG > 1
 				printf("GLB: texture name: %s\n", name);
 #endif
+
+				/* texture name is something like "0", the real name is in
+				 * "../$carname.conf"; try to load default texture */
+				if(name[0] == '0')
+				{
+					if(g_file_test("textures.jpg", G_FILE_TEST_EXISTS))
+					{
+						material->tex_image = g3d_texture_load_cached(
+							context, model, "textures.jpg");
+						if(material->tex_image != NULL)
+							material->tex_image->tex_id = 1;
+					}
+				}
 
 				g_free(name);
 			}
@@ -183,6 +196,7 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 			object->vertex_count = nvertices;
 			object->vertex_data = g_new0(gfloat, nvertices * 3);
 			normals = g_new0(gfloat, nvertices * 3);
+			texcoords = g_new0(gfloat, nvertices * 2);
 
 			for(i = 0; i < nvertices; i ++)
 			{
@@ -207,8 +221,8 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 					normals + i * 3 + 2);
 
 				/* texture coordinates */
-				g3d_read_float_be(f);
-				g3d_read_float_be(f);
+				texcoords[i * 2 + 0] = glb_get_float(f) / 64;
+				texcoords[i * 2 + 1] = 1.0 - glb_get_float(f) / 64;
 			}
 		}
 
@@ -232,9 +246,32 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 					face->normals[j * 3 + 2] = normals[index * 3 + 2];
 				}
 				face->material = g_slist_nth_data(object->materials, 0);
+
+				if(face->material->tex_image != NULL)
+				{
+					face->tex_vertex_count = 3;
+					face->tex_vertex_data = g_new0(gfloat, 3 * 2);
+					face->tex_image = face->material->tex_image;
+					for(j = 0; j < 3; j ++)
+					{
+						index = face->vertex_indices[j];
+
+						face->tex_vertex_data[j * 2 + 0] =
+							texcoords[index * 2 + 0];
+						face->tex_vertex_data[j * 2 + 1] =
+							texcoords[index * 2 + 1];
+						face->flags |= G3D_FLAG_FAC_TEXMAP;
+					}
+				}
+
 				object->faces = g_slist_append(object->faces, face);
 			}
 		}
+
+		if(normals != NULL)
+			g_free(normals);
+		if(texcoords != NULL)
+			g_free(texcoords);
 	}
 
 	fclose(f);

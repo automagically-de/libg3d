@@ -29,7 +29,7 @@ SUPPORTED FILETYPES:
 | .dof  | x | x | p | x |   | Racer model files                       |
 | .dxf  | x |   |   |   |   | AutoCAD                                 |
 | .flt  | p |   |   |   |   | OpenFlight (in Progress, experimental)  |
-| .glb  | x | x |   | x |   | UltimateStunts models                   |
+| .glb  | x | x | x | x |   | UltimateStunts models                   |
 | .iob  | x | x |   |   |   | Impulse Turbo Silver / Imagine          |
 | .iv   | p |   |   |   |   | SGI Inventor (ascii only)               |
 | .joe  | x |   | x | x |   | VDrift v3 .joe car models               |

@@ -1,3 +1,11 @@
+Changes since version 0.0.5:
+	* plugins: try to detect file type with libmagic if available
+	* general: there are some minor API changes which require the
+		reconfiguration and recompilation of programs using libg3d
+	* imp_flt: very basic model support for OpenFlight
+	* imp_r4: basic support for Reflections/Monzoom models
+	* imp_glb: texture support
+	* doc: a little bit more API documentation
 
 (Version 0.0.4 was not released)
 

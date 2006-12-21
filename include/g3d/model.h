@@ -36,6 +36,14 @@ G_BEGIN_DECLS
  */
 G3DModel *g3d_model_new(void);
 
+#define G3D_MODEL_SCALE           (1 << 0)
+#define G3D_MODEL_CENTER          (1 << 1)
+#define G3D_MODEL_OPTIMIZE        (1 << 2)
+#define G3D_MODEL_NOCHECK         (1 << 3)
+
+G3DModel *g3d_model_load_full(G3DContext *context, const gchar *filename,
+	guint32 flags);
+
 /**
  * g3d_model_load:
  * @context: a valid context

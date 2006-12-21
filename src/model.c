@@ -62,7 +62,7 @@ static gdouble objects_max_radius(GSList *objects)
 	return max_rad;
 }
 
-static void objects_post_load(GSList *objects, gdouble max_rad)
+static void objects_post_load(GSList *objects, gdouble max_rad, guint32 flags)
 {
 	G3DObject *object;
 	GSList *oitem;
@@ -72,10 +72,13 @@ static void objects_post_load(GSList *objects, gdouble max_rad)
 	{
 		object = (G3DObject *)oitem->data;
 
-		g3d_object_scale(object, (10.0 / max_rad));
-		g3d_object_optimize(object);
+		if(flags & G3D_MODEL_SCALE)
+			g3d_object_scale(object, (10.0 / max_rad));
 
-		objects_post_load(object->objects, max_rad);
+		if(flags & G3D_MODEL_OPTIMIZE)
+			g3d_object_optimize(object);
+
+		objects_post_load(object->objects, max_rad, flags);
 
 		oitem = oitem->next;
 	}
@@ -144,8 +147,8 @@ gboolean g3d_model_check(G3DModel *model)
 	return objects_check(model->objects);
 }
 
-
-G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
+G3DModel *g3d_model_load_full(G3DContext *context, const gchar *filename,
+	guint32 flags)
 {
 	G3DModel *model;
 	gdouble max_rad;
@@ -159,20 +162,22 @@ G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
 		g3d_context_update_progress_bar(context, 0.0, FALSE);
 
 		/* check model */
-		if(!g3d_model_check(model))
-		{
-			g3d_model_free(model);
-			return NULL;
-		}
+		if(!(flags & G3D_MODEL_NOCHECK))
+			if(!g3d_model_check(model))
+			{
+				g3d_model_free(model);
+				return NULL;
+			}
 
 		/* center model */
-		g3d_model_center(model);
+		if(flags & G3D_MODEL_CENTER)
+			g3d_model_center(model);
 
 		/* get maximum radius of all objects */
 		max_rad = objects_max_radius(model->objects);
 
 		/* scale and optimize objects */
-		objects_post_load(model->objects, max_rad);
+		objects_post_load(model->objects, max_rad, flags);
 
 		/* save filename */
 		if(model->filename == NULL)
@@ -187,6 +192,13 @@ G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
 	}
 
 	return NULL;
+
+}
+
+G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
+{
+	return g3d_model_load_full(context, filename,
+		G3D_MODEL_SCALE | G3D_MODEL_CENTER | G3D_MODEL_OPTIMIZE);
 }
 
 static void objects_max_extension(GSList *objects,

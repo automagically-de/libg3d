@@ -1,4 +1,4 @@
-/* $Id: material.c,v 1.1.2.2 2006/01/23 16:38:47 dahms Exp $ */
+/* $Id$ */
 
 /*
     libg3d - 3D object loading library

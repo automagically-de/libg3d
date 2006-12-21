@@ -74,7 +74,9 @@ LeoCadLibrary *leocad_library_load(const gchar *libdir)
 	idx = fopen(filename, "rb");
 	if(idx == NULL)
 	{
+#if DEBUG > 0
 		g_print("LeoCAD: failed to read '%s'\n", filename);
+#endif
 		g_free(library);
 		return NULL;
 	}
@@ -83,7 +85,9 @@ LeoCadLibrary *leocad_library_load(const gchar *libdir)
 	bin = fopen(filename, "rb");
 	if(bin == NULL)
 	{
+#if DEBUG > 0
 		g_print("LeoCAD: failed to read '%s'\n", filename);
+#endif
 		fclose(idx);
 		g_free(library);
 		return NULL;

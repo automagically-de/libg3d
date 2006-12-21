@@ -1,4 +1,4 @@
-/* $Id: img_sgi.c,v 1.1.2.2 2006/01/23 16:44:28 dahms Exp $ */
+/* $Id$ */
 
 /*
     libg3d - 3D object loading library

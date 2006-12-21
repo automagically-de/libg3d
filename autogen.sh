@@ -3,22 +3,22 @@
 mkdir -p config
 
 echo "++ aclocal -I m4/ $ACLOCAL_FLAGS $INCLUDES"
-aclocal -I m4/ $ACLOCAL_FLAGS $INCLUDES
+aclocal -I m4/ $ACLOCAL_FLAGS $INCLUDES || exit 1 
 
 echo "++ autoheader"
-autoheader
+autoheader || exit 1
 
 echo "++ libtoolize --automake --copy --force"
-libtoolize --automake --copy --force
+libtoolize --automake --copy --force || exit 1
 
 echo "++ gtkdocize --copy"
-gtkdocize --copy
+gtkdocize --copy || exit 1
 
 echo "++ automake --gnu --add-missing --copy"
-automake --gnu --add-missing --copy
+automake --gnu --add-missing --copy || exit 1
 
 echo "++ autoconf"
-autoconf
+autoconf || exit 1
 
 configure_options="--enable-debug --enable-experimental --enable-gtk-doc"
 

@@ -7,3 +7,5 @@ pkglib_DATA = libg3d.magic
 
 deb:
 	fakeroot dpkg-buildpackage
+
+EXTRA_DIST = libg3d.magic

@@ -1,0 +1,4 @@
+There are some bug fixes and minor feature enhancements. For file type
+detection now libmagic is optionally used. Because of some litte ABI changes
+you have to reconfigure and recompile all programs depending on libg3d.
+

@@ -8,6 +8,7 @@
 #include <g3d/texture.h>
 #include <g3d/iff.h>
 #include <g3d/read.h>
+#include <g3d/debug.h>
 
 #include "imp_lwo.h"
 

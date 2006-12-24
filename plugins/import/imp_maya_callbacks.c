@@ -6,6 +6,7 @@
 #include <g3d/primitive.h>
 #include <g3d/read.h>
 #include <g3d/matrix.h>
+#include <g3d/debug.h>
 
 #include "imp_maya_obj.h"
 #include "imp_maya_var.h"

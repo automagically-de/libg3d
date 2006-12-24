@@ -100,9 +100,11 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		object->faces = g_slist_append(object->faces, face);
 	}
 
+#if DEBUG > 0
 	/* flags/index of material? */
 	for(i = 0; i < 8; i ++)
 		flagstats[i] = 0;
+#endif
 
 	for(i = 0; i < ntris; i ++)
 	{

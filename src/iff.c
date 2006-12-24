@@ -29,6 +29,7 @@
 #include <g3d/read.h>
 #include <g3d/iff.h>
 #include <g3d/context.h>
+#include <g3d/debug.h>
 
 FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len)
 {

@@ -3,6 +3,7 @@
 #include <g3d/iff.h>
 #include <g3d/read.h>
 #include <g3d/material.h>
+#include <g3d/debug.h>
 
 static gchar *padding = "                    ";
 

@@ -27,6 +27,7 @@ pluginimp_LTLIBRARIES += \
 	imp_r4.la \
 	imp_rbh.la \
 	imp_stl.la \
+	imp_ta.la \
 	imp_test.la
 endif
 
@@ -84,6 +85,8 @@ imp_r4_la_SOURCES = imp_r4.c imp_r4_chunks.h \
 imp_rbh_la_SOURCES = imp_rbh.c imp_rbh_chunks.h \
 	imp_rbh_callbacks.c imp_rbh_callbacks.h
 imp_stl_la_SOURCES = imp_stl.c
+imp_ta_la_SOURCES = imp_ta.c imp_ta_3do_palette.h \
+	imp_ta_3do.c imp_ta_3do.h
 imp_test_la_SOURCES = imp_test.c
 imp_vrml_la_SOURCES = imp_vrml_v1.l imp_vrml.c
 imp_vrml_la_LIBADD = ${LEXLIB}

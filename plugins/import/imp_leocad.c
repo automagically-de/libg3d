@@ -107,12 +107,45 @@ gchar **plugin_extensions(G3DContext *context)
  * LeoCAD specific stuff
  */
 
+static gboolean leocad_change_key(guint16 ktime, gfloat *param, guint8 ktype,
+	gfloat *matrix, gfloat *mloc, gboolean *valid_matrix)
+{
+	/* get first frame */
+	if(ktime == 1)
+	{
+		switch(ktype)
+		{
+			case 0x00: /* translation */
+				g3d_matrix_identity(mloc);
+				g3d_matrix_translate(param[0], param[1], param[2], mloc);
+				g3d_matrix_multiply(matrix, mloc, matrix);
+				*valid_matrix = TRUE;
+				break;
+
+			case 0x01: /* rotation */
+				g3d_matrix_rotate((gfloat)param[3] * M_PI / 180.0,
+					param[0], param[1], param[2], matrix);
+				g3d_matrix_multiply(mloc, matrix, matrix);
+				*valid_matrix = TRUE;
+				break;
+
+			default:
+				break;
+		}
+	}
+#if DEBUG > 0
+	g_print("LeoCAD: key 0x%02x (%d): %+2.2f %+2.2f %+2.2f %+2.2f\n",
+		ktype, ktime, param[0], param[1], param[2], param[3]);
+#endif
+	return TRUE;
+}
+
 static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 	LeoCadLibrary *library, gfloat lcdversion)
 {
-	guint32 i, j, nkeys;
+	guint32 i, j, k, nkeys, nobjs;
 	guint16 ktime;
-	guint8 pver, ktype, color = 0, len8;
+	guint8 pver, over, ktype, color = 0, len8;
 	gchar name[9];
 	gfloat param[4], matrix[16], mloc[16];
 	gfloat offx = 0.0, offy = 0.0, offz = 0.0;
@@ -134,7 +167,38 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 
 		if(pver >= 9)
 		{
+			/* object stuff */
+			over = g3d_read_int8(f);
+			nobjs = g3d_read_int32_le(f);
+			for(i = 0; i < nobjs; i ++)
+			{
+				/* time */
+				ktime = g3d_read_int16_le(f);
+				/* param */
+				param[0] = g3d_read_float_le(f);
+				param[1] = g3d_read_float_le(f);
+				param[2] = g3d_read_float_le(f);
+				param[3] = g3d_read_float_le(f);
+				/* type */
+				ktype = g3d_read_int8(f);
 
+				leocad_change_key(ktime, param, ktype, matrix, mloc,
+					&valid_matrix);
+			}
+
+			if(over == 1)
+			{
+				nobjs = g3d_read_int32_le(f);
+				for(i = 0; i < nobjs; i ++)
+				{
+					ktime = g3d_read_int16_le(f);
+					param[0] = g3d_read_float_le(f);
+					param[1] = g3d_read_float_le(f);
+					param[2] = g3d_read_float_le(f);
+					param[3] = g3d_read_float_le(f);
+					ktype = g3d_read_int8(f);
+				}
+			}
 		}
 		else /* pver < 9 */
 		{
@@ -155,43 +219,9 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 					/* type */
 					ktype = g3d_read_int8(f);
 
-					/* get first frame */
-					if(ktime == 1)
-					{
-						switch(ktype)
-						{
-							case 0x00: /* translation */
-#if 1
-								mloc[0 * 4 + 3] = param[0];
-								mloc[1 * 4 + 3] = param[1];
-								mloc[2 * 4 + 3] = param[2];
-#else
-								mloc[3 * 4 + 0] = param[0];
-								mloc[3 * 4 + 1] = param[1];
-								mloc[3 * 4 + 2] = param[2];
-#endif
-								g3d_matrix_multiply(matrix, mloc, matrix);
-								valid_matrix = TRUE;
-								break;
+					leocad_change_key(ktime, param, ktype, matrix, mloc,
+						&valid_matrix);
 
-							case 0x01: /* rotation */
-								g3d_matrix_rotate(
-									(gfloat)param[3] * M_PI / 180.0,
-									param[0], param[1], param[2], matrix);
-								g3d_matrix_multiply(mloc, matrix, matrix);
-								valid_matrix = TRUE;
-								break;
-
-							default:
-								break;
-						}
-					}
-#if DEBUG > 2
-					g_print("LeoCAD: key 0x%02x (%d): "
-						"%+2.2f %+2.2f %+2.2f %+2.2f\n",
-						ktype, ktime,
-						param[0], param[1], param[2], param[3]);
-#endif
 				} /* keys */
 
 				nkeys = g3d_read_int32_le(f);
@@ -219,25 +249,13 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 					{
 						if(pver > 3)
 						{
+#if DEBUG > 2
+							g_print("LeoCAD: matrix\n");
+#endif
 							/* matrix */
-							for(j = 0; j < 16; j ++)
-							{
-#if DEBUG > 2
-								if((j % 4) == 0)
-									g_print("LeoCAD: matrix:");
-#endif
-#if 0
-								matrix[(j % 4) * 4 + j / 4] =
-									g3d_read_float_le(f);
-#else
-								matrix[j] = g3d_read_float_le(f);
-#endif
-#if DEBUG > 2
-								g_print(" %+.2f", matrix[j]);
-								if((j % 4) == 3)
-									g_print("\n");
-#endif
-							}
+							for(j = 0; j < 4; j ++)
+								for(k = 0; k < 4; k ++)
+									matrix[j * 4 + k] = g3d_read_float_le(f);
 
 							valid_matrix = TRUE;
 						}
@@ -349,15 +367,8 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 	if(!valid_matrix)
 	{
 		/* translation */
-#if 0
-		mloc[0 * 4 + 3] = offx;
-		mloc[1 * 4 + 3] = offy;
-		mloc[2 * 4 + 3] = offz;
-#else
-		mloc[3 * 4 + 0] = offx;
-		mloc[3 * 4 + 1] = offy;
-		mloc[3 * 4 + 2] = offz;
-#endif
+		g3d_matrix_identity(mloc);
+		g3d_matrix_translate(offx, offy, offz, mloc);
 		/* rotation */
 		rotx = (gfloat)(rotx * M_PI) / 180.0;
 		roty = (gfloat)(roty * M_PI) / 180.0;

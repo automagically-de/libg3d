@@ -273,7 +273,7 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 						}
 
 						/* time */
-						g3d_read_int8(f);
+						ktime = g3d_read_int8(f);
 
 						/* bl? */
 						g3d_read_int32_le(f);
@@ -373,7 +373,7 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 		rotx = (gfloat)(rotx * M_PI) / 180.0;
 		roty = (gfloat)(roty * M_PI) / 180.0;
 		rotz = (gfloat)(rotz * M_PI) / 180.0;
-
+		g3d_matrix_identity(matrix);
 		g3d_matrix_rotate_xyz(rotx, roty, rotz, matrix);
 
 		/* combine */

@@ -22,6 +22,7 @@ pluginimp_LTLIBRARIES = \
 
 if EXPERIMENTAL
 pluginimp_LTLIBRARIES += \
+	imp_ase.la \
 	imp_flt.la \
 	imp_maya.la \
 	imp_r4.la \
@@ -58,6 +59,7 @@ imp_ar_la_SOURCES = imp_ar.c imp_ar.h \
 	imp_ar_decompress.c imp_ar_decompress.h \
 	imp_ar_dof.c imp_ar_dof.h \
 	imp_ar_carini.c imp_ar_carini.h
+imp_ase_la_SOURCES = imp_ase.c
 imp_cob_la_SOURCES = imp_cob.c
 imp_dxf_la_SOURCES = imp_dxf.c
 imp_flt_la_SOURCES = imp_flt.c imp_flt.h \

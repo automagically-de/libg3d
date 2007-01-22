@@ -9,6 +9,9 @@
 # AC3D
 0             string       AC3D                    ac
 
+# ASE
+0             string       *3DSMAX_ASCIIEXPORT     ase
+
 # Caligari Truespace
 0             string       Caligari                cob
 

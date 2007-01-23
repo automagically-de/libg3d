@@ -34,8 +34,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 {
 	FILE *f;
 	gchar line[2048], tmp[128], *s;
-	guint32 i, j, a, b, c, ab, bc, ca, mtlid, glid = 0;
-	gfloat x, y, z;
+	guint32 i, j, a, b, c, ab, bc, ca, mtlid, glid = 0, tvertcnt = 0;
+	gfloat x, y, z, *tverts = NULL;
 	G3DObject *object = NULL;
 	G3DMaterial *material;
 	G3DFace *face = NULL;
@@ -52,6 +52,11 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	while(fgets(line, 2048, f))
 	{
 		g_strstrip(line);
+
+#if DEBUG > 4
+		g_print("ASE: %s\n", line);
+#endif
+
 		if(strncmp(line, "*GEOMOBJECT ", 12) == 0)
 		{
 			object = g_new0(G3DObject, 1);
@@ -169,6 +174,58 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 				}
 			}
 		}
+		else if(strncmp(line, "*MESH_NUMTVERTEX ", 17) == 0)
+		{
+			/* clear old tvertex data */
+			if(tverts)
+			{
+				g_free(tverts);
+				tvertcnt = 0;
+			}
+
+			if(sscanf(line, "*MESH_NUMTVERTEX %u", &tvertcnt) == 1)
+				tverts = g_new0(gfloat, tvertcnt * 2);
+		}
+		else if(strncmp(line, "*MESH_TVERT ", 12) == 0)
+		{
+			if(sscanf(line, "*MESH_TVERT %u %f %f %f", &i, &x, &y, &z) == 4)
+			{
+				if(i < tvertcnt)
+				{
+					tverts[i * 2 + 0] = x;
+					tverts[i * 2 + 1] = y;
+				}
+			}
+		}
+		else if(strncmp(line, "*MESH_TFACE ", 12) == 0)
+		{
+			if(object && (sscanf(line, "*MESH_TFACE %u %u %u %u",
+				&i, &a, &b, &c) == 4))
+			{
+				face = g_slist_nth_data(object->faces, i);
+				if(face && face->material->tex_image &&
+					(a < tvertcnt) && (b < tvertcnt) && (c < tvertcnt))
+				{
+					face->flags |= G3D_FLAG_FAC_TEXMAP;
+					face->tex_image = face->material->tex_image;
+					face->tex_vertex_count = 3;
+					face->tex_vertex_data = g_new0(gfloat, 2 * 3);
+					face->tex_vertex_data[0 * 2 + 0] = tverts[a * 2 + 0];
+					face->tex_vertex_data[0 * 2 + 1] = 1.0 - tverts[a * 2 + 1];
+					face->tex_vertex_data[1 * 2 + 0] = tverts[b * 2 + 0];
+					face->tex_vertex_data[1 * 2 + 1] = 1.0 - tverts[b * 2 + 1];
+					face->tex_vertex_data[2 * 2 + 0] = tverts[c * 2 + 0];
+					face->tex_vertex_data[2 * 2 + 1] = 1.0 - tverts[c * 2 + 1];
+				}
+			}
+		}
+	}
+
+	/* clean up */
+	if(tverts)
+	{
+		g_free(tverts);
+		tvertcnt = 0;
 	}
 
 	fclose(f);

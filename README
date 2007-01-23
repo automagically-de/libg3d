@@ -23,6 +23,7 @@ SUPPORTED FILETYPES:
 | .ac   | x | x | x |   | x | AC3D                                    |
 | .acc  | x | x | x |   | x | AC3D with triangle strips (TORCS)       |
 | .ar   | x |   |   |   | x | Racer container files                   |
+| .ase  | x |   | p | x |   | ASCII Scene Exporter (3D Studio)        |
 | .b3d  | x | x |   |   |   | ?? (3D MetaFile format)                 |
 | .car  | x |   |   |   | x | VDrift car description                  |
 | .cob  | x | x |   |   |   | Caligari TrueSpace                      |
@@ -49,6 +50,8 @@ SUPPORTED FILETYPES:
 | .r3   | p |   |   |   |   | Reflections 3 (experimental)            |
 | .r4   | p |   |   |   |   | Reflections 4 (experimental)            |
 | .stl  | p |   |   |   |   | Standard Tessellation Language          |
+| .stla | p |   |   |   |   | Standard Tessellation Language (ASCII)  |
+| .stlb | p |   |   |   |   | Standard Tessellation Language (binary) |
 | .wrl  | x | x |   |   |   | VRML World (VRML 1 only and incomplete) |
 +-------+---+---+---+---+---------------------------------------------+
 
@@ -61,7 +64,6 @@ also see http://homepage.gna.org/libg3d/references.html
 
 type                  docs  ex.avail. status
 -----------------------------------------------------------------------------
-.flt (OpenFlight)     yes   yes       a lot to do...
 .wrl (VRML 2.0)       yes   yes       not started yet
 .x3d (X3D)            yes   yes       not started yet
 .max (3D Studio MAX)  no    yes       probably not (no docs, no clue)

@@ -27,17 +27,18 @@
 
 #include <g3d/types.h>
 #include <g3d/material.h>
+#include <g3d/texture.h>
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
 {
 	FILE *f;
-	gchar line[2048], tmp[128];
-	guint32 i, a, b, c, ab, bc, ca, mtlid;
+	gchar line[2048], tmp[128], *s;
+	guint32 i, j, a, b, c, ab, bc, ca, mtlid, glid = 0;
 	gfloat x, y, z;
 	G3DObject *object = NULL;
 	G3DMaterial *material;
-	G3DFace *face;
+	G3DFace *face = NULL;
 
 	setlocale(LC_NUMERIC, "C");
 
@@ -64,6 +65,21 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 			material->name = g_strdup_printf("material %d",
 				g_slist_length(model->materials));
 			model->materials = g_slist_append(model->materials, material);
+
+			if(sscanf(line, "*MATERIAL %u \"%s", &i, tmp) == 2)
+			{
+				tmp[strlen(tmp) - 1] = '\0';
+#if DEBUG > 2
+				g_print("ASE: material file: %s\n", tmp);
+#endif
+				/* TODO: parse .fx file */
+				s = g_strdup_printf("%.*s.jpg", strlen(tmp) - 3, tmp);
+				material->tex_image =
+					g3d_texture_load_cached(context, model, s);
+				if(material->tex_image)
+					material->tex_image->tex_id = ++ glid;
+				g_free(s);
+			}
 		}
 		else if(strncmp(line, "*NODE_NAME ", 11) == 0)
 		{
@@ -115,6 +131,42 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 					face->material = g_slist_nth_data(model->materials, 0);
 
 				object->faces = g_slist_append(object->faces, face);
+				face = NULL;
+			}
+		}
+		else if(strncmp(line, "*MESH_FACENORMAL ", 17) == 0)
+		{
+			if(object && (sscanf(line, "*MESH_FACENORMAL %u %f %f %f",
+				&i, &x, &y, &z) == 4))
+			{
+				face = g_slist_nth_data(object->faces, i);
+				if(face)
+				{
+					face->flags |= G3D_FLAG_FAC_NORMALS;
+					face->normals = g_new0(gfloat, 3 * 3);
+					for(j = 0; j < 3; j ++)
+					{
+						face->normals[j * 3 + 0] = x;
+						face->normals[j * 3 + 1] = y;
+						face->normals[j * 3 + 2] = z;
+					}
+				}
+			}
+		}
+		else if(strncmp(line, "*MESH_VERTEXNORMAL ", 19) == 0)
+		{
+			if(face && face->normals && (sscanf(line,
+				"*MESH_VERTEXNORMAL %u %f %f %f", &i, &x, &y, &z) == 4))
+			{
+				for(j = 0; j < 3; j ++)
+				{
+					if(face->vertex_indices[j] == i)
+					{
+						face->normals[j * 3 + 0] = x;
+						face->normals[j * 3 + 1] = y;
+						face->normals[j * 3 + 2] = z;
+					}
+				}
 			}
 		}
 	}

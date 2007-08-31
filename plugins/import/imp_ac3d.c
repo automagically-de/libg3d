@@ -518,5 +518,8 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 		}
 	}
 
+	/* cleanup */
+	g_free(transform);
+
 	return 0;
 }

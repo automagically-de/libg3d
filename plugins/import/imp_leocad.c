@@ -68,6 +68,10 @@ void plugin_cleanup(gpointer user_data)
 {
 	LeoCadLibrary *library;
 
+#if DEBUG > 0
+	g_print("LeoCAD: cleaning up library\n");
+#endif
+
 	library = (LeoCadLibrary *)user_data;
 
 	if(library)

@@ -249,7 +249,7 @@ gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
 gboolean maya_cb_DMSH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	MayaObject *obj;
-	G3DObject *object;
+	G3DObject *object, *parent;
 	G3DMaterial *material;
 
 	if(local->finalize)
@@ -258,6 +258,13 @@ gboolean maya_cb_DMSH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 		object = (G3DObject *)obj->user_data;
 		object->name = obj->name ? g_strdup(obj->name) : "(unnamed mesh)";
+
+		if(obj->parent)
+		{
+			parent = g3d_model_get_object_by_name(global->model, obj->parent);
+			if(parent)
+				object->transformation = parent->transformation;
+		}
 
 		maya_obj_add_to_tree(obj, global->model, object);
 		maya_obj_free(obj);

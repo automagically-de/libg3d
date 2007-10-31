@@ -72,6 +72,7 @@ gboolean lwo_cb_IMAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	LwoObject *obj;
 	G3DMaterial *material;
 	guint32 index, i;
+	static tex_id = 0;
 
 	obj = (LwoObject *)global->user_data;
 	g_return_val_if_fail(obj != NULL, FALSE);
@@ -91,6 +92,12 @@ gboolean lwo_cb_IMAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	{
 		material->tex_image = g3d_texture_load_cached(
 			global->context, global->model, obj->clipfiles[i]);
+		if(material->tex_image && (material->tex_image->tex_id == 0))
+		{
+			tex_id ++;
+			if(tex_id == 0) tex_id = 1;
+			material->tex_image->tex_id = tex_id;
+		}
 	}
 
 	return TRUE;
@@ -569,7 +576,7 @@ gboolean lwo_cb_VMAP(g3d_iff_gdata *global, g3d_iff_ldata *local)
 				obj->tex_vertices[index * 2 + 0] =
 					g3d_read_float_be(global->f);
 				obj->tex_vertices[index * 2 + 1] =
-					1.0 - g3d_read_float_be(global->f);
+					g3d_read_float_be(global->f);
 				local->nb -= 8;
 			}
 		}

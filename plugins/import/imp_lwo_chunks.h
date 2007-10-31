@@ -7,6 +7,7 @@
 
 static g3d_iff_chunk_info lwo_chunks[] = {
 	{ "AAST", "antialiasing strength",       0, NULL },
+	{ "ADTR", "additive transparency",       0, NULL },
 	{ "ALPH", "alpha mode",                  0, NULL },
 	{ "AXIS", "major axis",                  0, NULL },
 	{ "BBOX", "bounding box",                0, NULL },
@@ -51,6 +52,7 @@ static g3d_iff_chunk_info lwo_chunks[] = {
 	{ "RIMG", "reflection map image",        0, NULL },
 	{ "RIND", "refractive index",            0, NULL },
 	{ "RSAN", "reflection map seam angle",   0, NULL },
+	{ "SHDR", "shader",                      0, NULL },
 	{ "SIDE", "polygon sidedness",           0, NULL },
 	{ "SMAN", "max smooting angle",          0, NULL },
 	{ "SPEC", "specular",                    0, lwo_cb_SPEC },

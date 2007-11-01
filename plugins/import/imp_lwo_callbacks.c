@@ -72,7 +72,7 @@ gboolean lwo_cb_IMAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	LwoObject *obj;
 	G3DMaterial *material;
 	guint32 index, i;
-	static tex_id = 0;
+	static guint32 tex_id = 0;
 
 	obj = (LwoObject *)global->user_data;
 	g_return_val_if_fail(obj != NULL, FALSE);
@@ -175,7 +175,8 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		type = g3d_read_int32_be(global->f);
 		local->nb -= 4;
 
-		if(type != G3D_IFF_MKID('F', 'A', 'C', 'E'))
+		if((type != G3D_IFF_MKID('F', 'A', 'C', 'E')) &&
+			(type != G3D_IFF_MKID('P', 'T', 'C', 'H')))
 		{
 			tmp = g3d_iff_id_to_text(type);
 			g_warning("[LWO] unhandled polygon type %s", tmp);

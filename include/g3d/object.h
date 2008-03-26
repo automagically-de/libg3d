@@ -68,6 +68,8 @@ gboolean g3d_object_scale(G3DObject *object, gfloat scale);
  */
 gboolean g3d_object_transform(G3DObject *object, gfloat *matrix);
 
+gboolean g3d_object_transform_normals(G3DObject *object, gfloat *matrix);
+
 /**
  * g3d_object_duplicate:
  * @object: the object to duplicate

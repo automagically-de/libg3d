@@ -27,10 +27,8 @@
 
 G_BEGIN_DECLS
 
-/* FIXME: rename to _box or something */
-
 /**
- * g3d_primitive_cube:
+ * g3d_primitive_box:
  * @width: the width of the cube
  * @height: the height of the cube
  * @depth: the depth of the cube
@@ -40,6 +38,9 @@ G_BEGIN_DECLS
  *
  * returns: the cube object
  */
+
+G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
+	G3DMaterial *material);
 
 G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
 	G3DMaterial *material);

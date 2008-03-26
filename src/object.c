@@ -27,6 +27,7 @@
 #include <g3d/vector.h>
 #include <g3d/matrix.h>
 #include <g3d/face.h>
+#include <g3d/texture.h>
 
 void g3d_object_free(G3DObject *object)
 {
@@ -111,27 +112,12 @@ gboolean g3d_object_scale(G3DObject *object, gfloat scale)
 	return TRUE;
 }
 
-#define G3D_OBJECT_TRANSFORM_NORMALS 0
-
-gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
+gboolean g3d_object_transform_normals(G3DObject *object, gfloat *matrix)
 {
-	guint32 i;
-#if G3D_OBJECT_TRANSFORM_NORMALS
+	gint32 i;
 	G3DFace *face;
 	GSList *fitem;
-#endif
 
-	/* transform vertices */
-	for(i = 0; i < object->vertex_count; i ++)
-	{
-		g3d_vector_transform(
-			&(object->vertex_data[i * 3 + 0]),
-			&(object->vertex_data[i * 3 + 1]),
-			&(object->vertex_data[i * 3 + 2]),
-			matrix);
-	}
-
-#if G3D_OBJECT_TRANSFORM_NORMALS
 	fitem = object->faces;
 	while(fitem)
 	{
@@ -155,6 +141,27 @@ gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
 
 		fitem = fitem->next;
 	}
+	return TRUE;
+}
+
+#define G3D_OBJECT_TRANSFORM_NORMALS 0
+
+gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
+{
+	guint32 i;
+
+	/* transform vertices */
+	for(i = 0; i < object->vertex_count; i ++)
+	{
+		g3d_vector_transform(
+			&(object->vertex_data[i * 3 + 0]),
+			&(object->vertex_data[i * 3 + 1]),
+			&(object->vertex_data[i * 3 + 2]),
+			matrix);
+	}
+
+#if G3D_OBJECT_TRANSFORM_NORMALS
+	g3d_object_transform_normals(object, matrix);
 #endif
 
 	return TRUE;
@@ -270,7 +277,7 @@ gboolean g3d_object_optimize(G3DObject *object)
 	G3DFace *face;
 	guint32 index = 0, i, j;
 	GSList *fitem;
-	gfloat nx, ny, nz;
+	gfloat nx, ny, nz, su = 1.0, sv = 1.0;
 
 	/* count number of faces (optimized) */
 	object->_num_faces = 0;
@@ -314,7 +321,12 @@ gboolean g3d_object_optimize(G3DObject *object)
 			object->_flags[index] = face->flags;
 
 			if(face->flags & G3D_FLAG_FAC_TEXMAP)
+			{
+				g3d_texture_prepare(face->tex_image);
 				object->_tex_images[index] = face->tex_image->tex_id;
+				su = face->tex_image->tex_scale_u;
+				sv = face->tex_image->tex_scale_v;
+			}
 
 			for(j = 0; j < 3; j ++)
 			{
@@ -345,15 +357,15 @@ gboolean g3d_object_optimize(G3DObject *object)
 				if(face->flags & G3D_FLAG_FAC_TEXMAP)
 				{
 					/* u */
-					object->_tex_coords[(index * 3 + j) * 2 + 0] =
-						(j == 0) ?
+					object->_tex_coords[(index * 3 + j) * 2 + 0] = su *
+						((j == 0) ?
 							face->tex_vertex_data[0] :
-							face->tex_vertex_data[(i + j) * 2 + 0];
+							face->tex_vertex_data[(i + j) * 2 + 0]);
 					/* v */
-					object->_tex_coords[(index * 3 + j) * 2 + 1] =
-						(j == 0) ?
+					object->_tex_coords[(index * 3 + j) * 2 + 1] = sv *
+						((j == 0) ?
 							face->tex_vertex_data[1] :
-							face->tex_vertex_data[(i + j) * 2 + 1];
+							face->tex_vertex_data[(i + j) * 2 + 1]);
 				}
 			} /* j: 0 < 3 */
 

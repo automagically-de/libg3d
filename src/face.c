@@ -36,15 +36,17 @@ void g3d_face_free(G3DFace *face)
 gboolean g3d_face_get_normal(G3DFace *face, G3DObject *object,
 	gfloat *nx, gfloat *ny, gfloat *nz)
 {
+	guint32 n = face->vertex_count - 1;
+
 	return g3d_vector_normal(
 		/* ax, ay, az */
 		VERTEX_ITEM(1, 0) - VERTEX_ITEM(0, 0),
 		VERTEX_ITEM(1, 1) - VERTEX_ITEM(0, 1),
 		VERTEX_ITEM(1, 2) - VERTEX_ITEM(0, 2),
 		/* bx, by, bz */
-		VERTEX_ITEM(2, 0) - VERTEX_ITEM(0, 0),
-		VERTEX_ITEM(2, 1) - VERTEX_ITEM(0, 1),
-		VERTEX_ITEM(2, 2) - VERTEX_ITEM(0, 2),
+		VERTEX_ITEM(n, 0) - VERTEX_ITEM(0, 0),
+		VERTEX_ITEM(n, 1) - VERTEX_ITEM(0, 1),
+		VERTEX_ITEM(n, 2) - VERTEX_ITEM(0, 2),
 		/* nx, ny, nz */
 		nx, ny, nz);
 }

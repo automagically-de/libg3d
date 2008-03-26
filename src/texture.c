@@ -24,6 +24,7 @@
 #include <string.h>
 #include <g3d/types.h>
 #include <g3d/plugins.h>
+#include <g3d/texture.h>
 
 static gboolean dump_ppm(G3DImage *image, const gchar *filename);
 
@@ -110,11 +111,13 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 	image = g3d_texture_load(context, filename);
 	if(image != NULL)
 	{
+		g3d_texture_prepare(image);
 		g_hash_table_insert(model->tex_images, (gpointer)g_strdup(filename),
 			image);
 	}
 
-	if(0 && image)
+#if 0
+	if(image)
 	{
 		basename = g_path_get_basename(filename);
 		ppmname = g_strdup_printf("/tmp/%s.ppm", basename);
@@ -122,6 +125,7 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 		g_free(ppmname);
 		g_free(basename);
 	}
+#endif
 
 	return image;
 }
@@ -135,6 +139,42 @@ void g3d_texture_free(G3DImage *texture)
 
 gboolean g3d_texture_prepare(G3DImage *texture)
 {
+	guint32 nw = 1, nh = 1, y;
+	guint8 *np;
+
+	while(nw < texture->width) nw *= 2;
+	while(nh < texture->height) nh *= 2;
+
+	if((nw != texture->width) || (nh != texture->height))
+	{
+		/* blow up texture image to dimensions with a power of two */
+		np = g_malloc(nw * nh * 4);
+		memset(np, 0xFF, nw * nh * 4);
+
+		/* copy image data */
+		for(y = 0; y < texture->height; y ++)
+			memcpy(np + ((nh - y - 1) * nw * 4),
+				texture->pixeldata +
+					((texture->height - y - 1) * texture->width * 4),
+				texture->width * 4);
+
+		/* calculate scaling factor */
+		texture->tex_scale_u = ((gfloat)texture->width / (gfloat)nw);
+		texture->tex_scale_v = ((gfloat)texture->height / (gfloat)nh);
+
+#if DEBUG > 0
+		g_debug("texture scaling factor for '%s' set to %.2f,%.2f",
+			texture->name, texture->tex_scale_u, texture->tex_scale_v);
+#endif
+
+		/* update image */
+		g_free(texture->pixeldata);
+		texture->pixeldata = np;
+		texture->width = nw;
+		texture->height = nh;
+
+		return TRUE;
+	}
 	return FALSE;
 }
 

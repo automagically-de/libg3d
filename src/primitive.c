@@ -29,12 +29,23 @@
 
 #include <g3d/types.h>
 #include <g3d/vector.h>
+#include <g3d/primitive.h>
+#include <g3d/face.h>
 
 G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
 	G3DMaterial *material)
 {
+	g_warning("g3d_primitive_cube is deprecated - please update your "
+		"sources to use g3d_primitive_box instead");
+	return g3d_primitive_box(width, height, depth, material);
+}
+
+G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
+	G3DMaterial *material)
+{
 	G3DObject *object;
 	G3DFace *face;
+	gfloat nx, ny, nz;
 	gint32 faces[6][4] = {
 		{ 0, 1, 2, 3 },
 		{ 4, 5, 6, 7 },
@@ -86,10 +97,33 @@ G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
 		face = g_new0(G3DFace, 1);
 		face->vertex_count = 4;
 		face->vertex_indices = g_new0(guint32, 4);
-		for(j = 0; j < 4; j ++)
-		{
+		face->normals = g_new0(gfloat, 4 * 3);
+		face->tex_vertex_count = 4;
+		face->tex_vertex_data = g_new0(gfloat, 4 * 2);
+		for(j = 0; j < 4; j ++) {
 			face->vertex_indices[j] = faces[i][j];
 		}
+
+		/* add normals */
+		g3d_face_get_normal(face, object, &nx, &ny, &nz);
+		for(j = 0; j < 4; j ++) {
+			face->normals[j * 3 + 0] = nx;
+			face->normals[j * 3 + 1] = ny;
+			face->normals[j * 3 + 2] = nz;
+		}
+
+		face->flags |= G3D_FLAG_FAC_NORMALS;
+
+		/* add default texture coordinates */
+		face->tex_vertex_data[0 * 2 + 0] = 0;
+		face->tex_vertex_data[0 * 2 + 1] = 0;
+		face->tex_vertex_data[1 * 2 + 0] = 1;
+		face->tex_vertex_data[1 * 2 + 1] = 0;
+		face->tex_vertex_data[2 * 2 + 0] = 1;
+		face->tex_vertex_data[2 * 2 + 1] = 1;
+		face->tex_vertex_data[3 * 2 + 0] = 0;
+		face->tex_vertex_data[3 * 2 + 1] = 1;
+
 		face->material = material;
 		object->faces = g_slist_append(object->faces, face);
 	}

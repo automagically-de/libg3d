@@ -153,4 +153,5 @@ All types used in libg3d
 @materials: 
 @objects: 
 @tex_images: 
+@plugin: 
 

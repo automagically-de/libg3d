@@ -76,11 +76,16 @@ AC_ARG_ENABLE(experimental,
 	experimental=0)
 AM_CONDITIONAL([EXPERIMENTAL], test "x$experimental" = "x1")
 
+AC_ARG_ENABLE(profile,
+	[[  --enable-profile        enable gprof profiling]],
+	[if test "x$enableval" = "xyes" ; then profile="-pg"
+		else profile=""; fi],
+	profile="")
 
 if test "$DEBUG" = "0"; then
-	DBG_CFLAGS="-O2"
+	DBG_CFLAGS="-O2 $profile"
 else
-	DBG_CFLAGS="-g"
+	DBG_CFLAGS="-g $profile"
 fi
 AC_SUBST(DBG_CFLAGS)
 

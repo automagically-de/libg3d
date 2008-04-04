@@ -466,7 +466,7 @@ gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		d = maya_var_get_double(obj, "sd", 1.0);
 
 		material = g3d_material_new();
-		object = g3d_primitive_cube(w, h, d, material);
+		object = g3d_primitive_box(w, h, d, material);
 		object->name = obj->name ? g_strdup(obj->name) : "(unnamed cube)";
 
 		object->materials = g_slist_append(object->materials, material);

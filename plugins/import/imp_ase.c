@@ -132,8 +132,14 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 				face->vertex_indices[1] = b;
 				face->vertex_indices[2] = c;
 				face->material = g_slist_nth_data(model->materials, mtlid);
-				if(face->material == 0)
+				if(face->material == NULL)
 					face->material = g_slist_nth_data(model->materials, 0);
+				if(face->material == NULL) {
+					face->material = g3d_material_new();
+					face->material->name = g_strdup("(fallback material)");
+					model->materials = g_slist_append(model->materials,
+						face->material);
+				}
 
 				object->faces = g_slist_append(object->faces, face);
 				face = NULL;

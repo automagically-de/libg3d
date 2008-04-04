@@ -131,7 +131,7 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		if(x3ds_chunks[i].id == chunk_id)
 		{
-			g_debug("%s(%d)[0x%04X][%c%c] %s (%d bytes)",
+			g_debug("\\%s(%d)[0x%04X][%c%c] %s (%d bytes)",
 				padding + (strlen(padding) - parent->level), parent->level,
 				chunk_id,
 				x3ds_chunks[i].container ? 'c' : ' ',

@@ -42,7 +42,7 @@ gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		local->nb -= 8;
 	}
 
-	g_debug("%s[Maya][CMPD] %s = [%g %g %g]",
+	g_debug("\\%s[Maya][CMPD] %s = [%g %g %g]",
 		padding + (strlen(padding) - local->level),
 		var,
 		val[0], val[1], val[2]);
@@ -89,7 +89,7 @@ gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	if(obj && *buffer)
 		obj->parent = g_strdup(buffer);
 
-	g_debug("%s[Maya][CREA] %s (%s)",
+	g_debug("\\%s[Maya][CREA] %s (%s)",
 		padding + (strlen(padding) - local->level),
 		name, *buffer ? buffer : "none");
 
@@ -117,7 +117,7 @@ gboolean maya_cb_CWFL(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	local->nb -= g3d_read_cstr(global->f, buffer, max_len);
 
-	g_debug("%s[Maya][CWFL] %s; %s (flags: %u, %d bytes left)",
+	g_debug("\\%s[Maya][CWFL] %s; %s (flags: %u, %d bytes left)",
 		padding + (strlen(padding) - local->level),
 		name, buffer, flags, local->nb);
 
@@ -151,7 +151,7 @@ gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		local->nb -= 8;
 	}
 
-	g_debug("%s[Maya][DBL#] %s (%d doubles) (0x%02X)",
+	g_debug("\\%s[Maya][DBL#] %s (%d doubles) (0x%02X)",
 		padding + (strlen(padding) - local->level),
 		var, ndbl, flags);
 
@@ -186,7 +186,7 @@ gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	val[1] = g3d_read_double_be(global->f);
 	local->nb -= 16;
 
-	g_debug("%s[Maya][DBL2] %s = (%g,%g) (0x%02X)",
+	g_debug("\\%s[Maya][DBL2] %s = (%g,%g) (0x%02X)",
 		padding + (strlen(padding) - local->level),
 		var, val[0], val[1], flags);
 
@@ -222,7 +222,7 @@ gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	val[2] = g3d_read_double_be(global->f);
 	local->nb -= 24;
 
-	g_debug("%s[Maya][DBL3] %s = (%g,%g,%g) (0x%02X)",
+	g_debug("\\%s[Maya][DBL3] %s = (%g,%g,%g) (0x%02X)",
 		padding + (strlen(padding) - local->level),
 		var, val[0], val[1], val[2], flags);
 
@@ -261,7 +261,7 @@ gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	val = g3d_read_double_be(global->f);
 	local->nb -= 8;
 
-	g_debug("%s[Maya][DBLE] %s = %g (0x%02X)",
+	g_debug("\\%s[Maya][DBLE] %s = %g (0x%02X)",
 		padding + (strlen(padding) - local->level),
 		var, val, flags);
 
@@ -336,7 +336,7 @@ gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	val[2] = g3d_read_float_be(global->f);
 	local->nb -= 12;
 
-	g_debug("%s[Maya][DBL3] %s = (%g; %g; %g) (0x%02X)",
+	g_debug("\\%s[Maya][DBL3] %s = (%g; %g; %g) (0x%02X)",
 		padding + (strlen(padding) - local->level),
 		var, val[0], val[1], val[2], flags);
 
@@ -381,7 +381,7 @@ gboolean maya_cb_MATR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		local->nb -= 8;
 	}
 
-	g_debug("%s[Maya][MATR] %s = \n"
+	g_debug("\\%s[Maya][MATR] %s = \n"
 		"%f %f %f %f\n"
 		"%f %f %f %f\n"
 		"%f %f %f %f\n"
@@ -567,7 +567,7 @@ gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	/* value */
 	local->nb -= g3d_read_cstr(global->f, buffer, local->nb);
 
-	g_debug("%s[Maya][STR ] %s = '%.*s' (%d characters)",
+	g_debug("\\%s[Maya][STR ] %s = '%.*s' (%d characters)",
 		padding + (strlen(padding) - local->level),
 		var, 40, buffer, strlen(buffer));
 

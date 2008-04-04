@@ -21,7 +21,7 @@ gboolean rbh_cb_RBHH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		x2 = g3d_read_int32_le(global->f);
 		local->nb -= 12;
 
-		g_debug("%s[RBH][RBHH] %d: 0x%08x 0x%08x 0x%08x",
+		g_debug("\\%s[RBH][RBHH] %d: 0x%08x 0x%08x 0x%08x",
 			padding + (strlen(padding) - local->level),
 			i + 1, x0, x1, x2);
 	}
@@ -47,7 +47,7 @@ gboolean rbh_cb_BODY(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	local->nb -= 4;
 
 	g_debug(
-		"%s[RBH][BODY] %d verts, %d faces, %d bytes remaining (%d x 4 + %d)",
+		"\\%s[RBH][BODY] %d verts, %d faces, %d bytes remaining (%d x 4 + %d)",
 		padding + (strlen(padding) - local->level),
 		nverts, nfaces, local->nb,
 		local->nb / 4, local->nb % 4);
@@ -69,7 +69,7 @@ gboolean rbh_cb_BODY(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		local->nb -= 4;
 	}
 
-	g_debug("%s[RBH][BODY] max. value: %d",
+	g_debug("\\%s[RBH][BODY] max. value: %d",
 		padding + (strlen(padding) - local->level),
 		maxx);
 
@@ -88,7 +88,7 @@ gboolean rbh_cb_RELC(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		local->nb -= 4;
 	}
 
-	g_debug("%s[RBH][RELC] max. value: %d",
+	g_debug("\\%s[RBH][RELC] max. value: %d",
 		padding + (strlen(padding) - local->level),
 		maxx);
 

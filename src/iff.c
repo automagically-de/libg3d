@@ -120,7 +120,7 @@ void g3d_iff_debug_chunk(g3d_iff_chunk_info *info, guint32 chunk_id,
 	gchar *padding = "                                   ";
 
 	tid = g3d_iff_id_to_text(chunk_id);
-	g_debug("%s(%d)[%s][%c%c%c] %s (%d) @ 0x%08x - %d bytes left",
+	g_debug("\\%s(%d)[%s][%c%c%c] %s (%d) @ 0x%08x - %d bytes left",
 		padding + (strlen(padding) - level), level,
 		tid,
 		chunk_type,

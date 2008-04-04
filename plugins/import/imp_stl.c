@@ -27,11 +27,9 @@
 #include <g3d/material.h>
 
 /*
- * Infos for the STL(A)-Format:
- *  http://www.csit.fsu.edu/~burkardt/data/stla/stla.html
- * Infos for the STL(B)-Format:
- *  http://www.csit.fsu.edu/~burkardt/data/stlb/stlb.html
- */
+ Infos for the STL(A)-Format: http://www.csit.fsu.edu/~burkardt/data/stla/stla.html
+ Infos for the STL(B)-Format: http://www.csit.fsu.edu/~burkardt/data/stlb/stlb.html
+*/
 
 #define STL_ASCII  0
 #define STL_BINARY 1
@@ -68,6 +66,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 		fclose(f);
 		if (type == STL_BINARY) {
+#if DEBUG > 0
+			printf("STL: format is BINARY\n");
+#endif
 			if((f = fopen(filename, "rb")) == NULL) {
 				g_warning("STLb: failed to open '%s'", filename);
 				return FALSE;
@@ -86,6 +87,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 			material->a = 1.0;
 			object->materials = g_slist_append(object->materials, material);
 			object->vertex_count = num_faces * 3;
+#if DEBUG > 0
+			printf("STL: BINARY: vertex_count: %i\n", object->vertex_count);
+#endif
 			object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
 			for (n = 0; n < num_faces; n++) {
 				face = g_new0(G3DFace, 1);
@@ -129,6 +133,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 			}
 			fclose(f);
 		} else {
+#if DEBUG > 0
+			printf("STL: format is ASCII\n");
+#endif
 			if((f = fopen(filename, "r")) == NULL) {
 				g_warning("STLa: failed to open '%s'", filename);
 				return FALSE;
@@ -154,6 +161,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 					object->vertex_count++;
 				}
 			}
+#if DEBUG > 0
+			printf("STL: ASCII: vertex_count: %i\n", object->vertex_count);
+#endif
 			fseek(f, 0, SEEK_SET);
 			object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
 			index = 0;

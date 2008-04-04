@@ -578,6 +578,13 @@ gboolean lwo_cb_VMAP(g3d_iff_gdata *global, g3d_iff_ldata *local)
 					g3d_read_float_be(global->f);
 				obj->tex_vertices[index * 2 + 1] =
 					g3d_read_float_be(global->f);
+#if DEBUG > 0
+				if((obj->tex_vertices[index * 2 + 0] > 1.0) ||
+					(obj->tex_vertices[index * 2 + 1] > 1.0))
+					g_debug("LWO: TXUV: %.2f, %.2f",
+						obj->tex_vertices[index * 2 + 0],
+						obj->tex_vertices[index * 2 + 1]);
+#endif
 				local->nb -= 8;
 			}
 		}

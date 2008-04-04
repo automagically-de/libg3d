@@ -1,4 +1,4 @@
-SUBDIRS = . doc m4 include plugins src tests
+SUBDIRS = . doc m4 include plugins src programs tests
 
 pkgconfigdir=${libdir}/pkgconfig
 

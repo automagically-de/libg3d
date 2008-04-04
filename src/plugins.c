@@ -390,6 +390,9 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	retval = plugin->loadmodel_func(context, basename, model,
 		plugin->user_data);
 
+	if(retval)
+		model->plugin = plugin;
+
 	g_free(basename);
 	g_free(dirname);
 

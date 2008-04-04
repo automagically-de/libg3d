@@ -259,6 +259,12 @@ typedef struct {
 } G3DContext;
 
 /*****************************************************************************
+ * G3DPlugin: real definition in g3d/plugins.h
+ *****************************************************************************/
+
+typedef struct _G3DPlugin G3DPlugin;
+
+/*****************************************************************************
  * G3DModel
  *****************************************************************************/
 
@@ -270,6 +276,9 @@ typedef struct {
 	GSList *objects;
 
 	GHashTable *tex_images;
+
+	/* the plugin used to load the image, may be NULL */
+	G3DPlugin *plugin;
 } G3DModel;
 
 G_END_DECLS

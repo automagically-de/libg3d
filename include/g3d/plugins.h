@@ -46,7 +46,7 @@ typedef gchar *(* PluginGetDescFunc)(G3DContext *context);
 
 typedef gchar **(* PluginGetExtFunc)(G3DContext *context);
 
-typedef struct {
+struct _G3DPlugin {
 	gchar *name;
 	gchar *path;
 	guint32 type;
@@ -62,7 +62,7 @@ typedef struct {
 	gpointer user_data;
 
 	GModule *module;
-} G3DPlugin;
+};
 
 gboolean g3d_plugins_init(G3DContext *context);
 

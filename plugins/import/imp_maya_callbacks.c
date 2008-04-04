@@ -43,7 +43,7 @@ gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	}
 
 	g_debug("%s[Maya][CMPD] %s = [%g %g %g]",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		var,
 		val[0], val[1], val[2]);
 
@@ -90,11 +90,39 @@ gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		obj->parent = g_strdup(buffer);
 
 	g_debug("%s[Maya][CREA] %s (%s)",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		name, *buffer ? buffer : "none");
 
 	g_free(buffer);
 	g_free(name);
+
+	return TRUE;
+}
+
+gboolean maya_cb_CWFL(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	gchar *buffer, *name;
+	gchar *padding = "                    ";
+	guint32 flags, max_len;
+
+	/* flags ? */
+	flags = g3d_read_int8(global->f);
+	local->nb -= 1;
+
+	max_len = local->nb;
+	buffer = g_malloc(max_len + 1);
+
+	local->nb -= g3d_read_cstr(global->f, buffer, max_len);
+	name = g_strdup(buffer);
+
+	local->nb -= g3d_read_cstr(global->f, buffer, max_len);
+
+	g_debug("%s[Maya][CWFL] %s; %s (flags: %u, %d bytes left)",
+		padding + (strlen(padding) - local->level),
+		name, buffer, flags, local->nb);
+
+	g_free(name);
+	g_free(buffer);
 
 	return TRUE;
 }
@@ -124,7 +152,7 @@ gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	}
 
 	g_debug("%s[Maya][DBL#] %s (%d doubles) (0x%02X)",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		var, ndbl, flags);
 
 	if(local->object)
@@ -159,7 +187,7 @@ gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	local->nb -= 16;
 
 	g_debug("%s[Maya][DBL2] %s = (%g,%g) (0x%02X)",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		var, val[0], val[1], flags);
 
 	if(local->object)
@@ -195,7 +223,7 @@ gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	local->nb -= 24;
 
 	g_debug("%s[Maya][DBL3] %s = (%g,%g,%g) (0x%02X)",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		var, val[0], val[1], val[2], flags);
 
 	if(local->object)
@@ -234,7 +262,7 @@ gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	local->nb -= 8;
 
 	g_debug("%s[Maya][DBLE] %s = %g (0x%02X)",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		var, val, flags);
 
 	if(local->object)
@@ -309,7 +337,7 @@ gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	local->nb -= 12;
 
 	g_debug("%s[Maya][DBL3] %s = (%g; %g; %g) (0x%02X)",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		var, val[0], val[1], val[2], flags);
 
 	if(local->object)
@@ -358,7 +386,7 @@ gboolean maya_cb_MATR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		"%f %f %f %f\n"
 		"%f %f %f %f\n"
 		"%f %f %f %f",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		var,
 		val[0 * 4 + 0], val[1 * 4 + 0], val[2 * 4 + 0], val[3 * 4 + 0],
 		val[0 * 4 + 1], val[1 * 4 + 1], val[2 * 4 + 1], val[3 * 4 + 1],
@@ -467,7 +495,8 @@ gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 		material = g3d_material_new();
 		object = g3d_primitive_box(w, h, d, material);
-		object->name = obj->name ? g_strdup(obj->name) : "(unnamed cube)";
+		object->name = obj->name ? g_strdup(obj->name) :
+			g_strdup("(unnamed cube)");
 
 		object->materials = g_slist_append(object->materials, material);
 		maya_obj_add_to_tree(obj, global->model, object);
@@ -485,6 +514,45 @@ gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
+/* cylinder */
+gboolean maya_cb_PCYL(g3d_iff_gdata *global, g3d_iff_ldata *local)
+{
+	MayaObject *obj;
+	G3DObject *object;
+	G3DMaterial *material;
+	gdouble h;
+	guint32 s;
+
+	if(local->finalize)
+	{
+		obj = (MayaObject *)local->object;
+		g_return_val_if_fail(obj != NULL, FALSE);
+
+		h = maya_var_get_double(obj, "h", 1.0);
+		s = (guint32)maya_var_get_double(obj, "sc", 5);
+
+		material = g3d_material_new();
+		object = g3d_primitive_cylinder(1.0, h, s, TRUE, TRUE, material);
+		object->name = obj->name ? g_strdup(obj->name) :
+			g_strdup("(unnamed cylinder)");
+
+		object->materials = g_slist_append(object->materials, material);
+		maya_obj_add_to_tree(obj, global->model, object);
+
+		/* destroy object */
+		maya_obj_free(obj);
+	}
+	else
+	{
+		/* create object */
+		obj = maya_obj_new();
+		local->object = obj;
+	}
+
+	return TRUE;
+
+}
+
 /* string */
 gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
@@ -500,7 +568,7 @@ gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	local->nb -= g3d_read_cstr(global->f, buffer, local->nb);
 
 	g_debug("%s[Maya][STR ] %s = '%.*s' (%d characters)",
-		padding + (strlen(padding) - local->level) + 1,
+		padding + (strlen(padding) - local->level),
 		var, 40, buffer, strlen(buffer));
 
 	if(local->object)

@@ -15,7 +15,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "CMPD", "compound",                          0, maya_cb_CMPD },
 	{ "CONN", "unknown",                           1, NULL }, /* FOR4 */
 	{ "CONS", "unknown",                           1, NULL }, /* LIS4 */
-	{ "CWFL", "unknown",                           0, NULL },
+	{ "CWFL", "unknown",                           0, maya_cb_CWFL },
 	{ "CREA", "creator",                           0, maya_cb_CREA },
 	{ "DBL#", "double #",                          0, maya_cb_DBLn },
 	{ "DBL2", "double 2",                          0, maya_cb_DBL2 },
@@ -61,7 +61,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "PCTL", "poly translate ?",                  1, NULL }, /* FOR4 */
 	{ "PCTU", "poly scale ?",                      1, NULL }, /* FOR4 */
 	{ "PCUB", "poly cube",                         1, maya_cb_PCUB },
-	{ "PCYL", "poly cylinder",                     1, NULL }, /* FOR4 */
+	{ "PCYL", "poly cylinder",                     1, maya_cb_PCYL },
 	{ "PEXE", "poly extrude",                      1, NULL }, /* FOR4 */
 	{ "PEXF", "poly extrude face",                 1, NULL }, /* FOR4 */
 	{ "PFUV", "poly flip UV",                      1, NULL }, /* FOR4 */

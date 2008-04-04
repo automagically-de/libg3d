@@ -5,6 +5,7 @@
 
 gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local);
+gboolean maya_cb_CWFL(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local);
@@ -14,6 +15,7 @@ gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_MATR(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local);
+gboolean maya_cb_PCYL(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local);
 gboolean maya_cb_XFRM(g3d_iff_gdata *global, g3d_iff_ldata *local);
 

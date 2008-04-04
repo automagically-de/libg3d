@@ -114,6 +114,7 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 	gint32 chunk_id, chunk_len, i;
 	x3ds_parent_data *subparent;
 	gpointer level_object;
+	gchar *padding = "                                   ";
 
 	level_object = NULL;
 
@@ -130,12 +131,12 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		if(x3ds_chunks[i].id == chunk_id)
 		{
-			x3ds_debug(parent->level, "[0x%04X][%c%c] %s (%d bytes)\n",
+			g_debug("%s(%d)[0x%04X][%c%c] %s (%d bytes)",
+				padding + (strlen(padding) - parent->level), parent->level,
 				chunk_id,
 				x3ds_chunks[i].container ? 'c' : ' ',
 				x3ds_chunks[i].callback ? 'f' : ' ',
 				x3ds_chunks[i].desc, chunk_len);
-
 			if (chunk_id==0)
 			{
 				g_printerr("error: bad chunk id\n");
@@ -213,19 +214,6 @@ gint32 x3ds_read_cstr(FILE *f, char *string)
 		n++;
 	} while(c != 0);
 	return n;
-}
-
-void x3ds_debug(int level, char *format, ...)
-{
-#if DEBUG > 0
-	int i;
-	va_list parms;
-
-	for(i=0; i<level; i++) fprintf(stderr, "  ");
-	va_start(parms, format);
-	vfprintf(stderr, format, parms);
-	va_end(parms);
-#endif
 }
 
 G3DObject *x3ds_newobject(G3DModel *model, const char *name)

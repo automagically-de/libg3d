@@ -24,6 +24,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include <gdk/gdk.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include <g3d/types.h>
@@ -34,6 +35,16 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 	GdkPixbuf *pixbuf;
 	guint32 x, y, nchannels;
 	guchar *p;
+	static gboolean init = TRUE;
+
+	if(init) {
+		/* initialize GDK */
+		/* FIXME: problem if already initialized with gtk_init()? */
+		gint argc = 0;
+		if(!gdk_init_check(&argc, NULL))
+			return FALSE;
+		init = FALSE;
+	}
 
 	pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
 	if(pixbuf == NULL)

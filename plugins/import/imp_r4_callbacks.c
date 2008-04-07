@@ -57,13 +57,29 @@ static void flagstat_register(guint8 flags, guint32 *flagstats)
 }
 #endif
 
+static gchar *r4_read_string(FILE *f, guint32 *r)
+{
+	gint32 len;
+	gchar *str;
+
+	len = g3d_read_int16_be(f);
+	str = g_malloc0(len + 1);
+	fread(str, 1, len, f);
+
+	if(r)
+		*r = len + 2;
+	return str;
+}
+
 /* triangles */
 gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
 	G3DObject *object;
 	G3DFace *face;
-	guint32 ntris, i;
+	guint32 ntris, r;
+	gint32 i, n_str;
 	guint8 u, max_u = 0;
+	gchar *name;
 #if DEBUG > 0
 	guint32 flagstats[8];
 #endif
@@ -124,6 +140,21 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 #if DEBUG > 0
 	printf("R4: DRE2: max. flag: %d\n", max_u);
+#endif
+
+#if 1
+	/* some strings */
+	n_str = g3d_read_int32_be(global->f); /* may be 0xFFFFFFFF = -1 */
+	local->nb -= 4;
+	printf("R4: DRE2: %d string(s) @ 0x%08lx:\n", n_str, ftell(global->f));
+	for(i = 0; i < MIN(n_str, 1); i ++) {
+		name = r4_read_string(global->f, &r);
+		local->nb -= r;
+#if DEBUG > 0
+		printf("R4: DRE2:   '%s' (%d)\n", name, r - 2);
+#endif
+		g_free(name);
+	}
 #endif
 
 	dump_remaining(global, local);
@@ -320,20 +351,13 @@ gboolean r4_cb_RKAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 /* object name */
 gboolean r4_cb_ROBJ(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
-	gchar buffer[512];
-	gint32 len;
+	guint32 len;
 
-	len = g3d_read_int16_be(global->f);
-	local->nb -= 2;
-
-	fread(buffer, 1, len, global->f);
-	local->nb -= len;
-	buffer[len] = '\0';
-
-	local->level_object = g_strdup(buffer);
+	local->level_object = r4_read_string(global->f, &len);
+	local->nb -= (len + 2);
 
 #if DEBUG > 2
-	g_printerr("[R4] ROBJ: %s\n", buffer);
+	g_printerr("[R4] ROBJ: %s\n", (gchar *)local->level_object);
 #endif
 
 	return TRUE;

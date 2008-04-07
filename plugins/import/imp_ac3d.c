@@ -39,7 +39,7 @@ struct ac3d_transform {
 
 static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gchar *line, struct ac3d_transform *transform, guint32 flags,
-	GSList **objectlist, gint32 *rowcnt);
+	GSList **objectlist, gint32 *rowcnt, guint32 level);
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer user_data)
@@ -116,12 +116,14 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 			material->a = 1.0 - trans;
 
 			model->materials = g_slist_append(model->materials, material);
+			g_debug("\\(0) Material (line %d)", rowcnt);
 		}
 		else if(strncmp(buffer, "OBJECT", 6) == 0)
 		{
 			transform = g_new0(struct ac3d_transform, 1);
+			g_debug("\\(0) Object (line %d)", rowcnt);
 			ac3d_read_object(f, context, model, buffer, transform, flags,
-				&(model->objects), &rowcnt);
+				&(model->objects), &rowcnt, 1);
 		}
 		else
 		{
@@ -169,12 +171,13 @@ static gchar *ac3d_remove_quotes(gchar *text)
 
 static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gchar *line, struct ac3d_transform *parent_transform, guint32 flags,
-	GSList **objectlist, gint32 *rowcnt)
+	GSList **objectlist, gint32 *rowcnt, guint32 level)
 {
 	struct ac3d_transform *transform;
 	G3DObject *object;
 	G3DMaterial *material = NULL;
 	G3DFace *face;
+	/* FIXME: remove static buffers */
 	static gchar buffer[2049], namebuf[257];
 	guint32 nkids, ti1, i, surf_flags, surf_done;
 	guint32 i1, i2, i3;
@@ -187,6 +190,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	gchar *filename;
 	gint32 kidsread, objectcount = 0;
 	static guint32 texid = 1;
+	static gchar *padding = "                      ";
 
 	if(sscanf(line, "OBJECT %s", namebuf) != 1)
 	{
@@ -216,8 +220,11 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 				/* read kids */
 				*rowcnt += 1;
 				fgets(buffer, 2048, f);
+				g_debug("\\%s(%d) Object (line %d)",
+					padding + (strlen(padding) - level),
+					level, *rowcnt);
 				kidsread = ac3d_read_object(f, context, model, buffer,
-					transform, flags, &(object->objects), rowcnt);
+					transform, flags, &(object->objects), rowcnt, level + 1);
 				objectcount += kidsread;
 			}
 

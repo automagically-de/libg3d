@@ -91,7 +91,8 @@ imp_maya_la_SOURCES = imp_maya.c imp_maya_chunks.h \
 	imp_maya_callbacks.c imp_maya_callbacks.h \
 	imp_maya_obj.c imp_maya_obj.h \
 	imp_maya_var.c imp_maya_var.h
-imp_max_la_SOURCES = imp_max.c
+imp_max_la_SOURCES = imp_max.c \
+	imp_max_chunks.h imp_max_callbacks.c imp_max_callbacks.h
 imp_md2_la_SOURCES = imp_md2.c imp_md2_normals.h
 imp_md3_la_SOURCES = imp_md3.c
 imp_nff_la_SOURCES = imp_nff.c

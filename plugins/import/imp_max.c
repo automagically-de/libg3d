@@ -28,9 +28,13 @@
 #include <g3d/read.h>
 #include <g3d/object.h>
 
+#include "imp_max_chunks.h"
+
 static gchar *max_read_mbstr(FILE *f, guint32 *len);
 static gchar *max_read_header128(FILE *f, gint32 *data);
-static gboolean max_read_chunk(FILE *f, gint32 *nb, guint32 level);
+static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
+	guint32 level);
+static MaxChunk *max_get_chunk_desc(guint16 id, gboolean container);
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
@@ -38,6 +42,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	FILE *f;
 	gchar *name;
 	gint32 i, n, data[16];
+	MaxGlobalData *global;
 
 	f = fopen(filename, "rb");
 	if(f == NULL) {
@@ -61,9 +66,14 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		g_free(name);
 	}
 
+	global = g_new0(MaxGlobalData, 1);
+	global->context = context;
+	global->model = model;
+	global->f = f;
+	global->padding = "                                               ";
 	fseek(f, 0x800, SEEK_SET);
-	max_read_chunk(f, NULL, 0);
-
+	max_read_chunk(global, NULL, 0);
+	g_free(global);
 	fclose(f);
 	return FALSE;
 }
@@ -121,45 +131,88 @@ static gchar *max_read_header128(FILE *f, gint32 *data)
 	return name;
 }
 
-static gboolean max_read_chunk(FILE *f, gint32 *nb, guint32 level)
+static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
+	guint32 level)
 {
 	guint16 id;
 	guint32 length;
 	gboolean container;
 	gint32 bytes;
-	static gchar *padding = "                     ";
+	MaxChunk *chunk;
+	MaxLocalData *local;
 
-	id = g3d_read_int16_le(f);
-	length = g3d_read_int32_le(f);
+	id = g3d_read_int16_le(global->f);
+	length = g3d_read_int32_le(global->f);
 	container = (length & 0x80000000);
 	length &= 0x0FFFFFFF;
 	bytes = length - 6;
 
-	if(nb && (length > *nb))
+	if(nb)
+		*nb -= 6;
+
+	if(nb && (bytes > *nb))
 		return FALSE;
 
 	if(length < 6)
 		return FALSE;
 
 	if(nb)
-		*nb -= length;
+		*nb -= bytes;
+
+	chunk = max_get_chunk_desc(id, container);
 
 #if DEBUG > 0
-	g_debug("\\%s(%d)[0x%04X][%c] %d bytes @ 0x%08lx",
-		(padding + (strlen(padding) - level)), level,
-		id, (container ? 'c' : ' '), length,
-		ftell(f));
+	g_debug("\\%s(%d)[0x%04X][%c%c] %s - %d (%d) bytes @ 0x%08lx",
+		(global->padding + (strlen(global->padding) - level)), level,
+		id, (container ? 'c' : ' '),
+		(chunk && chunk->callback) ? 'f' : ' ',
+		chunk ? chunk->desc : "unknown",
+		length - 6, length,
+		ftell(global->f));
 #endif
 
 	if(container) {
 		while(bytes > 0) {
-			if(!max_read_chunk(f, &bytes, level + 1))
-				return FALSE;
+			if(!max_read_chunk(global, &bytes, level + 1)) {
+				if(bytes > 0) {
+					g_debug("[MAX:0x%04X] skipping %d bytes", id, bytes);
+					fseek(global->f, bytes, SEEK_CUR);
+					bytes = 0;
+				}
+			}
 		}
+	} else if(chunk && chunk->callback) {
+		local = g_new0(MaxLocalData, 1);
+		local->id = id;
+		local->nb = length - 6;
+		local->level = level + 1;
+		chunk->callback(global, local);
+		/* skip remaining bytes */
+		if(local->nb > 0)
+			fseek(global->f, local->nb, SEEK_CUR);
+		g_free(local);
 	} else {
 		/* skip non-container stuff for now */
-		fseek(f, bytes, SEEK_CUR);
+		fseek(global->f, bytes, SEEK_CUR);
 	}
 
 	return TRUE;
+}
+
+static MaxChunk *max_get_chunk_desc(guint16 id, gboolean container)
+{
+	MaxChunk *chunk, *chunks;
+	gint32 i;
+
+	if(container)
+		chunks = max_cnt_chunks;
+	else
+		chunks = max_chunks;
+
+	for(i = 0, chunk = &(chunks[i]); chunk->id <= id;
+		i ++, chunk = &(chunks[i])) {
+		if(chunk->id == id)
+			return chunk;
+	}
+	return NULL;
 }

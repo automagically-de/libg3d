@@ -31,10 +31,10 @@ pluginimp_LTLIBRARIES += \
 	imp_stl.la \
 	imp_ta.la \
 	imp_test.la
-
 if HAVE_LIBXML2
 pluginimp_LTLIBRARIES += \
-	imp_collada.la
+	imp_collada.la \
+	imp_osm.la
 endif # HAVE_LIBXML2
 endif # EXPERIMENTAL
 
@@ -97,6 +97,8 @@ imp_md2_la_SOURCES = imp_md2.c imp_md2_normals.h
 imp_md3_la_SOURCES = imp_md3.c
 imp_nff_la_SOURCES = imp_nff.c
 imp_obj_la_SOURCES = imp_obj.c
+imp_osm_la_SOURCES = imp_osm.c
+imp_osm_la_LIBADD = @GLIB_LIBS@ @LIBXML2_LIBS@
 imp_q3o_la_SOURCES = imp_q3o.c
 imp_r4_la_SOURCES = imp_r4.c imp_r4_chunks.h \
 	imp_r4_callbacks.c imp_r4_callbacks.h

@@ -41,7 +41,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 {
 	FILE *f;
 	gchar *name;
-	gint32 i, n, data[16];
+	gint32 i, n, data[16], o_scene = 0;
 	MaxGlobalData *global;
 
 	f = fopen(filename, "rb");
@@ -63,6 +63,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	/* additional headers */
 	for(i = 0; i < n; i ++) {
 		name = max_read_header128(f, data);
+		if(strcmp(name, "Scene") == 0)
+			o_scene = data[14] + 0x800;
 		g_free(name);
 	}
 
@@ -73,6 +75,13 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	global->padding = "                                               ";
 	fseek(f, 0x800, SEEK_SET);
 	max_read_chunk(global, NULL, 0);
+
+	/* scene data */
+	if(o_scene > 0) {
+		fseek(f, o_scene, SEEK_SET);
+		max_read_chunk(global, NULL, 0);
+	}
+
 	g_free(global);
 	fclose(f);
 	return FALSE;
@@ -144,7 +153,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	id = g3d_read_int16_le(global->f);
 	length = g3d_read_int32_le(global->f);
 	container = (length & 0x80000000);
-	length &= 0x0FFFFFFF;
+	length &= 0x7FFFFFFF;
 	bytes = length - 6;
 
 	if(nb)
@@ -168,15 +177,19 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 		(chunk && chunk->callback) ? 'f' : ' ',
 		chunk ? chunk->desc : "unknown",
 		length - 6, length,
-		ftell(global->f));
+		ftell(global->f) - 6);
 #endif
 
 	if(container) {
 		while(bytes > 0) {
 			if(!max_read_chunk(global, &bytes, level + 1)) {
 				if(bytes > 0) {
-					g_debug("[MAX:0x%04X] skipping %d bytes", id, bytes);
 					fseek(global->f, bytes, SEEK_CUR);
+					g_debug(
+						"[MAX:0x%04X] skipping %d bytes, 0x%08lx => 0x%08lx",
+						id, bytes,
+						ftell(global->f) - bytes,
+						ftell(global->f));
 					bytes = 0;
 				}
 			}

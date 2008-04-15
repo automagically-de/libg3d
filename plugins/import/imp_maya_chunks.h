@@ -13,18 +13,18 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "CHNG", "changes",                           0, NULL },
 	{ "CMP#", "unknown",                           0, NULL },
 	{ "CMPD", "compound",                          0, maya_cb_CMPD },
-	{ "CONN", "unknown",                           1, NULL }, /* FOR4 */
-	{ "CONS", "unknown",                           1, NULL }, /* LIS4 */
-	{ "CWFL", "unknown",                           0, maya_cb_CWFL },
-	{ "CREA", "creator",                           0, maya_cb_CREA },
+	{ "CONN", "connection list",                   1, NULL }, /* FOR4 */
+	{ "CONS", "construction",                      1, NULL }, /* LIS4 */
+	{ "CWFL", "connect attr",                      0, maya_cb_CWFL },
+	{ "CREA", "create node",                       0, maya_cb_CREA },
 	{ "DBL#", "double #",                          0, maya_cb_DBLn },
 	{ "DBL2", "double 2",                          0, maya_cb_DBL2 },
 	{ "DBL3", "double 3",                          0, maya_cb_DBL3 },
 	{ "DBLE", "double",                            0, maya_cb_DBLE },
 	{ "DCAM", "camera",                            1, NULL }, /* FOR4 */
 	{ "DECT", "delete component",                  1, NULL }, /* FOR4 */
-	{ "DELA", "unknown",                           1, NULL }, /* FOR4 */
-	{ "DELL", "unknown",                           1, NULL }, /* LIS4 */
+	{ "DELA", "delete attribute",                  1, NULL }, /* FOR4 */
+	{ "DELL", "delete list",                       1, NULL }, /* LIS4 */
 	{ "DISC", "unknown",                           0, NULL },
 	{ "DISL", "unknown",                           1, NULL }, /* LIS4 */
 	{ "DMSH", "mesh",                              1, maya_cb_DMSH },
@@ -95,7 +95,7 @@ static g3d_iff_chunk_info maya_chunks[] = {
 	{ "RTFT", "texture file",                      1, NULL }, /* FOR4 */
 	{ "SCRP", "script",                            1, NULL }, /* FOR4 */
 	{ "SHAD", "shadow",                            1, NULL }, /* FOR4 */
-	{ "SLCT", "unknown",                           0, NULL }, /* evil ;) */
+	{ "SLCT", "select",                            0, NULL }, /* evil ;) */
 	{ "STR ", "string",                            0, maya_cb_STR_ },
 	{ "TGEO", "transform geometry",                1, NULL }, /* FOR4 */
 	{ "TUNI", "time unit",                         0, NULL },

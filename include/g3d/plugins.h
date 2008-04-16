@@ -39,6 +39,9 @@ typedef void (* PluginCleanupFunc)(gpointer user_data);
 typedef gboolean (* PluginLoadModelFunc)(G3DContext *context,
 	const gchar *filename, G3DModel *model, gpointer user_data);
 
+typedef gboolean (* PluginLoadModelFromStreamFunc)(G3DContext *context,
+	G3DStream *stream, G3DModel *model, gpointer user_data);
+
 typedef gboolean (* PluginLoadImageFunc)(G3DContext *context,
 	const gchar *filename, G3DImage *image, gpointer user_data);
 
@@ -55,6 +58,7 @@ struct _G3DPlugin {
 	PluginInitFunc init_func;
 	PluginCleanupFunc cleanup_func;
 	PluginLoadModelFunc loadmodel_func;
+	PluginLoadModelFromStreamFunc loadmodelstream_func;
 	PluginLoadImageFunc loadimage_func;
 	PluginGetDescFunc desc_func;
 	PluginGetExtFunc ext_func;

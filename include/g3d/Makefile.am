@@ -12,6 +12,7 @@ g3dinclude_HEADERS = \
 	face.h \
 	material.h \
 	texture.h \
+	stream.h \
 	read.h \
 	iff.h \
 	primitive.h \

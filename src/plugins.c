@@ -26,6 +26,7 @@
 #include <unistd.h>
 
 #include <g3d/config.h>
+#include <g3d/stream.h>
 #include <g3d/types.h>
 #include <g3d/plugins.h>
 
@@ -113,6 +114,8 @@ static gboolean plugins_loaddirectory(G3DContext *context,
 				PLUGIN_GET_SYMBOL("plugin_init", plugin->init_func);
 				PLUGIN_GET_SYMBOL("plugin_cleanup", plugin->cleanup_func);
 				PLUGIN_GET_SYMBOL("plugin_load_model", plugin->loadmodel_func);
+				PLUGIN_GET_SYMBOL("plugin_load_model_from_stream",
+					plugin->loadmodelstream_func);
 				PLUGIN_GET_SYMBOL("plugin_load_image", plugin->loadimage_func);
 
 				/* append plugin to list */
@@ -347,8 +350,9 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
 {
 	G3DPlugin *plugin = NULL;
+	G3DStream *stream;
 	gchar *lcext, *basename, *dirname;
-	gboolean retval;
+	gboolean retval = FALSE;
 	gchar *olddir;
 
 #ifdef USE_LIBMAGIC
@@ -373,12 +377,6 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 		return FALSE;
 	}
 
-	if(plugin->loadmodel_func == NULL)
-	{
-		g_warning("can't find symbol 'plugin_load_model' in %s", plugin->name);
-		return FALSE;
-	}
-
 	basename = g_path_get_basename(filename);
 	dirname = g_path_get_dirname(filename);
 
@@ -387,8 +385,16 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	 * for some reason a glib >= 2.8 is required */
 	chdir(dirname);
 
-	retval = plugin->loadmodel_func(context, basename, model,
-		plugin->user_data);
+	if(plugin->loadmodelstream_func != NULL) {
+		/* try to load the model via the more generic G3DStream interface */
+		stream = g3d_stream_open_file(filename, "rb");
+		retval = plugin->loadmodelstream_func(context, stream, model,
+			plugin->user_data);
+		g3d_stream_close(stream);
+	} else {
+		retval = plugin->loadmodel_func(context, basename, model,
+			plugin->user_data);
+	}
 
 	if(retval)
 		model->plugin = plugin;

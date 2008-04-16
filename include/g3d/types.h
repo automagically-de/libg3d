@@ -281,6 +281,13 @@ typedef struct {
 	G3DPlugin *plugin;
 } G3DModel;
 
+/*****************************************************************************
+ * G3DStream
+ *****************************************************************************/
+
+/* declared in stream.h */
+typedef struct _G3DStream G3DStream;
+
 G_END_DECLS
 
 #endif /* __G3D_TYPES_H__ */

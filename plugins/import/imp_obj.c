@@ -28,29 +28,24 @@
 
 #include <g3d/types.h>
 #include <g3d/material.h>
+#include <g3d/stream.h>
 
 static G3DObject *obj_createobject(GSList **olist, const gchar *name);
 static gboolean obj_tryloadmat(G3DModel *model, const gchar *filename);
 static G3DMaterial *obj_usemat(G3DModel *model, const gchar *matname);
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	FILE *f;
 	gchar line[2048], oname[128], matname[128], matfile[1024];
+	gchar *filename;
 	G3DObject *object = NULL;
 	G3DMaterial *material = NULL;
 	gdouble x,y,z;
 	guint32 num_v, v_off = 1, v_cnt = 0;
 
 	setlocale(LC_NUMERIC, "C");
-
-	f = fopen(filename, "r");
-	if(f == NULL)
-	{
-		g_warning("can't open file '%s'", filename);
-		return FALSE;
-	}
+	filename = g3d_stream_get_uri(stream);
 
 	strncpy(matfile, filename, strlen(filename) - 3);
 	matfile[strlen(filename)-3] = '\0';
@@ -59,10 +54,10 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	object = obj_createobject(&(model->objects), "(default)");
 
-	while(!feof(f))
+	while(!g3d_stream_eof(stream))
 	{
 		memset(line, 0, 2048);
-		fgets(line, 2048, f);
+		g3d_stream_read_line(stream, line, 2048);
 		/* remove leading and trailing whitespace characters */
 		g_strstrip(line);
 		if(strlen(line) > 0)
@@ -152,7 +147,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 						if(object == NULL)
 						{
 							g_printerr("error: face before object\n");
-							fclose(f);
 							return FALSE;
 						}
 						face = g_new0(G3DFace, 1);
@@ -215,7 +209,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 			}
 		}
 	}
-	fclose(f);
 	return TRUE;
 }
 

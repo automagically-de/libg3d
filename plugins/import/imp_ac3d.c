@@ -28,6 +28,7 @@
 #include <glib.h>
 
 #include <g3d/types.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
 
@@ -37,16 +38,15 @@ struct ac3d_transform {
 	gfloat offx, offy, offz;
 };
 
-static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
-	gchar *line, struct ac3d_transform *transform, guint32 flags,
-	GSList **objectlist, gint32 *rowcnt, guint32 level);
+static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
+	G3DModel *model, gchar *line, struct ac3d_transform *transform,
+	guint32 flags, GSList **objectlist, gint32 *rowcnt, guint32 level);
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	struct ac3d_transform *transform;
-	FILE *f;
-	gchar buffer[2049], namebuf[257];
+	gchar buffer[2049], namebuf[257], *filename;
 	guint32 version, ti1, flags = 0;
 	G3DMaterial *material;
 	gfloat tf1, tf2, tf3, tf4, tf5, tf6, trans;
@@ -54,23 +54,16 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	setlocale(LC_NUMERIC, "C");
 
-	f = fopen(filename, "r");
-	if(f == NULL)
-	{
-		g_printerr("could not open file '%s'", filename);
-		return FALSE;
-	}
-
 	rowcnt ++;
-	fgets(buffer, 2048, f);
+	g3d_stream_read_line(stream, buffer, 2048);
 
 	if(strncmp(buffer, "AC3D", 4) != 0)
 	{
-		g_printerr("file '%s' is not a AC3D model", filename);
-		fclose(f);
+		g_warning("file is not a AC3D model");
 		return FALSE;
 	}
 
+	filename = g3d_stream_get_uri(stream);
 	if(g_ascii_strcasecmp(filename + strlen(filename) - 4, ".acc") == 0)
 	{
 #if DEBUG > 0
@@ -85,7 +78,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	g_print("AC3D: version %d\n", version);
 #endif
 
-	while(fgets(buffer, 2048, f))
+	while(g3d_stream_read_line(stream, buffer, 2048))
 	{
 		rowcnt ++;
 		if(strncmp(buffer, "MATERIAL", 8) == 0)
@@ -122,7 +115,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		{
 			transform = g_new0(struct ac3d_transform, 1);
 			g_debug("\\(0) Object (line %d)", rowcnt);
-			ac3d_read_object(f, context, model, buffer, transform, flags,
+			ac3d_read_object(stream, context, model, buffer, transform, flags,
 				&(model->objects), &rowcnt, 1);
 		}
 		else
@@ -133,7 +126,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 	}
 
-	fclose(f);
 	return TRUE;
 }
 
@@ -154,13 +146,9 @@ gchar **plugin_extensions(G3DContext *context)
 static gchar *ac3d_remove_quotes(gchar *text)
 {
 	if(text[0] == '"')
-	{
 		return g_strndup(text + 1, strlen(text) - 2);
-	}
 	else
-	{
 		return g_strdup(text);
-	}
 }
 
 /**
@@ -169,9 +157,9 @@ static gchar *ac3d_remove_quotes(gchar *text)
  *          error.
  */
 
-static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
-	gchar *line, struct ac3d_transform *parent_transform, guint32 flags,
-	GSList **objectlist, gint32 *rowcnt, guint32 level)
+static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
+	G3DModel *model, gchar *line, struct ac3d_transform *parent_transform,
+	guint32 flags, GSList **objectlist, gint32 *rowcnt, guint32 level)
 {
 	struct ac3d_transform *transform;
 	G3DObject *object;
@@ -204,7 +192,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 	objectcount ++;
 	*(objectlist) = g_slist_append(*(objectlist), object);
 
-	while(fgets(buffer, 2048, f))
+	while(g3d_stream_read_line(stream, buffer, 2048))
 	{
 		*rowcnt += 1;
 		if(strncmp(buffer, "kids", 4) == 0)
@@ -219,11 +207,11 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 			{
 				/* read kids */
 				*rowcnt += 1;
-				fgets(buffer, 2048, f);
+				g3d_stream_read_line(stream, buffer, 2048);
 				g_debug("\\%s(%d) Object (line %d)",
 					padding + (strlen(padding) - level),
 					level, *rowcnt);
-				kidsread = ac3d_read_object(f, context, model, buffer,
+				kidsread = ac3d_read_object(stream, context, model, buffer,
 					transform, flags, &(object->objects), rowcnt, level + 1);
 				objectcount += kidsread;
 			}
@@ -279,7 +267,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 					g_new0(gfloat, object->vertex_count * 3);
 				for(i = 0; i < object->vertex_count; i ++)
 				{
-					if(fgets(buffer, 2048, f))
+					if(g3d_stream_read_line(stream, buffer, 2048))
 					{
 						*rowcnt += 1;
 						if(sscanf(buffer, "%f %f %f",
@@ -314,7 +302,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 
 			while(!surf_done)
 			{
-				if(!fgets(buffer, 2048, f))
+				if(!g3d_stream_read_line(stream, buffer, 2048))
 					return 0;
 				*rowcnt += 1;
 
@@ -341,7 +329,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 						/* normal face */
 						for(i = 0; i < face->vertex_count; i ++)
 						{
-							if(!fgets(buffer, 2048, f))
+							if(!g3d_stream_read_line(stream, buffer, 2048))
 								return 0;
 							*rowcnt += 1;
 
@@ -398,11 +386,11 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 							if(i == 0)
 							{
 								/* TODO: error handling */
-								fgets(buffer, 2048, f);
+								g3d_stream_read_line(stream, buffer, 2048);
 								sscanf(buffer, "%u %f %f", &i1, &u1, &v1);
-								fgets(buffer, 2048, f);
+								g3d_stream_read_line(stream, buffer, 2048);
 								sscanf(buffer, "%u %f %f", &i2, &u2, &v2);
-								fgets(buffer, 2048, f);
+								g3d_stream_read_line(stream, buffer, 2048);
 								sscanf(buffer, "%u %f %f", &i3, &u3, &v3);
 
 								*rowcnt += 3;
@@ -418,7 +406,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 								u2 = u3;
 								v2 = v3;
 
-								fgets(buffer, 2048, f);
+								g3d_stream_read_line(stream, buffer, 2048);
 								*rowcnt += 1;
 								sscanf(buffer, "%u %f %f", &i3, &u3, &v3);
 
@@ -514,7 +502,7 @@ static gint32 ac3d_read_object(FILE *f, G3DContext *context, G3DModel *model,
 					*rowcnt, buffer);
 			}
 			/* object data on next line */
-			fgets(buffer, 2048, f);
+			g3d_stream_read_line(stream, buffer, 2048);
 			*rowcnt += 1;
 		}
 		else

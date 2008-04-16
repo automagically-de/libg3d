@@ -30,6 +30,7 @@
 #include <g3d/types.h>
 #include <g3d/material.h>
 #include <g3d/object.h>
+#include <g3d/vector.h>
 #include <g3d/matrix.h>
 #include <g3d/primitive.h>
 
@@ -117,6 +118,12 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	}
 
 	/* clean up */
+	if(object->vertex_data) {
+		/* reference points not needed anymore */
+		g_free(object->vertex_data);
+		object->vertex_data = NULL;
+		object->vertex_count = 0;
+	}
 	g_hash_table_destroy(materials);
 	if(translist->ids)
 		g_free(translist->ids);
@@ -210,19 +217,11 @@ static void osm_add_street(G3DObject *object, OSMNodeTransList *translist,
 	GHashTable *tags, GHashTable *materials)
 {
 	gint32 i, n;
-	gdouble x1, x2, z1, z2, cx, cz, a;
+	gdouble *vdata;
 	gfloat matrix[16];
-	G3DObject *ostreet, *osegment;
+	G3DObject *ostreet = NULL;
 	gchar *name, *mname;
 	G3DMaterial *material = NULL;
-
-	ostreet = g_new0(G3DObject, 1);
-	name = g_hash_table_lookup(tags, "name");
-	if(name == NULL)
-		ostreet->name = g_strdup("unnamed street");
-	else
-		ostreet->name = g_strdup(name);
-	object->objects = g_slist_append(object->objects, ostreet);
 
 	/* lookup material */
 	name = g_hash_table_lookup(tags, "highway");
@@ -243,38 +242,39 @@ static void osm_add_street(G3DObject *object, OSMNodeTransList *translist,
 		g_return_if_fail(material != NULL);
 	}
 
-	/* add segments */
-	for(i = 0; i < (refcount - 1); i ++) {
-		/* get coordinates of control points */
+	/* create strip */
+	vdata = g_new0(gdouble, refcount * 2);
+	for(i = 0; i < refcount; i ++) {
 		n = osm_translist_lookup(translist, refdata[i]);
-		if(n == -1)
+		if(n == -1) {
+			g_warning("OSM: looking up reference %d failed", refdata[i]);
 			continue;
-		x1 = object->vertex_data[n * 3 + 0];
-		z1 = object->vertex_data[n * 3 + 2];
-		n = osm_translist_lookup(translist, refdata[i + 1]);
-		if(n == -1)
-			continue;
-		x2 = object->vertex_data[n * 3 + 0];
-		z2 = object->vertex_data[n * 3 + 2];
-		/* add street segment */
-		osegment = g3d_primitive_box(
-			misc_delta(x1, z1, x2, z2), 0.00005, 0.0003,
-			material);
-		osegment->name = g_strdup_printf("segment #%d", i + 1);
-		/* rotation */
-		a = misc_angle(x1, z1, x2, z2);
-		g3d_matrix_identity(matrix);
-		g3d_matrix_rotate(-a, 0.0, 1.0, 0.0, matrix);
-		g3d_object_transform(osegment, matrix);
-		g3d_object_transform_normals(osegment, matrix);
-		/* translation */
-		cx = MIN(x1, x2) + ABS(x1 - x2) / 2.0;
-		cz = MIN(z1, z2) + ABS(z1 - z2) / 2.0;
-		g3d_matrix_identity(matrix);
-		g3d_matrix_translate(cx, 0.0, cz, matrix);
-		g3d_object_transform(osegment, matrix);
-		ostreet->objects = g_slist_append(ostreet->objects, osegment);
+		}
+		vdata[i * 2 + 0] = object->vertex_data[n * 3 + 0];
+		vdata[i * 2 + 1] = object->vertex_data[n * 3 + 2];
 	}
+	ostreet = g3d_primitive_box_strip_2d(refcount, vdata, 0.00003, 0.0003,
+		material);
+	g_free(vdata);
+
+	if(ostreet == NULL)
+		return;
+
+	/* bridge? */
+	name = g_hash_table_lookup(tags, "bridge");
+	if(name && (strcmp(name, "true") == 0)) {
+		g3d_matrix_identity(matrix);
+		g3d_matrix_translate(0.0, 0.00005, 0.0, matrix);
+		g3d_object_transform(ostreet, matrix);
+	}
+
+	/* name? */
+	name = g_hash_table_lookup(tags, "name");
+	if(name == NULL)
+		ostreet->name = g_strdup("unnamed street");
+	else
+		ostreet->name = g_strdup(name);
+	object->objects = g_slist_append(object->objects, ostreet);
 }
 
 static void osm_add_way(G3DObject *object, OSMNodeTransList *translist,

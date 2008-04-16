@@ -92,6 +92,22 @@ G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
 G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 	G3DMaterial *material);
 
+/**
+ * g3d_primitive_box_strip_2d:
+ * @vcnt: number of control points
+ * @vdata: 2-dimensional control point data (2 * vcnt * gdouble)
+ * @height: height of resulting strip (y component)
+ * @width: width of strip (corner diameter)
+ * @material: material to use for faces
+ *
+ * Generates a strip of box segments defined by corner center points
+ * using two-dimensional data (x/z plane).
+ *
+ * Returns: strip object
+ */
+G3DObject *g3d_primitive_box_strip_2d(guint32 vcnt, gdouble *vdata,
+	gdouble height, gdouble width, G3DMaterial *material);
+
 G_END_DECLS
 
 #endif /* __G3D_PRIMITIVE_H__ */

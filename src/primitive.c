@@ -555,3 +555,128 @@ G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 
 	return object;
 }
+
+/* vdata: 2-dimensional coordinates: vcnt * 2 * gdouble */
+G3DObject *g3d_primitive_box_strip_2d(guint32 vcnt, gdouble *vdata,
+	gdouble height, gdouble width, G3DMaterial *material)
+{
+	G3DObject *object;
+	G3DFace *face;
+	gint32 i, index;
+	gfloat *normals, normal[3], r;
+
+	/* create object & helpers */
+	object = g_new0(G3DObject, 1);
+	normals = g_new0(gfloat, 3 * vcnt);
+	object->vertex_count = vcnt * 4;
+	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+
+	/* generate normals */
+	for(i = 0; i < vcnt; i ++) {
+		/* normal data */
+		g3d_vector_normal(
+			/* vector 1 */
+			vdata[(i + 1) * 2 + 0] - vdata[i * 2 + 0],
+			0.0,
+			vdata[(i + 1) * 2 + 1] - vdata[i * 2 + 1],
+			/* vector 2 */
+			0.0, 1.0, 0.0,
+			/* resulting vector */
+			&(normals[i * 3 + 0]),
+			&(normals[i * 3 + 1]),
+			&(normals[i * 3 + 2]));
+		g3d_vector_unify(
+			&(normals[i * 3 + 0]),
+			&(normals[i * 3 + 1]),
+			&(normals[i * 3 + 2]));
+	}
+
+	/* radius */
+	r = width / 2.0;
+
+	/* generate vertices */
+	for(i = 0; i < vcnt; i ++) {
+		/* average normal for vertex */
+		if(i == 0) {
+			normal[0] = normals[i * 3 + 0];
+			normal[1] = normals[i * 3 + 1];
+			normal[2] = normals[i * 3 + 2];
+		} else {
+			normal[0] = (normals[i * 3 + 0] + normals[(i - 1) * 3 + 0]) / 2.0;
+			normal[1] = (normals[i * 3 + 1] + normals[(i - 1) * 3 + 1]) / 2.0;
+			normal[2] = (normals[i * 3 + 2] + normals[(i - 1) * 3 + 2]) / 2.0;
+			g3d_vector_unify(&(normals[0]), &(normals[1]), &(normals[2]));
+		}
+
+		/* vertex data */
+		/* v0 */
+		index = i * 4;
+		object->vertex_data[index * 3 + 0] = vdata[i * 2 + 0] + normals[0] * r;
+		object->vertex_data[index * 3 + 1] = height;
+		object->vertex_data[index * 3 + 2] = vdata[i * 2 + 1] + normals[2] * r;
+		/* v1 */
+		index ++;
+		object->vertex_data[index * 3 + 0] = vdata[i * 2 + 0] - normals[0] * r;
+		object->vertex_data[index * 3 + 1] = height;
+		object->vertex_data[index * 3 + 2] = vdata[i * 2 + 1] - normals[2] * r;
+		/* v2 */
+		index ++;
+		object->vertex_data[index * 3 + 0] = vdata[i * 2 + 0] - normals[0] * r;
+		object->vertex_data[index * 3 + 1] = 0.0;
+		object->vertex_data[index * 3 + 2] = vdata[i * 2 + 1] - normals[2] * r;
+		/* v3 */
+		index ++;
+		object->vertex_data[index * 3 + 0] = vdata[i * 2 + 0] + normals[0] * r;
+		object->vertex_data[index * 3 + 1] = 0.0;
+		object->vertex_data[index * 3 + 2] = vdata[i * 2 + 1] + normals[2] * r;
+
+		if(i > 0) {
+			/* generate faces */
+			/* upper face */
+			face = g_new0(G3DFace, 1);
+			face->material = material;
+			face->vertex_count = 4;
+			face->vertex_indices = g_new0(guint32, 4);
+			face->vertex_indices[0] = (i * 4) + 0;
+			face->vertex_indices[1] = (i * 4) + 1;
+			face->vertex_indices[2] = (i * 4) - 3;
+			face->vertex_indices[3] = (i * 4) - 4;
+			object->faces = g_slist_prepend(object->faces, face);
+			/* lower face */
+			face = g_new0(G3DFace, 1);
+			face->material = material;
+			face->vertex_count = 4;
+			face->vertex_indices = g_new0(guint32, 4);
+			face->vertex_indices[0] = (i * 4) + 3;
+			face->vertex_indices[1] = (i * 4) - 1;
+			face->vertex_indices[2] = (i * 4) - 2;
+			face->vertex_indices[3] = (i * 4) + 2;
+			object->faces = g_slist_prepend(object->faces, face);
+			/* "front" face */
+			face = g_new0(G3DFace, 1);
+			face->material = material;
+			face->vertex_count = 4;
+			face->vertex_indices = g_new0(guint32, 4);
+			face->vertex_indices[0] = (i * 4) + 1;
+			face->vertex_indices[1] = (i * 4) + 2;
+			face->vertex_indices[2] = (i * 4) - 2;
+			face->vertex_indices[3] = (i * 4) - 3;
+			object->faces = g_slist_prepend(object->faces, face);
+			/* "back" face */
+			face = g_new0(G3DFace, 1);
+			face->material = material;
+			face->vertex_count = 4;
+			face->vertex_indices = g_new0(guint32, 4);
+			face->vertex_indices[0] = (i * 4) - 4;
+			face->vertex_indices[1] = (i * 4) - 1;
+			face->vertex_indices[2] = (i * 4) + 3;
+			face->vertex_indices[3] = (i * 4) + 0;
+			object->faces = g_slist_prepend(object->faces, face);
+		}
+	}
+	/* clean up */
+	g_free(normals);
+
+	return object;
+}
+

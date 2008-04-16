@@ -32,7 +32,7 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 {
 	FILE *f;
 	guint32 filesize, offset, headsize, compression;
-	gint32 x, y;
+	gint32 x, y, i;
 
 	f = fopen(filename, "r");
 	if(f == NULL)
@@ -87,6 +87,9 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 					image->pixeldata[y*image->width+x] = g3d_read_int8(f);
 #else
 					image->pixeldata[(y*image->width+x)*4+0] = g3d_read_int8(f);
+					image->pixeldata[(y*image->width+x)*4+1] =
+					image->pixeldata[(y*image->width+x)*4+2] =
+						image->pixeldata[(y*image->width+x)*4+0];
 					image->pixeldata[(y*image->width+x)*4+3] = 0xFF;
 #endif
 #if DEBUG > 5
@@ -102,11 +105,14 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 				default:
 					break;
 			}
-		}
+		} /* x */
 #if DEBUG > 5
 		g_printerr("\n");
 #endif
-	}
+		/* padding */
+		for(i = x; i < ((image->width + 3) & ~(3)); i ++)
+			g3d_read_int8(f);
+	} /* y */
 	image->depth = 32;
 #if DEBUG > 2
 	g_printerr("bitmap successfully loaded\n");

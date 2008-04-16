@@ -8,7 +8,7 @@ libg3d_la_SOURCES = \
 	face.c \
 	material.c \
 	texture.c \
-	stream.c \
+	stream.c stream_file.c \
 	read.c \
 	iff.c \
 	primitive.c \

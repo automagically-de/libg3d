@@ -54,7 +54,19 @@ gint32 g3d_stream_read_int32_le(G3DStream *stream)
 		(g3d_stream_read_int8(stream) << 24);
 }
 
-/* FIXME: host byte order matters for union!? */
+static void g3d_stream_read_bytes(G3DStream *stream, guint8 *buf, gsize n)
+{
+	gint32 i;
+	for(i = 0; i < n; i ++)
+		buf[i] = g3d_stream_read_int8(stream);
+}
+
+static void g3d_stream_read_bytes_swap(G3DStream *stream, guint8 *buf, gsize n)
+{
+	gint32 i;
+	for(i = (n - 1); i >= 0; i --)
+		buf[i] = g3d_stream_read_int8(stream);
+}
 
 gfloat g3d_stream_read_float_be(G3DStream *stream)
 {
@@ -62,10 +74,11 @@ gfloat g3d_stream_read_float_be(G3DStream *stream)
 		gfloat f;
 		guint8 u[4];
 	} u;
-	gint32 i;
-
-	for(i = 3; i >= 0; i --)
-		u.u[i] = g3d_stream_read_int8(stream);
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	g3d_stream_read_bytes_swap(stream, u.u, 4);
+#elif G_BYTE_ORDER == G_BIG_ENDIAN
+	g3d_stream_read_bytes(stream, u.u, 4);
+#endif
 	return u.f;
 }
 
@@ -75,10 +88,11 @@ gfloat g3d_stream_read_float_le(G3DStream *stream)
 		gfloat f;
 		guint8 u[4];
 	} u;
-	gint32 i;
-
-	for(i = 0; i < 4; i ++)
-		u.u[i] = g3d_stream_read_int8(stream);
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	g3d_stream_read_bytes(stream, u.u, 4);
+#elif G_BYTE_ORDER == G_BIG_ENDIAN
+	g3d_stream_read_bytes_swap(stream, u.u, 4);
+#endif
 	return u.f;
 }
 gdouble g3d_stream_read_double_be(G3DStream *stream)
@@ -87,10 +101,11 @@ gdouble g3d_stream_read_double_be(G3DStream *stream)
 		gdouble f;
 		guint8 u[8];
 	} u;
-	gint32 i;
-
-	for(i = 7; i >= 0; i --)
-		u.u[i] = g3d_stream_read_int8(stream);
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	g3d_stream_read_bytes_swap(stream, u.u, 8);
+#elif G_BYTE_ORDER == G_BIG_ENDIAN
+	g3d_stream_read_bytes(stream, u.u, 8);
+#endif
 	return u.f;
 }
 
@@ -100,10 +115,11 @@ gdouble g3d_stream_read_double_le(G3DStream *stream)
 		gdouble f;
 		guint8 u[8];
 	} u;
-	gint32 i;
-
-	for(i = 0; i < 8; i ++)
-		u.u[i] = g3d_stream_read_int8(stream);
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	g3d_stream_read_bytes(stream, u.u, 8);
+#elif G_BYTE_ORDER == G_BIG_ENDIAN
+	g3d_stream_read_bytes_swap(stream, u.u, 8);
+#endif
 	return u.f;
 }
 

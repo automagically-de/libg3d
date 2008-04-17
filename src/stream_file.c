@@ -35,7 +35,7 @@ static gchar *g3d_stream_file_read_line(gchar *buf, gsize size, gpointer data)
 	return fgets(buf, size, (FILE *)data);
 }
 
-static gint g3d_stream_file_seek(gpointer data, guint32 offset,
+static gint g3d_stream_file_seek(gpointer data, glong offset,
 	GSeekType whence)
 {
 	return fseek((FILE *)data, offset, whence);

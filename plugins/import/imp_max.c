@@ -44,6 +44,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	retval = max_read_subfile(context, model, filename, "Config");
 	retval = max_read_subfile(context, model, filename, "Scene");
 
+	g3d_context_update_progress_bar(context, 0.0, FALSE);
+
 	return retval;
 }
 
@@ -151,6 +153,12 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	}
 
 	g3d_context_update_interface(global->context);
+
+	if(level < 2)
+		g3d_context_update_progress_bar(global->context,
+			(gfloat)g3d_stream_tell(global->stream) /
+			(gfloat)g3d_stream_size(global->stream),
+			TRUE);
 
 	return TRUE;
 }

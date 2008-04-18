@@ -23,6 +23,7 @@
 #include <gsf/gsf-input.h>
 #include <gsf/gsf-infile.h>
 #include <gsf/gsf-input-stdio.h>
+#include <gsf/gsf-input-gzip.h>
 #include <gsf/gsf-infile-msole.h>
 
 #include <g3d/stream.h>
@@ -82,6 +83,7 @@ G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 	const gchar *subfile)
 {
 	G3DStreamGsf *sg;
+	GsfInput *input_gzipped, *input_tmp;
 	GError *error = NULL;
 	guint32 flags = 0;
 
@@ -123,6 +125,19 @@ G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 		g_error_free(error);
 		return NULL;
 	}
+
+	/* try to open subfile as gzipped */
+	input_gzipped = gsf_input_gzip_new(sg->input_subfile, &error);
+	if(error != NULL) {
+		/* failed to open gzip data */
+		g_error_free(error);
+	} else {
+		/* succeeded to open gzip data */
+		input_tmp = sg->input_subfile;
+		sg->input_subfile = input_gzipped;
+		g_object_unref(input_tmp);
+	}
+
 #if DEBUG > 2
 	g_debug("GSF: got subfile '%s'", subfile);
 #endif

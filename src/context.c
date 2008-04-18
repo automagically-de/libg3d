@@ -20,6 +20,12 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <g3d/config.h>
+
+#ifdef HAVE_LIBGSF
+#	include <gsf/gsf-utils.h>
+#endif
+
 #include <g3d/types.h>
 #include <g3d/plugins.h>
 
@@ -28,6 +34,9 @@ G3DContext *g3d_context_new(void)
 	G3DContext *context;
 
 	context = g_new0(G3DContext, 1);
+#ifdef HAVE_LIBGSF
+	gsf_init();
+#endif
 
 	g3d_plugins_init(context);
 
@@ -37,6 +46,9 @@ G3DContext *g3d_context_new(void)
 void g3d_context_free(G3DContext *context)
 {
 	g3d_plugins_cleanup(context);
+#ifdef HAVE_LIBGSF
+	gsf_shutdown();
+#endif
 
 	g_free(context);
 }

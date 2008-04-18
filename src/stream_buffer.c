@@ -26,7 +26,7 @@
 
 typedef struct {
 	gsize size;
-	glong offset;
+	goffset offset;
 	guint8 *buffer;
 	gboolean free_buffer;
 } G3DStreamBuffer;
@@ -45,7 +45,7 @@ static gsize g3d_stream_buffer_read(gpointer ptr, gsize size, gsize nmemb,
 	return max_items;
 }
 
-static gint g3d_stream_buffer_seek(gpointer data, glong offset,
+static gint g3d_stream_buffer_seek(gpointer data, goffset offset,
 	GSeekType whence)
 {
 	G3DStreamBuffer *sbuf = (G3DStreamBuffer *)data;
@@ -71,10 +71,16 @@ static gint g3d_stream_buffer_seek(gpointer data, glong offset,
 	return 0;
 }
 
-static guint32 g3d_stream_buffer_tell(gpointer data)
+static goffset g3d_stream_buffer_tell(gpointer data)
 {
 	G3DStreamBuffer *sbuf = (G3DStreamBuffer *)data;
 	return sbuf->offset;
+}
+
+static goffset g3d_stream_buffer_size(gpointer data)
+{
+	G3DStreamBuffer *sbuf = (G3DStreamBuffer *)data;
+	return sbuf->size;
 }
 
 static gboolean g3d_stream_buffer_eof(gpointer data)
@@ -110,7 +116,8 @@ G3DStream *g3d_stream_from_buffer(guint8 *buffer, gsize size,
 	stream = g3d_stream_new_custom(flags, uri,
 		g3d_stream_buffer_read,
 		NULL /* use generic implementation of *_read_line */,
-		g3d_stream_buffer_seek, g3d_stream_buffer_tell, g3d_stream_buffer_eof,
+		g3d_stream_buffer_seek, g3d_stream_buffer_tell,
+		g3d_stream_buffer_size, g3d_stream_buffer_eof,
 		g3d_stream_buffer_close, sbuf);
 	g_free(uri);
 	return stream;

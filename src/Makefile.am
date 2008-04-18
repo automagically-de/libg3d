@@ -31,3 +31,8 @@ libg3d_la_LIBADD = \
 	@GLIB_LIBS@ \
 	@MAGIC_LIBS@
 
+if HAVE_LIBGSF
+libg3d_la_CFLAGS += @LIBGSF_CFLAGS@
+libg3d_la_LIBADD += @LIBGSF_LIBS@
+libg3d_la_SOURCES += stream_gsf.c
+endif

@@ -20,18 +20,18 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <stdio.h>
 #include <string.h>
 
 #include <g3d/types.h>
 #include <g3d/context.h>
 #include <g3d/read.h>
 #include <g3d/object.h>
+#include <g3d/stream.h>
 
 #include "imp_max_chunks.h"
 
-static gchar *max_read_mbstr(FILE *f, guint32 *len);
-static gchar *max_read_header128(FILE *f, gint32 *data);
+static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
+	const gchar *filename, const gchar *subfile);
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	guint32 level);
 static MaxChunk *max_get_chunk_desc(guint16 id, gboolean container);
@@ -39,52 +39,12 @@ static MaxChunk *max_get_chunk_desc(guint16 id, gboolean container);
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
 {
-	FILE *f;
-	gchar *name;
-	gint32 i, n, data[16], o_scene = 0;
-	MaxGlobalData *global;
+	gboolean retval;
 
-	f = fopen(filename, "rb");
-	if(f == NULL) {
-		g_warning("failed to open %s", filename);
-		return FALSE;
-	}
+	retval = max_read_subfile(context, model, filename, "Config");
+	retval = max_read_subfile(context, model, filename, "Scene");
 
-	fseek(f, 0x400, SEEK_SET);
-	/* Root Entry */
-	name = max_read_header128(f, data);
-	g_free(name);
-	n = data[3];
-#if 0
-	/* Scene */
-	name = max_read_header128(f, data);
-	g_free(name);
-#endif
-	/* additional headers */
-	for(i = 0; i < n; i ++) {
-		name = max_read_header128(f, data);
-		if(strcmp(name, "Scene") == 0)
-			o_scene = data[14] + 0x800;
-		g_free(name);
-	}
-
-	global = g_new0(MaxGlobalData, 1);
-	global->context = context;
-	global->model = model;
-	global->f = f;
-	global->padding = "                                               ";
-	fseek(f, 0x800, SEEK_SET);
-	max_read_chunk(global, NULL, 0);
-
-	/* scene data */
-	if(o_scene > 0) {
-		fseek(f, o_scene, SEEK_SET);
-		max_read_chunk(global, NULL, 0);
-	}
-
-	g_free(global);
-	fclose(f);
-	return FALSE;
+	return retval;
 }
 
 char *plugin_description(void)
@@ -101,43 +61,33 @@ char **plugin_extensions(void)
  * max specific
  *****************************************************************************/
 
-static gchar *max_read_mbstr(FILE *f, guint32 *len)
+static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
+	const gchar *filename, const gchar *subfile)
 {
-	gchar *buffer, *str;
-	gint32 i;
+	G3DStream *ssf;
+	MaxGlobalData *global;
+	gint32 fsize;
 
-	buffer = g_malloc0(65);
-	for(i = 0; i < 32; i ++) {
-		buffer[i] = g3d_read_int8(f);
-		g3d_read_int8(f);
+	ssf = g3d_stream_open_structured_file(filename, subfile);
+	if(ssf == NULL) {
+		g_warning("MAX: failed to open '%s' in structured file '%s'",
+			subfile, filename);
+		return FALSE;
 	}
 
-	if(len)
-		*len = 64;
+	global = g_new0(MaxGlobalData, 1);
+	global->context = context;
+	global->model = model;
+	global->stream = ssf;
+	global->padding = "                                               ";
 
-	str = g_strdup(buffer);
-	g_free(buffer);
+	fsize = g3d_stream_size(ssf);
+	while(max_read_chunk(global, &fsize, 0));
 
-	return str;
-}
+	g_free(global);
+	g3d_stream_close(ssf);
 
-static gchar *max_read_header128(FILE *f, gint32 *data)
-{
-	gchar *name;
-	gint32 i;
-
-	name = max_read_mbstr(f, NULL);
-
-#if DEBUG > 0
-	g_debug("MAX: section %s:", name);
-#endif
-	for(i = 0; i < 16; i ++) {
-		data[i] = g3d_read_int32_le(f);
-#if DEBUG > 0
-		g_debug("MAX:   0x%08x (%d)", data[i], data[i]);
-#endif
-	}
-	return name;
+	return TRUE;
 }
 
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
@@ -150,20 +100,20 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	MaxChunk *chunk;
 	MaxLocalData *local;
 
-	id = g3d_read_int16_le(global->f);
-	length = g3d_read_int32_le(global->f);
+	if(nb && (*nb < 6))
+		return FALSE;
+
+	id = g3d_stream_read_int16_le(global->stream);
+	length = g3d_stream_read_int32_le(global->stream);
 	container = (length & 0x80000000);
 	length &= 0x7FFFFFFF;
 	bytes = length - 6;
 
+	if(nb && (length > *nb))
+		return FALSE;
+
 	if(nb)
 		*nb -= 6;
-
-	if(nb && (bytes > *nb))
-		return FALSE;
-
-	if(length < 6)
-		return FALSE;
 
 	if(nb)
 		*nb -= bytes;
@@ -171,28 +121,19 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	chunk = max_get_chunk_desc(id, container);
 
 #if DEBUG > 0
-	g_debug("\\%s(%d)[0x%04X][%c%c] %s - %d (%d) bytes @ 0x%08lx",
+	g_debug("\\%s(%d)[0x%04X][%c%c] %s - %d (%d) bytes @ 0x%08x",
 		(global->padding + (strlen(global->padding) - level)), level,
 		id, (container ? 'c' : ' '),
 		(chunk && chunk->callback) ? 'f' : ' ',
 		chunk ? chunk->desc : "unknown",
 		length - 6, length,
-		ftell(global->f) - 6);
+		(guint32)g3d_stream_tell(global->stream) - 6);
 #endif
 
 	if(container) {
 		while(bytes > 0) {
-			if(!max_read_chunk(global, &bytes, level + 1)) {
-				if(bytes > 0) {
-					fseek(global->f, bytes, SEEK_CUR);
-					g_debug(
-						"[MAX:0x%04X] skipping %d bytes, 0x%08lx => 0x%08lx",
-						id, bytes,
-						ftell(global->f) - bytes,
-						ftell(global->f));
-					bytes = 0;
-				}
-			}
+			if(!max_read_chunk(global, &bytes, level + 1))
+				return FALSE;
 		}
 	} else if(chunk && chunk->callback) {
 		local = g_new0(MaxLocalData, 1);
@@ -202,12 +143,14 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 		chunk->callback(global, local);
 		/* skip remaining bytes */
 		if(local->nb > 0)
-			fseek(global->f, local->nb, SEEK_CUR);
+			g3d_stream_seek(global->stream, local->nb, G_SEEK_CUR);
 		g_free(local);
 	} else {
 		/* skip non-container stuff for now */
-		fseek(global->f, bytes, SEEK_CUR);
+		g3d_stream_seek(global->stream, bytes, G_SEEK_CUR);
 	}
+
+	g3d_context_update_interface(global->context);
 
 	return TRUE;
 }

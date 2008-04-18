@@ -8,7 +8,7 @@
 typedef struct {
 	G3DContext *context;
 	G3DModel *model;
-	FILE *f;
+	G3DStream *stream;
 	gchar *padding;
 } MaxGlobalData;
 

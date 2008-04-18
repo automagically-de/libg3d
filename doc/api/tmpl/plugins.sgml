@@ -109,6 +109,7 @@ Plugin interface
 @init_func: 
 @cleanup_func: 
 @loadmodel_func: 
+@loadmodelstream_func: 
 @loadimage_func: 
 @desc_func: 
 @ext_func: 

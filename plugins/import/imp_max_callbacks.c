@@ -1,5 +1,5 @@
 #include <string.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 
 #include "imp_max_callbacks.h"
 
@@ -8,14 +8,14 @@ gboolean max_cb_0x0005(MaxGlobalData *global, MaxLocalData *local)
 	gchar *str;
 	gint32 n_str, len, i, w3[3], cnt = 0;
 
-	n_str = g3d_read_int16_le(global->f);
+	n_str = g3d_stream_read_int16_le(global->stream);
 	local->nb -= 2;
 
 	if(local->nb == 0)
 		return FALSE;
 
 	/* flags? */
-	g3d_read_int16_le(global->f);
+	g3d_stream_read_int16_le(global->stream);
 	local->nb -= 2;
 
 #if DEBUG > 0
@@ -24,13 +24,13 @@ gboolean max_cb_0x0005(MaxGlobalData *global, MaxLocalData *local)
 #endif
 
 	while(local->nb > 0) {
-		len = g3d_read_int32_le(global->f);
+		len = g3d_stream_read_int32_le(global->stream);
 		local->nb -= 4;
 		str = g_malloc0(len + 1);
-		fread(str, 1, len, global->f);
+		g3d_stream_read(global->stream, str, 1, len);
 		local->nb -= len;
 		for(i = 0; i < 3; i ++)
-			w3[i] = g3d_read_int16_le(global->f);
+			w3[i] = g3d_stream_read_int16_le(global->stream);
 		local->nb -= 6;
 		cnt ++;
 #if DEBUG > 0
@@ -53,9 +53,9 @@ gboolean max_cb_0x0100(MaxGlobalData *global, MaxLocalData *local)
 
 	for(i = 0; i < local->nb; i ++) {
 		if((i % 2) == 0)
-			text[i / 2] = g3d_read_int8(global->f);
+			text[i / 2] = g3d_stream_read_int8(global->stream);
 		else
-			g3d_read_int8(global->f);
+			g3d_stream_read_int8(global->stream);
 	}
 	local->nb = 0;
 

@@ -25,7 +25,6 @@ pluginimp_LTLIBRARIES += \
 	imp_ase.la \
 	imp_flt.la \
 	imp_maya.la \
-	imp_max.la \
 	imp_r4.la \
 	imp_rbh.la \
 	imp_stl.la \
@@ -36,6 +35,10 @@ pluginimp_LTLIBRARIES += \
 	imp_collada.la \
 	imp_osm.la
 endif # HAVE_LIBXML2
+pluginimp_LTLIBRARIES += \
+	imp_max.la
+if HAVE_LIBGSF
+endif # HAVE_LIBGSF
 endif # EXPERIMENTAL
 
 AM_CFLAGS = \
@@ -46,7 +49,10 @@ AM_CFLAGS = \
 
 if HAVE_LIBXML2
 AM_CFLAGS += @LIBXML2_CFLAGS@
-endif
+endif # HAVE_LIBXML2
+if HAVE_LIBGSF
+AM_CFLAGS += @LIBGSF_CFLAGS@
+endif # HAVE_LIBGSF
 
 INCLUDES = -I$(top_builddir)/include
 
@@ -93,6 +99,7 @@ imp_maya_la_SOURCES = imp_maya.c imp_maya_chunks.h \
 	imp_maya_var.c imp_maya_var.h
 imp_max_la_SOURCES = imp_max.c \
 	imp_max_chunks.h imp_max_callbacks.c imp_max_callbacks.h
+imp_max_la_LIBADD = @GLIB_LIBS@ @LIBGSF_LIBS@
 imp_md2_la_SOURCES = imp_md2.c imp_md2_normals.h
 imp_md3_la_SOURCES = imp_md3.c
 imp_nff_la_SOURCES = imp_nff.c

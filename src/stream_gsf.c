@@ -123,6 +123,13 @@ G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 		g_object_unref(sg->infile_msole);
 		g_object_unref(sg->input_container);
 		g_error_free(error);
+		g_free(sg);
+		return NULL;
+	}
+	if(!GSF_IS_INPUT(sg->input_subfile)) {
+		g_object_unref(sg->infile_msole);
+		g_object_unref(sg->input_container);
+		g_free(sg);
 		return NULL;
 	}
 

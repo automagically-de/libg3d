@@ -14,6 +14,7 @@ typedef struct {
 
 typedef struct {
 	guint16 id;
+	gint32 parentid;
 	guint16 level;
 	gint32 nb;
 	gpointer object;
@@ -25,5 +26,9 @@ typedef gboolean (* MaxCallback)(MaxGlobalData *global, MaxLocalData *local);
 
 gboolean max_cb_0x0005(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x0100(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x010A(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x08FE(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x0912(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x0914(MaxGlobalData *global, MaxLocalData *local);
 
 #endif /* _IMP_MAX_CALLBACKS_H */

@@ -26,6 +26,7 @@
 #include <g3d/context.h>
 #include <g3d/read.h>
 #include <g3d/object.h>
+#include <g3d/material.h>
 #include <g3d/stream.h>
 
 #include "imp_max_chunks.h"
@@ -33,16 +34,38 @@
 static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	const gchar *filename, const gchar *subfile);
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
-	guint32 level);
+	guint32 level, gint32 parentid, gpointer object);
 static MaxChunk *max_get_chunk_desc(guint16 id, gboolean container);
+
+static const gchar *max_subfiles[] = {
+	"Config",
+	"VideoPostQueue",
+	"ScriptedCustAttribDefs",
+	"DllDirectory",
+	"ClassDirectory",
+	"ClassDirectory2",
+	"ClassDirectory3",
+	"ClassData",
+	"Scene",
+	NULL
+};
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
 {
-	gboolean retval;
+	gboolean retval = FALSE;
+	G3DMaterial *material;
+	const gchar **subfile = max_subfiles;
 
-	retval = max_read_subfile(context, model, filename, "Config");
-	retval = max_read_subfile(context, model, filename, "Scene");
+	/* create default material */
+	material = g3d_material_new();
+	material->name = g_strdup("default material");
+	model->materials = g_slist_append(model->materials, material);
+
+	while(*subfile) {
+		retval = max_read_subfile(context, model, filename, *subfile);
+		subfile ++;
+	}
 
 	g3d_context_update_progress_bar(context, 0.0, FALSE);
 
@@ -77,14 +100,17 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 		return FALSE;
 	}
 
+	fsize = g3d_stream_size(ssf);
+
+	g_debug("\\%s (%d bytes)", subfile, fsize);
+
 	global = g_new0(MaxGlobalData, 1);
 	global->context = context;
 	global->model = model;
 	global->stream = ssf;
 	global->padding = "                                               ";
 
-	fsize = g3d_stream_size(ssf);
-	while(max_read_chunk(global, &fsize, 0));
+	while(max_read_chunk(global, &fsize, 1, -1, NULL));
 
 	g_free(global);
 	g3d_stream_close(ssf);
@@ -93,12 +119,11 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 }
 
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
-	guint32 level)
+	guint32 level, gint32 parentid, gpointer object)
 {
 	guint16 id;
 	guint32 length;
 	gboolean container;
-	gint32 bytes;
 	MaxChunk *chunk;
 	MaxLocalData *local;
 
@@ -109,16 +134,11 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	length = g3d_stream_read_int32_le(global->stream);
 	container = (length & 0x80000000);
 	length &= 0x7FFFFFFF;
-	bytes = length - 6;
 
 	if(nb && (length > *nb))
 		return FALSE;
-
 	if(nb)
-		*nb -= 6;
-
-	if(nb)
-		*nb -= bytes;
+		*nb -= length;
 
 	chunk = max_get_chunk_desc(id, container);
 
@@ -132,25 +152,26 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 		(guint32)g3d_stream_tell(global->stream) - 6);
 #endif
 
-	if(container) {
-		while(bytes > 0) {
-			if(!max_read_chunk(global, &bytes, level + 1))
-				return FALSE;
-		}
-	} else if(chunk && chunk->callback) {
-		local = g_new0(MaxLocalData, 1);
-		local->id = id;
-		local->nb = length - 6;
-		local->level = level + 1;
+	local = g_new0(MaxLocalData, 1);
+	local->id = id;
+	local->parentid = parentid;
+	local->nb = length - 6;
+	local->level = level + 1;
+	local->object = object;
+
+	if(chunk && chunk->callback)
 		chunk->callback(global, local);
-		/* skip remaining bytes */
-		if(local->nb > 0)
-			g3d_stream_seek(global->stream, local->nb, G_SEEK_CUR);
-		g_free(local);
-	} else {
-		/* skip non-container stuff for now */
-		g3d_stream_seek(global->stream, bytes, G_SEEK_CUR);
-	}
+
+	if(container)
+		while(local->nb > 0)
+			if(!max_read_chunk(global, &(local->nb), level + 1, id,
+				local->object))
+				return FALSE;
+
+	if(local->nb > 0)
+		g3d_stream_seek(global->stream, local->nb, G_SEEK_CUR);
+
+	g_free(local);
 
 	g3d_context_update_interface(global->context);
 

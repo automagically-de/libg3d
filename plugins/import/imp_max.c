@@ -35,7 +35,8 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	const gchar *filename, const gchar *subfile);
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	guint32 level, gint32 parentid, gpointer object);
-static MaxChunk *max_get_chunk_desc(guint16 id, gboolean container);
+static MaxChunk *max_get_chunk_desc(guint16 id, gint32 parentid,
+	gboolean container);
 
 static const gchar *max_subfiles[] = {
 	"Config",
@@ -109,8 +110,9 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	global->model = model;
 	global->stream = ssf;
 	global->padding = "                                               ";
+	global->subfile = subfile;
 
-	while(max_read_chunk(global, &fsize, 1, -1, NULL));
+	while(max_read_chunk(global, &fsize, 1 /* level */, PINONE, NULL));
 
 	g_free(global);
 	g3d_stream_close(ssf);
@@ -140,7 +142,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	if(nb)
 		*nb -= length;
 
-	chunk = max_get_chunk_desc(id, container);
+	chunk = max_get_chunk_desc(id, parentid, container);
 
 #if DEBUG > 0
 	g_debug("\\%s(%d)[0x%04X][%c%c] %s - %d (%d) bytes @ 0x%08x",
@@ -184,7 +186,8 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	return TRUE;
 }
 
-static MaxChunk *max_get_chunk_desc(guint16 id, gboolean container)
+static MaxChunk *max_get_chunk_desc(guint16 id, gint32 parentid,
+	gboolean container)
 {
 	MaxChunk *chunk, *chunks;
 	gint32 i;
@@ -194,10 +197,13 @@ static MaxChunk *max_get_chunk_desc(guint16 id, gboolean container)
 	else
 		chunks = max_chunks;
 
-	for(i = 0, chunk = &(chunks[i]); chunk->id <= id;
+	for(i = 0, chunk = &(chunks[i]); chunk->id != PINONE;
 		i ++, chunk = &(chunks[i])) {
-		if(chunk->id == id)
-			return chunk;
+		if((chunk->parentid == PISOME) || (parentid == chunk->parentid) ||
+			(parentid == PISOME)) {
+			if(chunk->id == id)
+				return chunk;
+		} /* parentid */
 	}
 	return NULL;
 }

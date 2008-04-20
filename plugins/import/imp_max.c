@@ -200,7 +200,8 @@ static MaxChunk *max_get_chunk_desc(guint16 id, gint32 parentid,
 	for(i = 0, chunk = &(chunks[i]); chunk->id != PINONE;
 		i ++, chunk = &(chunks[i])) {
 		if((chunk->parentid == PISOME) || (parentid == chunk->parentid) ||
-			(parentid == PISOME)) {
+			(parentid == PISOME) ||
+			((chunk->parentid == PIROOT) && ((parentid & 0xFFF0) == 0x2000))) {
 			if(chunk->id == id)
 				return chunk;
 		} /* parentid */

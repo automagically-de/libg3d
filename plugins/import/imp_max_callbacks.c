@@ -29,16 +29,43 @@
 static gchar *max_read_wchar(G3DStream *stream, guint32 n)
 {
 	gint32 i;
+	gunichar2 *u16text;
 	gchar *text;
+	GError *error = NULL;
 
-	/* TODO: real wide char handling */
-
-	text = g_new0(gchar, n + 1);
+	u16text = g_new0(gunichar2, n + 1);
 	for(i = 0; i < n; i ++) {
-		text[i] = g3d_stream_read_int8(stream);
-		g3d_stream_read_int8(stream);
+		u16text[i] = g3d_stream_read_int16_le(stream);
 	}
+
+	text = g_utf16_to_utf8(u16text, n, NULL, NULL, &error);
+	if(error != NULL) {
+		g_warning("UTF-16 to UTF-8 conversion failed: %s",
+			error->message);
+		g_error_free(error);
+	}
+	g_free(u16text);
+
 	return text;
+}
+
+gboolean max_cb_debug_int32(MaxGlobalData *global, MaxLocalData *local)
+{
+	union {
+		gint32 i;
+		gfloat f;
+	} u;
+
+	g_return_val_if_fail(local->nb >= 4, FALSE);
+
+	u.i = g3d_stream_read_int32_le(global->stream);
+	local->nb -= 4;
+
+	g_debug("\\%s[D32] %d (0x%08x, %.2f)",
+		(global->padding + (strlen(global->padding) - local->level)),
+		u.i, u.i, u.f);
+
+	return TRUE;
 }
 
 gboolean max_cb_debug_wchars(MaxGlobalData *global, MaxLocalData *local)
@@ -200,10 +227,30 @@ gboolean max_cb_0x08FE_0x010A(MaxGlobalData *global, MaxLocalData *local)
 	return TRUE;
 }
 
+gboolean max_cb_PIROOT_0x001B(MaxGlobalData *global, MaxLocalData *local)
+{
+	G3DObject *object;
+
+	object = g_new0(G3DObject, 1);
+	if(object->name)
+		g_free(object->name);
+	object->name = g_strdup_printf("0x001B object @ 0x%08x",
+		(guint32)g3d_stream_tell(global->stream));
+	local->object = object;
+	global->model->objects = g_slist_append(global->model->objects, object);
+
+	return TRUE;
+}
+
 /* mesh */
 gboolean max_cb_0x001B_0x08FE(MaxGlobalData *global, MaxLocalData *local)
 {
 	G3DObject *object;
+
+	/* already created in 0x001B (should be) */
+	if(local->object)
+		return TRUE;
+
 	object = g_new0(G3DObject, 1);
 	if(object->name)
 		g_free(object->name);
@@ -211,6 +258,22 @@ gboolean max_cb_0x001B_0x08FE(MaxGlobalData *global, MaxLocalData *local)
 		(guint32)g3d_stream_tell(global->stream));
 	local->object = object;
 	global->model->objects = g_slist_append(global->model->objects, object);
+
+	return TRUE;
+}
+
+/* object name */
+gboolean max_cb_0x001B_0x0962(MaxGlobalData *global, MaxLocalData *local)
+{
+	G3DObject *object = (G3DObject *)local->object;
+	gint32 len;
+
+	g_return_val_if_fail(object != NULL, FALSE);
+
+	g_free(object->name);
+	len = local->nb / 2;
+	object->name = max_read_wchar(global->stream, len);
+	local->nb -= len * 2;
 
 	return TRUE;
 }

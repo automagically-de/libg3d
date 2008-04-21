@@ -38,6 +38,22 @@ static void _g_print(const gchar *str)
 #endif
 }
 
+#define ANSI_RESET "\033[0m"
+#define ANSI_GREEN "\033[32m"
+#define ANSI_RED   "\033[31m"
+
+static void log_handler(const gchar *log_domain, GLogLevelFlags log_level,
+	const gchar *message, gpointer user_data)
+{
+	if(message[0] == '\\') {
+		printf(ANSI_GREEN "%s\n" ANSI_RESET, message + 1);
+	} else if(message[0] == '|') {
+		printf("%s\n", message + 1);
+	} else {
+		printf(ANSI_RED "%s\n" ANSI_RESET, message);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	G3DContext *context;
@@ -52,6 +68,7 @@ int main(int argc, char **argv)
 
 	g_set_print_handler(_g_print);
 	g_set_printerr_handler(_g_print);
+	g_log_set_handler("LibG3D", G_LOG_LEVEL_MASK, log_handler, NULL);
 
 	context = g3d_context_new();
 

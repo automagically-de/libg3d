@@ -39,6 +39,7 @@ static MaxChunk *max_get_chunk_desc(guint16 id, gint32 parentid,
 	gboolean container);
 
 static const gchar *max_subfiles[] = {
+#if 0
 	"Config",
 	"VideoPostQueue",
 	"ScriptedCustAttribDefs",
@@ -47,6 +48,7 @@ static const gchar *max_subfiles[] = {
 	"ClassDirectory2",
 	"ClassDirectory3",
 	"ClassData",
+#endif
 	"Scene",
 	NULL
 };
@@ -112,7 +114,7 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	global->padding = "                                               ";
 	global->subfile = subfile;
 
-	while(max_read_chunk(global, &fsize, 1 /* level */, PINONE, NULL));
+	while(max_read_chunk(global, &fsize, 1 /* level */, IDNONE, NULL));
 
 	g_free(global);
 	g3d_stream_close(ssf);
@@ -145,7 +147,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	chunk = max_get_chunk_desc(id, parentid, container);
 
 #if DEBUG > 0
-	g_debug("\\%s(%d)[0x%04X][%c%c] %s - %d (%d) bytes @ 0x%08x",
+	g_debug("\\%s(%d)[0x%04X][%c%c] %s -- %d (%d) bytes @ 0x%08x",
 		(global->padding + (strlen(global->padding) - level)), level,
 		id, (container ? 'c' : ' '),
 		(chunk && chunk->callback) ? 'f' : ' ',
@@ -177,7 +179,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 
 	g3d_context_update_interface(global->context);
 
-	if(level < 2)
+	if(level < 3)
 		g3d_context_update_progress_bar(global->context,
 			(gfloat)g3d_stream_tell(global->stream) /
 			(gfloat)g3d_stream_size(global->stream),
@@ -197,11 +199,14 @@ static MaxChunk *max_get_chunk_desc(guint16 id, gint32 parentid,
 	else
 		chunks = max_chunks;
 
-	for(i = 0, chunk = &(chunks[i]); chunk->id != PINONE;
+	for(i = 0, chunk = &(chunks[i]); chunk->id != IDNONE;
 		i ++, chunk = &(chunks[i])) {
-		if((chunk->parentid == PISOME) || (parentid == chunk->parentid) ||
-			(parentid == PISOME) ||
-			((chunk->parentid == PIROOT) && ((parentid & 0xFFF0) == 0x2000))) {
+		if((chunk->parentid == IDSOME) || (parentid == chunk->parentid) ||
+			(parentid == IDSOME) ||
+			((chunk->parentid == IDROOT) && ID_IS_ROOT(parentid)) ||
+			((chunk->parentid == IDGEOM) && ID_IS_GEOM(parentid)) ||
+			((chunk->parentid == IDMATG) && ID_IS_MATG(parentid)) ||
+			((chunk->parentid == IDFILE) && ID_IS_FILE(parentid))) {
 			if(chunk->id == id)
 				return chunk;
 		} /* parentid */

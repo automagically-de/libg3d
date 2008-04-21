@@ -29,14 +29,15 @@ gboolean max_cb_debug_int32(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_debug_string(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_debug_wchars(MaxGlobalData *global, MaxLocalData *local);
 
-gboolean max_cb_PIROOT_0x001B(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_IDROOT_IDGEOM(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_IDMATG_0x4000(MaxGlobalData *global, MaxLocalData *local);
+
+gboolean max_cb_IDGEOM_0x08FE(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_IDGEOM_0x0962(MaxGlobalData *global, MaxLocalData *local);
 
 gboolean max_cb_0x0001_0x0005(MaxGlobalData *global, MaxLocalData *local);
 
-gboolean max_cb_0x0005_0x4000(MaxGlobalData *global, MaxLocalData *local);
-
-gboolean max_cb_0x001B_0x08FE(MaxGlobalData *global, MaxLocalData *local);
-gboolean max_cb_0x001B_0x0962(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x0118_0x0110(MaxGlobalData *global, MaxLocalData *local);
 
 gboolean max_cb_0x08FE_0x0100(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x08FE_0x010A(MaxGlobalData *global, MaxLocalData *local);

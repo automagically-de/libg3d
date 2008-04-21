@@ -56,15 +56,14 @@ gboolean max_cb_debug_int32(MaxGlobalData *global, MaxLocalData *local)
 		gfloat f;
 	} u;
 
-	g_return_val_if_fail(local->nb >= 4, FALSE);
+	while(local->nb >= 4) {
+		u.i = g3d_stream_read_int32_le(global->stream);
+		local->nb -= 4;
 
-	u.i = g3d_stream_read_int32_le(global->stream);
-	local->nb -= 4;
-
-	g_debug("\\%s[D32] %d (0x%08x, %.2f)",
-		(global->padding + (strlen(global->padding) - local->level)),
-		u.i, u.i, u.f);
-
+		g_debug("|%s[D32] 0x%08x, %d, %.2f",
+			(global->padding + (strlen(global->padding) - local->level)),
+			u.i, u.i, u.f);
+	}
 	return TRUE;
 }
 
@@ -77,7 +76,7 @@ gboolean max_cb_debug_wchars(MaxGlobalData *global, MaxLocalData *local)
 	str = max_read_wchar(global->stream, len);
 	local->nb -= len * 2;
 
-	g_debug("\\%s[TEXT] %s (%d)",
+	g_debug("|%s[TEXT] %s (%d)",
 		(global->padding + (strlen(global->padding) - local->level)),
 		str, len);
 	g_free(str);
@@ -100,7 +99,7 @@ gboolean max_cb_debug_string(MaxGlobalData *global, MaxLocalData *local)
 	g3d_stream_read(global->stream, str, 1, len);
 	local->nb -= len;
 
-	g_debug("\\%s[TEXT] %s (%d)",
+	g_debug("|%s[TEXT] %s (%d)",
 		(global->padding + (strlen(global->padding) - local->level)),
 		str, len);
 	g_free(str);
@@ -113,14 +112,15 @@ gboolean max_cb_0x0001_0x0005(MaxGlobalData *global, MaxLocalData *local)
 	gchar *str;
 	gint32 len, i, w3[3], cnt = 0;
 
-	g_return_val_if_fail(local->nb >= 4, FALSE);
+	if(local->nb < 4)
+		return FALSE;
 
 	/* flags? */
 	i = g3d_stream_read_int32_le(global->stream);
 	local->nb -= 4;
 
 #if DEBUG > 0
-	g_debug("\\%s[PROP] 0x%08x",
+	g_debug("|%s[PROP] 0x%08x",
 		(global->padding + (strlen(global->padding) - local->level)), i);
 #endif
 
@@ -135,7 +135,7 @@ gboolean max_cb_0x0001_0x0005(MaxGlobalData *global, MaxLocalData *local)
 		local->nb -= 6;
 		cnt ++;
 #if DEBUG > 0
-		g_debug("\\%s[PROP]  %04d: '%s' (%d bytes) [%d, %d, %d]",
+		g_debug("|%s[PROP]  %04d: '%s' (%d bytes) [%d, %d, %d]",
 			(global->padding + (strlen(global->padding) - local->level)),
 			cnt, str, len,
 			w3[0], w3[1], w3[2]);
@@ -211,7 +211,7 @@ gboolean max_cb_0x08FE_0x010A(MaxGlobalData *global, MaxLocalData *local)
 			return FALSE;
 		for(j = 0; j < 3; j ++) {
 			face->vertex_indices[j] =
-				g3d_stream_read_int16_le(global->stream);
+				g3d_stream_read_int16_le(global->stream) & 0x00FFFFFF;
 			if(face->vertex_indices[j] >= object->vertex_count) {
 				g_warning("MAX: 0x08FE::0x010A: vertex index too high"
 					" (%d (0x%08x) >= %d)",
@@ -227,15 +227,15 @@ gboolean max_cb_0x08FE_0x010A(MaxGlobalData *global, MaxLocalData *local)
 	return TRUE;
 }
 
-gboolean max_cb_PIROOT_0x001B(MaxGlobalData *global, MaxLocalData *local)
+gboolean max_cb_IDROOT_IDGEOM(MaxGlobalData *global, MaxLocalData *local)
 {
 	G3DObject *object;
 
 	object = g_new0(G3DObject, 1);
 	if(object->name)
 		g_free(object->name);
-	object->name = g_strdup_printf("0x001B object @ 0x%08x",
-		(guint32)g3d_stream_tell(global->stream));
+	object->name = g_strdup_printf("0x%04X object @ 0x%08x",
+		local->id, (guint32)g3d_stream_tell(global->stream));
 	local->object = object;
 	global->model->objects = g_slist_append(global->model->objects, object);
 
@@ -243,7 +243,7 @@ gboolean max_cb_PIROOT_0x001B(MaxGlobalData *global, MaxLocalData *local)
 }
 
 /* mesh */
-gboolean max_cb_0x001B_0x08FE(MaxGlobalData *global, MaxLocalData *local)
+gboolean max_cb_IDGEOM_0x08FE(MaxGlobalData *global, MaxLocalData *local)
 {
 	G3DObject *object;
 
@@ -263,18 +263,64 @@ gboolean max_cb_0x001B_0x08FE(MaxGlobalData *global, MaxLocalData *local)
 }
 
 /* object name */
-gboolean max_cb_0x001B_0x0962(MaxGlobalData *global, MaxLocalData *local)
+gboolean max_cb_IDGEOM_0x0962(MaxGlobalData *global, MaxLocalData *local)
 {
 	G3DObject *object = (G3DObject *)local->object;
+	gchar *name;
 	gint32 len;
 
 	g_return_val_if_fail(object != NULL, FALSE);
 
 	g_free(object->name);
 	len = local->nb / 2;
-	object->name = max_read_wchar(global->stream, len);
+	name = max_read_wchar(global->stream, len);
+	object->name = g_strdup_printf("%s (0x%08x)",
+		name, (guint32)g3d_stream_tell(global->stream) - len - 6);
+	g_free(name);
+#if DEBUG > 0
+	g_debug("|%s[NAME] %s",
+		(global->padding + (strlen(global->padding) - local->level)),
+		object->name);
+#endif
 	local->nb -= len * 2;
 
+	return TRUE;
+}
+
+/* single face */
+gboolean max_cb_0x0118_0x0110(MaxGlobalData *global, MaxLocalData *local)
+{
+	guint32 num;
+	gint i;
+	G3DObject *object = (G3DObject *)local->object;
+	G3DMaterial *mat;
+	G3DFace *face;
+
+	g_return_val_if_fail(local->nb >= 4, FALSE);
+	g_return_val_if_fail(object != NULL, FALSE);
+
+	mat = (G3DMaterial *)g_slist_nth_data(global->model->materials, 0);
+
+	num = g3d_stream_read_int32_le(global->stream);
+	local->nb -= 4;
+
+	face = g_new0(G3DFace, 1);
+	face->vertex_count = num;
+	face->vertex_indices = g_new0(guint32, num);
+	face->material = mat;
+	object->faces = g_slist_append(object->faces, face);
+
+	g_return_val_if_fail(local->nb >= (num * 4), FALSE);
+	for(i = 0; i < num; i ++) {
+		face->vertex_indices[i] = g3d_stream_read_int32_le(global->stream);
+		local->nb -= 4;
+		if(face->vertex_indices[i] >= object->vertex_count) {
+			g_warning("MAX: 0x0118::0x0110: vertex index (%d) >= "
+				"vertex count (%d)",
+				face->vertex_indices[i], object->vertex_count);
+			face->vertex_indices[i] = 0;
+		}
+	}
 	return TRUE;
 }
 
@@ -362,8 +408,8 @@ gboolean max_cb_0x08FE_0x0914(MaxGlobalData *global, MaxLocalData *local)
 	return TRUE;
 }
 
-/* material group */
-gboolean max_cb_0x0005_0x4000(MaxGlobalData *global, MaxLocalData *local)
+/* material */
+gboolean max_cb_IDMATG_0x4000(MaxGlobalData *global, MaxLocalData *local)
 {
 	G3DMaterial *material;
 

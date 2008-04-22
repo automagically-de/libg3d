@@ -222,7 +222,7 @@ gboolean max_cb_0x08FE_0x010A(MaxGlobalData *global, MaxLocalData *local)
 /* polygon data */
 gboolean max_cb_0x08FE_0x011A(MaxGlobalData *global, MaxLocalData *local)
 {
-	gint32 i, tmp;
+	gint32 i;
 	guint32 numpoly, type, numvert, cntpoly = 0;
 	G3DObject *object = (G3DObject *)local->object;
 	G3DFace *face;
@@ -265,65 +265,38 @@ gboolean max_cb_0x08FE_0x011A(MaxGlobalData *global, MaxLocalData *local)
 		}
 		type = g3d_stream_read_int16_le(global->stream);
 		local->nb -= 2;
-		switch(type) {
-			case 0x0021:
-			case 0x0030:
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				local->nb -= 12;
-				break;
-#if 0
-			case 0x0029:
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int16_le(global->stream);
-				local->nb -= 14;
-				break;
-#endif
-			case 0x0031:
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				local->nb -= 16;
-				break;
-#if 1
-			case 0x0029:
-			case 0x0038:
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int16_le(global->stream);
-				local->nb -= 14;
-				break;
-#endif
-#if 1
-			case 0x0039:
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int32_le(global->stream);
-				g3d_stream_read_int16_le(global->stream);
-				local->nb -= 18;
-				break;
-#endif
-			default:
-				g_warning(
-					"MAX: 0x011A: unknown polygon data type 0x%04X @ 0x%08x",
-					type, (guint32)g3d_stream_tell(global->stream) - 2);
+
+		if(type & 0xFFC6) {
+			g_warning("MAX: 0x011A: unhandled 0x%08x", type);
 #if DEBUG > 0
-				tmp = MIN(local->nb, 20);
-				for(i = 0; i < tmp; i ++) {
-					g_debug("|%s[POLY]   [%04X] 0x%04x",
-						(global->padding + (strlen(global->padding) -
-							local->level)),
-						type, g3d_stream_read_int8(global->stream));
-					local->nb --;
-				}
+			numvert = MIN(local->nb / 2, 20);
+			for(i = 0; i < numvert; i ++) {
+				g_debug("|%s[POLY] 0x%04x",
+				(global->padding + (strlen(global->padding) - local->level)),
+					g3d_stream_read_int16_le(global->stream));
+				local->nb -= 2;
+			}
 #endif
-				return FALSE;
+			return FALSE;
+		}
+
+		/* FIXME: order of additional data most likely wrong */
+		for(i = 3; i < numvert; i ++) {
+			g3d_stream_read_int32_le(global->stream);
+			g3d_stream_read_int32_le(global->stream);
+			local->nb -= 8;
+		}
+		if(type & 0x0001) {
+			g3d_stream_read_int32_le(global->stream);
+			local->nb -= 4;
+		}
+		if(type & 0x0008) {
+			g3d_stream_read_int16_le(global->stream);
+			local->nb -= 2;
+		}
+		if(type & 0x0010) {
+			g3d_stream_read_int32_le(global->stream);
+			local->nb -= 4;
 		}
 		cntpoly ++;
 	}

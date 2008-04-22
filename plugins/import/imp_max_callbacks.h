@@ -41,6 +41,9 @@ gboolean max_cb_0x0118_0x0110(MaxGlobalData *global, MaxLocalData *local);
 
 gboolean max_cb_0x08FE_0x0100(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x08FE_0x010A(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x08FE_0x011A(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x08FE_0x0128(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x08FE_0x012B(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x08FE_0x0912(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x08FE_0x0914(MaxGlobalData *global, MaxLocalData *local);
 

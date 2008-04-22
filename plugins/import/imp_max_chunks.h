@@ -17,7 +17,8 @@
 	 ((pid) == 0x2006) || ((pid) == 0x2008) || ((pid) == 0x2009) || \
 	 ((pid) == 0x200A) || ((pid) == 0x200B))
 #define ID_IS_GEOM(pid) \
-	(((pid) == 0x0014) || ((pid) == 0x0017) || ((pid) == 0x0019) || \
+	(((pid) == 0x0013) || ((pid) == 0x0014) || ((pid) == 0x0017) || \
+	 ((pid) == 0x0018) || ((pid) == 0x0019) || \
 	 ((pid) == 0x001B) || ((pid) == 0x001C) || ((pid) == 0x0026))
 #define ID_IS_MATG(pid) \
 	(((pid) == 0x0002) || \
@@ -40,8 +41,10 @@ static MaxChunk max_cnt_chunks[] = {
 	{ 0x0003, IDROOT, "[DEBUG] container",         NULL },
 	{ 0x0004, IDROOT, "[DEBUG] container",         NULL },
 
+	{ 0x0013, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
 	{ 0x0014, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
 	{ 0x0017, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
+	{ 0x0018, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
 	{ 0x0019, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
 	{ 0x001B, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
 	{ 0x0026, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },

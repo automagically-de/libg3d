@@ -32,7 +32,7 @@ pluginimp_LTLIBRARIES += \
 	imp_test.la
 if HAVE_LIBXML2
 pluginimp_LTLIBRARIES += \
-	imp_collada.la \
+	imp_dae.la \
 	imp_osm.la
 endif # HAVE_LIBXML2
 pluginimp_LTLIBRARIES += \
@@ -77,10 +77,10 @@ imp_ar_la_SOURCES = imp_ar.c imp_ar.h \
 	imp_ar_carini.c imp_ar_carini.h
 imp_ase_la_SOURCES = imp_ase.c
 imp_cob_la_SOURCES = imp_cob.c
-imp_collada_la_SOURCES = imp_collada.c \
-	imp_collada_xml.c imp_collada_xml.h \
-	imp_collada_library.c imp_collada_library.h
-imp_collada_la_LIBADD = @GLIB_LIBS@ @LIBXML2_LIBS@
+imp_dae_la_SOURCES = imp_dae.c \
+	imp_dae_xml.h imp_dae_xml.c \
+	imp_dae_library.h imp_dae_library.c
+imp_dae_la_LIBADD = @GLIB_LIBS@ @LIBXML2_LIBS@
 imp_dxf_la_SOURCES = imp_dxf.c
 imp_flt_la_SOURCES = imp_flt.c imp_flt.h \
 	imp_flt_opcodes.h \

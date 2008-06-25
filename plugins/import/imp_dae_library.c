@@ -1,0 +1,125 @@
+#include <glib.h>
+#include <libxml/tree.h>
+
+#include "imp_dae_xml.h"
+#include "imp_dae_library.h"
+
+struct _DaeLibrary {
+	GHashTable *ids;
+	GSList *libs;
+};
+
+typedef struct {
+	GHashTable *ids;
+	GSList *nodes;
+} DaeLibraryNodes;
+
+static gchar *dae_library_names[][2] = {
+	{ "library_animations",    "animation"    },
+	{ "library_cameras",       "camera"       },
+	{ "library_controllers",   "controller"   },
+	{ "library_effects",       "effect"       },
+	{ "library_geometries",    "geometry"     },
+	{ "library_images",        "image"        },
+	{ "library_lights",        "light"        },
+	{ "library_materials",     "material"     },
+	{ "library_visual_scenes", "visual_scene" },
+	{ NULL, NULL }
+};
+
+static gboolean dae_add_library(DaeLibrary *lib, xmlNodePtr libnode,
+	guint32 entryid)
+{
+	xmlNodePtr node;
+	xmlAttrPtr attr;
+	DaeLibraryNodes *nodelib;
+	gchar *id;
+
+	nodelib = g_new0(DaeLibraryNodes, 1);
+	nodelib->ids = g_hash_table_new_full(
+		g_str_hash, g_str_equal, g_free, NULL);
+	g_hash_table_insert(lib->ids, g_strdup(dae_library_names[entryid][1]),
+		nodelib);
+	lib->libs = g_slist_append(lib->libs, nodelib);
+
+	node = libnode->children;
+	while(node != NULL) {
+		if((node->type == XML_ELEMENT_NODE) &&
+			(xmlStrcmp(node->name,
+				(const xmlChar *)dae_library_names[entryid][1]) == 0)) {
+			/* found library entry */
+			attr = node->properties;
+			while(attr != NULL) {
+				if(xmlStrcmp(attr->name, (xmlChar *)"id") == 0) {
+					id = g_strdup((gchar *)attr->children->content);
+					g_debug("\t%s id=\"%s\"", dae_library_names[entryid][1],
+						id);
+					g_hash_table_insert(nodelib->ids, id, node);
+					nodelib->nodes = g_slist_append(nodelib->nodes, node);
+				}
+				attr = attr->next;
+			}
+		}
+		node = node->next;
+	}
+	return TRUE;
+}
+
+DaeLibrary *dae_library_load(xmlDocPtr xmldoc)
+{
+	DaeLibrary *lib;
+	gint i = 0;
+	xmlNodePtr rootnode, node;
+
+	lib = g_new0(DaeLibrary, 1);
+	lib->ids = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+
+	rootnode = xmlDocGetRootElement(xmldoc);
+	g_return_val_if_fail(rootnode != NULL, NULL);
+
+	while(dae_library_names[i][0] != NULL) {
+		g_debug("loading library %s", dae_library_names[i][0]);
+		node = rootnode->children;
+		while(node != NULL) {
+			if((node->type == XML_ELEMENT_NODE) &&
+				(xmlStrcmp(node->name,
+					(const xmlChar *)dae_library_names[i][0]) == 0)) {
+				dae_add_library(lib, node, i);
+				break;
+			}
+			node = node->next;
+		}
+		i ++;
+	}
+	return lib;
+}
+
+xmlNodePtr dae_library_lookup(DaeLibrary *library, const gchar *tagname,
+	const gchar *id)
+{
+	DaeLibraryNodes *nodelib;
+
+	nodelib = g_hash_table_lookup(library->ids, tagname);
+	if(nodelib == NULL) {
+		g_warning("DAE: failed to lookup library for '%s'", tagname);
+		return NULL;
+	}
+	return (xmlNodePtr)g_hash_table_lookup(nodelib->ids, id);
+}
+
+void dae_library_cleanup(DaeLibrary *library)
+{
+	DaeLibraryNodes *nodelib;
+	GSList *item;
+
+	for(item = library->libs; item != NULL; item = item->next) {
+		nodelib = (DaeLibraryNodes *)item->data;
+		g_hash_table_destroy(nodelib->ids);
+		g_slist_free(nodelib->nodes);
+	}
+
+	g_hash_table_destroy(library->ids);
+	g_slist_free(library->libs);
+	g_free(library);
+}
+

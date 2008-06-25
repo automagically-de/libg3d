@@ -169,15 +169,17 @@ gboolean max_cb_0x08FE_0x0100(MaxGlobalData *global, MaxLocalData *local)
 		(global->padding + (strlen(global->padding) - local->level)),
 		num);
 #endif
-	object->vertex_count = num;
-	object->vertex_data = g_new0(gfloat, 3 * num);
+	global->vertex_offset = object->vertex_count;
+	object->vertex_count += num;
+	object->vertex_data = g_realloc(object->vertex_data,
+		object->vertex_count * 3 * sizeof(gfloat));
 
 	for(i = 0; i < num; i ++) {
 		if(local->nb < 16)
 			return FALSE;
 		g3d_stream_read_int32_le(global->stream); /* always 0 */
 		for(j = 0; j < 3; j ++)
-			object->vertex_data[i * 3 + j] =
+			object->vertex_data[(global->vertex_offset + i) * 3 + j] =
 				g3d_stream_read_float_le(global->stream);
 		local->nb -= 16;
 	}
@@ -231,7 +233,8 @@ gboolean max_cb_0x08FE_0x011A(MaxGlobalData *global, MaxLocalData *local)
 	g_return_val_if_fail(local->nb >= 4, FALSE);
 	g_return_val_if_fail(object != NULL, FALSE);
 
-	material = (G3DMaterial *)g_slist_nth_data(global->model->materials, 0);
+	material = (G3DMaterial *)g_slist_nth_data(global->model->materials,
+		(global->vertex_offset ? 1 : 0));
 	g_return_val_if_fail(material != NULL, FALSE);
 
 	numpoly = g3d_stream_read_int32_le(global->stream);
@@ -258,6 +261,7 @@ gboolean max_cb_0x08FE_0x011A(MaxGlobalData *global, MaxLocalData *local)
 		object->faces = g_slist_append(object->faces, face);
 		for(i = 0; i < numvert; i ++) {
 			face->vertex_indices[i] =
+				global->vertex_offset +
 				g3d_stream_read_int32_le(global->stream);
 			local->nb -= 4;
 			g_return_val_if_fail(
@@ -379,17 +383,19 @@ gboolean max_cb_0x08FE_0x012B(MaxGlobalData *global, MaxLocalData *local)
 	return TRUE;
 }
 
+/* geometric object */
 gboolean max_cb_IDROOT_IDGEOM(MaxGlobalData *global, MaxLocalData *local)
 {
 	G3DObject *object;
 
 	object = g_new0(G3DObject, 1);
-	if(object->name)
-		g_free(object->name);
 	object->name = g_strdup_printf("0x%04X object @ 0x%08x",
 		local->id, (guint32)g3d_stream_tell(global->stream));
 	local->object = object;
 	global->model->objects = g_slist_append(global->model->objects, object);
+
+	global->object = object;
+	global->vertex_offset = 0;
 
 	return TRUE;
 }
@@ -397,20 +403,7 @@ gboolean max_cb_IDROOT_IDGEOM(MaxGlobalData *global, MaxLocalData *local)
 /* mesh */
 gboolean max_cb_IDGEOM_0x08FE(MaxGlobalData *global, MaxLocalData *local)
 {
-	G3DObject *object;
-
-	/* already created in 0x001B (should be) */
-	if(local->object)
-		return TRUE;
-
-	object = g_new0(G3DObject, 1);
-	if(object->name)
-		g_free(object->name);
-	object->name = g_strdup_printf("0x08FE object @ 0x%08x",
-		(guint32)g3d_stream_tell(global->stream));
-	local->object = object;
-	global->model->objects = g_slist_append(global->model->objects, object);
-
+	g_return_val_if_fail(global->object != NULL, FALSE);
 	return TRUE;
 }
 
@@ -451,7 +444,8 @@ gboolean max_cb_0x0118_0x0110(MaxGlobalData *global, MaxLocalData *local)
 	g_return_val_if_fail(local->nb >= 4, FALSE);
 	g_return_val_if_fail(object != NULL, FALSE);
 
-	mat = (G3DMaterial *)g_slist_nth_data(global->model->materials, 0);
+	mat = (G3DMaterial *)g_slist_nth_data(global->model->materials,
+		(global->vertex_offset ? 1 : 0));
 
 	num = g3d_stream_read_int32_le(global->stream);
 	local->nb -= 4;
@@ -464,12 +458,15 @@ gboolean max_cb_0x0118_0x0110(MaxGlobalData *global, MaxLocalData *local)
 
 	g_return_val_if_fail(local->nb >= (num * 4), FALSE);
 	for(i = 0; i < num; i ++) {
-		face->vertex_indices[i] = g3d_stream_read_int32_le(global->stream);
+		face->vertex_indices[i] =
+			global->vertex_offset +
+			g3d_stream_read_int32_le(global->stream);
 		local->nb -= 4;
 		if(face->vertex_indices[i] >= object->vertex_count) {
 			g_warning("MAX: 0x0118::0x0110: vertex index (%d) >= "
 				"vertex count (%d)",
-				face->vertex_indices[i], object->vertex_count);
+				face->vertex_indices[i],
+				object->vertex_count);
 			face->vertex_indices[i] = 0;
 		}
 	}
@@ -485,7 +482,8 @@ gboolean max_cb_0x08FE_0x0912(MaxGlobalData *global, MaxLocalData *local)
 	G3DFace *face;
 	G3DMaterial *mat;
 
-	mat = (G3DMaterial *)g_slist_nth_data(global->model->materials, 0);
+	mat = (G3DMaterial *)g_slist_nth_data(global->model->materials,
+		(global->vertex_offset ? 1 : 0));
 
 	if(local->nb < 4)
 		return FALSE;
@@ -498,7 +496,11 @@ gboolean max_cb_0x08FE_0x0912(MaxGlobalData *global, MaxLocalData *local)
 		g_warning("MAX: 0x08FE::0x0912: no object");
 		return FALSE;
 	}
-
+#if DEBUG > 0
+	g_debug("|%s[TRIS] %d triangles",
+		(global->padding + (strlen(global->padding) - local->level)),
+		num);
+#endif
 	for(i = 0; i < num; i ++) {
 		face = g_new0(G3DFace, 1);
 		face->vertex_count = 3;
@@ -510,6 +512,7 @@ gboolean max_cb_0x08FE_0x0912(MaxGlobalData *global, MaxLocalData *local)
 			return FALSE;
 		for(j = 0; j < 3; j ++) {
 			face->vertex_indices[j] =
+				global->vertex_offset +
 				g3d_stream_read_int32_le(global->stream);
 			if(face->vertex_indices[j] >= object->vertex_count) {
 				g_warning("MAX: 0x08FE::0x0912: vertex index too high"
@@ -532,30 +535,115 @@ gboolean max_cb_0x08FE_0x0914(MaxGlobalData *global, MaxLocalData *local)
 {
 	guint32 num;
 	gint i, j;
-	G3DObject *object;
+	G3DObject *object = (G3DObject *)local->object;
 
-	if(local->nb < 4)
-		return FALSE;
+	g_return_val_if_fail(local->nb >= 4, FALSE);
+	g_return_val_if_fail(object != NULL, FALSE);
 
 	/* vertices */
 	num = g3d_stream_read_int32_le(global->stream);
 	local->nb -= 4;
-	object = (G3DObject *)local->object;
-	if(object == NULL) {
-		g_warning("MAX: 0x08FE::0x0914: no object");
-		return FALSE;
-	}
-
-	object->vertex_count = num;
-	object->vertex_data = g_new0(gfloat, 3 * num);
+#if DEBUG > 0
+	g_debug("|%s[VERT] %d vertices",
+		(global->padding + (strlen(global->padding) - local->level)),
+		num);
+#endif
+	global->vertex_offset = object->vertex_count;
+	object->vertex_count += num;
+	object->vertex_data = g_realloc(object->vertex_data,
+		object->vertex_count * 3 * sizeof(gfloat));
 
 	for(i = 0; i < num; i ++) {
 		if(local->nb < 12)
 			return FALSE;
 		for(j = 0; j < 3; j ++)
-			object->vertex_data[i * 3 + j] =
+			object->vertex_data[(global->vertex_offset + i) * 3 + j] =
 				g3d_stream_read_float_le(global->stream);
 		local->nb -= 12;
+	}
+	return TRUE;
+}
+
+/* texture vertices */
+gboolean max_cb_0x08FE_0x0916(MaxGlobalData *global, MaxLocalData *local)
+{
+	return max_cb_0x08FE_0x0128(global, local);
+}
+
+/* texture triangles */
+gboolean max_cb_0x08FE_0x0918(MaxGlobalData *global, MaxLocalData *local)
+{
+	guint32 cnttris = 0;
+
+	while(local->nb >= 12) {
+		cnttris ++;
+
+		g3d_stream_read_int32_le(global->stream);
+		g3d_stream_read_int32_le(global->stream);
+		g3d_stream_read_int32_le(global->stream);
+		local->nb -= 12;
+	}
+
+#if DEBUG > 0
+	g_debug("|%s[TEXI] %d textured triangles (%d bytes left)",
+		(global->padding + (strlen(global->padding) - local->level)),
+		cnttris, local->nb);
+#endif
+	return 0;
+}
+
+/* vertices */
+gboolean max_cb_0x08FE_0x2394(MaxGlobalData *global, MaxLocalData *local)
+{
+	return max_cb_0x08FE_0x0914(global, local);
+}
+
+/* triangles */
+gboolean max_cb_0x08FE_0x2396(MaxGlobalData *global, MaxLocalData *local)
+{
+	guint32 num;
+	gint32 i, j;
+	G3DObject *object = (G3DObject *)local->object;
+	G3DFace *face;
+	G3DMaterial *mat;
+
+	mat = (G3DMaterial *)g_slist_nth_data(global->model->materials,
+		(global->vertex_offset ? 1 : 0));
+
+	g_return_val_if_fail(local->nb >= 4, FALSE);
+	g_return_val_if_fail(object != NULL, FALSE);
+
+	/* faces */
+	num = g3d_stream_read_int32_le(global->stream);
+	local->nb -= 4;
+#if DEBUG > 0
+	g_debug("|%s[TRIS] %d triangles",
+		(global->padding + (strlen(global->padding) - local->level)),
+		num);
+#endif
+	for(i = 0; i < num; i ++) {
+		g_return_val_if_fail(local->nb >= 12, FALSE);
+
+		face = g_new0(G3DFace, 1);
+		face->vertex_count = 3;
+		face->vertex_indices = g_new0(guint32, 3);
+		face->material = mat;
+		object->faces = g_slist_append(object->faces, face);
+
+		g_return_val_if_fail(local->nb >= 12, FALSE);
+		for(j = 0; j < 3; j ++) {
+			face->vertex_indices[j] =
+				global->vertex_offset +
+				g3d_stream_read_int32_le(global->stream);
+			local->nb -= 4;
+			if(face->vertex_indices[j] >= object->vertex_count) {
+				g_warning("MAX: 0x08FE::0x2396: vertex index too high"
+					" (%d (0x%08x) >= %d)",
+					face->vertex_indices[j], face->vertex_indices[j],
+					object->vertex_count);
+				face->vertex_indices[j] = 0;
+			}
+		}
 	}
 	return TRUE;
 }
@@ -580,14 +668,20 @@ gboolean max_cb_IDMATG_0x4000(MaxGlobalData *global, MaxLocalData *local)
 /* material name */
 gboolean max_cb_0x4000_0x4001(MaxGlobalData *global, MaxLocalData *local)
 {
+	guint32 len;
 	G3DMaterial *material = (G3DMaterial *)local->object;
 
 	g_return_val_if_fail(material != NULL, FALSE);
 	if(material->name)
 		g_free(material->name);
-	material->name = max_read_wchar(global->stream, local->nb / 2);
-	local->nb = 0;
-
+	len = local->nb / 2;
+	material->name = max_read_wchar(global->stream, len);
+	local->nb -= len * 2;
+#if DEBUG > 0
+	g_debug("|%s[MATN] %s",
+		(global->padding + (strlen(global->padding) - local->level)),
+		material->name);
+#endif
 	return TRUE;
 }
 
@@ -604,7 +698,11 @@ gboolean max_cb_0x4000_0x4030(MaxGlobalData *global, MaxLocalData *local)
 	material->b = g3d_stream_read_float_le(global->stream);
 	material->a = g3d_stream_read_float_le(global->stream);
 	local->nb -= 16;
-
+#if DEBUG > 0
+	g_debug("|%s[MATC] %.2f, %.2f, %.2f, %.2f",
+		(global->padding + (strlen(global->padding) - local->level)),
+		material->r, material->g, material->b, material->a);
+#endif
 	return TRUE;
 }
 

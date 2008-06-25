@@ -11,6 +11,9 @@ typedef struct {
 	G3DStream *stream;
 	gchar *padding;
 	const gchar *subfile;
+
+	G3DObject *object;
+	guint32 vertex_offset;
 } MaxGlobalData;
 
 typedef struct {
@@ -46,6 +49,10 @@ gboolean max_cb_0x08FE_0x0128(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x08FE_0x012B(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x08FE_0x0912(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x08FE_0x0914(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x08FE_0x0916(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x08FE_0x0918(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x08FE_0x2394(MaxGlobalData *global, MaxLocalData *local);
+gboolean max_cb_0x08FE_0x2396(MaxGlobalData *global, MaxLocalData *local);
 
 gboolean max_cb_0x4000_0x4001(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_0x4000_0x4030(MaxGlobalData *global, MaxLocalData *local);

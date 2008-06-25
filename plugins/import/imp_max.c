@@ -34,7 +34,7 @@
 static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	const gchar *filename, const gchar *subfile);
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
-	guint32 level, gint32 parentid, gpointer object);
+	guint32 level, gint32 parentid, gpointer object, guint32 *l2cnt);
 static MaxChunk *max_get_chunk_desc(guint16 id, gint32 parentid,
 	gboolean container);
 
@@ -53,6 +53,22 @@ static const gchar *max_subfiles[] = {
 	NULL
 };
 
+typedef enum {
+	MAX_ROOT_NODE,
+	MAX_L2_NODE,
+	MAX_CNT_NODE,
+	MAX_DATA_NODE
+} MaxNodeType;
+
+typedef struct {
+	MaxNodeType type;
+	gchar *name;
+	guint32 cnt2034;
+	guint32 val2034;
+	gint32 data2034;
+	GSList *children;
+} MaxNode;
+
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
 {
@@ -63,6 +79,14 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	/* create default material */
 	material = g3d_material_new();
 	material->name = g_strdup("default material");
+	model->materials = g_slist_append(model->materials, material);
+
+	/* debugging material */
+	material = g3d_material_new();
+	material->r = 1.0;
+	material->g = 0.2;
+	material->b = 0.1;
+	material->name = g_strdup("debugging material");
 	model->materials = g_slist_append(model->materials, material);
 
 	while(*subfile) {
@@ -95,6 +119,7 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	G3DStream *ssf;
 	MaxGlobalData *global;
 	gint32 fsize;
+	guint32 l2cnt = 0;
 
 	ssf = g3d_stream_open_structured_file(filename, subfile);
 	if(ssf == NULL) {
@@ -114,7 +139,7 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	global->padding = "                                               ";
 	global->subfile = subfile;
 
-	while(max_read_chunk(global, &fsize, 1 /* level */, IDNONE, NULL));
+	while(max_read_chunk(global, &fsize, 1 /* level */, IDNONE, NULL, &l2cnt));
 
 	g_free(global);
 	g3d_stream_close(ssf);
@@ -123,7 +148,7 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 }
 
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
-	guint32 level, gint32 parentid, gpointer object)
+	guint32 level, gint32 parentid, gpointer object, guint32 *l2cnt)
 {
 	guint16 id;
 	guint32 length;
@@ -144,12 +169,15 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	if(nb)
 		*nb -= length;
 
+	if((level == 2) && l2cnt)
+		(*l2cnt) ++;
+
 	chunk = max_get_chunk_desc(id, parentid, container);
 
 #if DEBUG > 0
-	g_debug("\\%s(%d)[0x%04X][%c%c] %s -- %d (%d) bytes @ 0x%08x",
+	g_debug("\\%s(%d)[0x%04X][0x%04X][%c%c] %s -- %d (%d) bytes @ 0x%08x",
 		(global->padding + (strlen(global->padding) - level)), level,
-		id, (container ? 'c' : ' '),
+		id, (l2cnt ? *l2cnt : 0xFFFF), (container ? 'c' : ' '),
 		(chunk && chunk->callback) ? 'f' : ' ',
 		chunk ? chunk->desc : "unknown",
 		length - 6, length,
@@ -163,13 +191,14 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	local->level = level + 1;
 	local->object = object;
 
+#if 0
 	if(chunk && chunk->callback)
 		chunk->callback(global, local);
-
-	if(container)
+#endif
+	if(container && (level < 2))
 		while(local->nb > 0)
 			if(!max_read_chunk(global, &(local->nb), level + 1, id,
-				local->object))
+				local->object, l2cnt))
 				return FALSE;
 
 	if(local->nb > 0)

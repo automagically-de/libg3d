@@ -20,6 +20,8 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <string.h>
+
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
@@ -28,6 +30,7 @@
 
 #include "imp_dae_xml.h"
 #include "imp_dae_library.h"
+#include "imp_dae_cb.h"
 
 static int dae_input_read_cb(gpointer ctx, gchar *buffer, gint len)
 {
@@ -75,58 +78,11 @@ gchar **plugin_extensions(void)
 /*****************************************************************************/
 /* COLLADA specific stuff                                                    */
 
-static xmlNodePtr dae_next_child(DaeLibrary *lib, xmlNodePtr parent,
-	xmlNodePtr *node, xmlNodePtr *instance, gchar **nodename)
-{
-	gchar *url, *name;
-	xmlAttrPtr attr;
-
-	g_return_val_if_fail(node != NULL, NULL);
-	g_return_val_if_fail(instance != NULL, NULL);
-	g_return_val_if_fail(nodename != NULL, NULL);
-	*instance = NULL;
-	*nodename = NULL;
-
-	if(*node == NULL)
-		*node = parent->children;
-	else
-		*node = (*node)->next;
-
-	/* skip TEXT nodes */
-	while(*node && ((*node)->type != XML_ELEMENT_NODE))
-		*node = (*node)->next;
-
-	if(*node == NULL)
-		return NULL;
-
-	if(xmlStrncmp((*node)->name, (xmlChar *)"instance_", 9) == 0) {
-		attr = (*node)->properties;
-		while(attr && (xmlStrcmp(attr->name, (xmlChar *)"url")))
-			attr = attr->next;
-
-		if(attr) {
-			/* skip leading '#' in url attribute */
-			url = g_strdup((gchar *)attr->children->content + 1);
-			/* skip 'instance_' part of node name */
-			name = g_strdup((gchar *)((*node)->name + 9));
-			g_debug("DAE: looking up '%s' in '%s'", url, name);
-			*instance = *node;
-			*node = dae_library_lookup(lib, name, url);
-			g_free(url);
-			g_free(name);
-		}
-	}
-	if(*node == NULL)
-		return NULL;
-
-	*nodename = g_strdup((gchar *)(*node)->name);
-
-	return *node;
-}
-
 static gboolean dae_load_scene(G3DModel *model, DaeLibrary *lib,
 	xmlDocPtr xmldoc)
 {
+	DaeGlobalData *global;
+	DaeLocalData *local;
 	xmlNodePtr scenenode, node = NULL, instance;
 	gchar *name;
 
@@ -138,10 +94,25 @@ static gboolean dae_load_scene(G3DModel *model, DaeLibrary *lib,
 		return FALSE;
 	}
 
-	while(dae_next_child(lib, scenenode, &node, &instance, &name)) {
+	global = g_new0(DaeGlobalData, 1);
+	global->model = model;
+	global->xmldoc = xmldoc;
+	global->lib = lib;
+
+	while(dae_xml_next_child(lib, scenenode, &node, &instance, &name)) {
 		g_debug("DAE: got node %s", name);
+		if(strcmp(name, "visual_scene") == 0) {
+			local = g_new0(DaeLocalData, 1);
+			local->node = node;
+			local->instance = instance;
+			local->parent = scenenode;
+			dae_cb_visual_scene(global, local);
+			g_free(local);
+		}
 		g_free(name);
 	}
+
+	g_free(global);
 
 	return TRUE;
 }

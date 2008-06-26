@@ -31,7 +31,6 @@ static gboolean dae_add_library(DaeLibrary *lib, xmlNodePtr libnode,
 	guint32 entryid)
 {
 	xmlNodePtr node;
-	xmlAttrPtr attr;
 	DaeLibraryNodes *nodelib;
 	gchar *id;
 
@@ -48,16 +47,11 @@ static gboolean dae_add_library(DaeLibrary *lib, xmlNodePtr libnode,
 			(xmlStrcmp(node->name,
 				(const xmlChar *)dae_library_names[entryid][1]) == 0)) {
 			/* found library entry */
-			attr = node->properties;
-			while(attr != NULL) {
-				if(xmlStrcmp(attr->name, (xmlChar *)"id") == 0) {
-					id = g_strdup((gchar *)attr->children->content);
-					g_debug("\t%s id=\"%s\"", dae_library_names[entryid][1],
-						id);
-					g_hash_table_insert(nodelib->ids, id, node);
-					nodelib->nodes = g_slist_append(nodelib->nodes, node);
-				}
-				attr = attr->next;
+			id = dae_xml_get_attr(node, "id");
+			if(id != NULL) {
+				g_debug("\t%s id=\"%s\"", dae_library_names[entryid][1], id);
+				g_hash_table_insert(nodelib->ids, id, node);
+				nodelib->nodes = g_slist_append(nodelib->nodes, node);
 			}
 		}
 		node = node->next;

@@ -79,7 +79,8 @@ imp_ase_la_SOURCES = imp_ase.c
 imp_cob_la_SOURCES = imp_cob.c
 imp_dae_la_SOURCES = imp_dae.c \
 	imp_dae_xml.h imp_dae_xml.c \
-	imp_dae_library.h imp_dae_library.c
+	imp_dae_library.h imp_dae_library.c \
+	imp_dae_cb.h imp_dae_cb.c imp_dae_chunks.h
 imp_dae_la_LIBADD = @GLIB_LIBS@ @LIBXML2_LIBS@
 imp_dxf_la_SOURCES = imp_dxf.c
 imp_flt_la_SOURCES = imp_flt.c imp_flt.h \

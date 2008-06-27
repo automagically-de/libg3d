@@ -3,9 +3,19 @@
 
 #include "imp_dae_cb.h"
 
+static DaeChunkDesc dae_chunks_effect[] = {
+	{ "profile_COMMON",  dae_cb_profile_COMMON },
+	{ NULL, NULL }
+};
+
 static DaeChunkDesc dae_chunks_geometry[] = {
 	{ "bind_material",   NULL },
 	{ "mesh",            dae_cb_mesh },
+	{ NULL, NULL }
+};
+
+static DaeChunkDesc dae_chunks_material[] = {
+	{ "effect",          dae_cb_effect },
 	{ NULL, NULL }
 };
 
@@ -27,6 +37,18 @@ static DaeChunkDesc dae_chunks_node[] = {
 	{ "scale",           dae_cb_scale },
 	{ "rotate",          dae_cb_rotate },
 	{ "translate",       dae_cb_translate },
+	{ NULL, NULL }
+};
+
+static DaeChunkDesc dae_chunks_profile_COMMON[] = {
+	{ "extra",           NULL },
+	{ "newparam",        NULL },
+	{ "technique",       dae_cb_technique },
+	{ NULL, NULL }
+};
+
+static DaeChunkDesc dae_chunks_technique[] = {
+	{ "phong",           dae_cb_phong },
 	{ NULL, NULL }
 };
 

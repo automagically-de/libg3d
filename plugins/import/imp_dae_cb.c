@@ -19,6 +19,49 @@ typedef struct {
 	} semantic;
 } DaeInput;
 
+/*****************************************************************************/
+
+G3DMaterial *dae_get_material_by_name(DaeGlobalData *global, const gchar *id,
+	guint32 level)
+{
+	G3DMaterial *material;
+	GSList *mitem;
+	gchar *tmp;
+	xmlNodePtr matnode;
+
+	/* try to find material */
+	for(mitem = global->model->materials; mitem != NULL; mitem = mitem->next) {
+		material = (G3DMaterial *)mitem->data;
+		if(strcmp(material->name, id) == 0)
+			return material;
+	}
+
+	material = g3d_material_new();
+	material->name = g_strdup(id);
+	global->model->materials = g_slist_append(global->model->materials,
+		material);
+
+	/* find material in library */
+	/* FIXME: name -> id mapping */
+	tmp = g_strdup_printf("%sID", id);
+	matnode = dae_library_lookup(global->lib, "material", tmp);
+	g_free(tmp);
+
+	if(matnode) {
+		dae_xml_parse(global, matnode, dae_chunks_material,
+			level, material);
+	}
+	return material;
+}
+
+/*****************************************************************************/
+
+gboolean dae_cb_effect(DaeGlobalData *global, DaeLocalData *local)
+{
+	return dae_xml_parse(global, local->node, dae_chunks_effect,
+		local->level, local->user_data);
+}
+
 gboolean dae_cb_geometry(DaeGlobalData *global, DaeLocalData *local)
 {
 	G3DObject *object, *pobject;
@@ -160,12 +203,50 @@ static GSList *dae_get_inputs(xmlNodePtr node)
 	return inputs;
 }
 
+gboolean dae_cb_phong(DaeGlobalData *global, DaeLocalData *local)
+{
+	G3DMaterial *material = (G3DMaterial *)local->user_data;
+	xmlNodePtr n1, n2;
+	gchar *next;
+
+	g_return_val_if_fail(material != NULL, FALSE);
+
+	/* diffuse */
+	n1 = dae_xml_get_child_by_tagname(local->node, "diffuse");
+	if(n1 != NULL) {
+		n2 = dae_xml_get_child_by_tagname(n1, "color");
+		if(n2 != NULL) {
+			next = NULL;
+			dae_xml_next_float(n2, &next, &(material->r));
+			dae_xml_next_float(n2, &next, &(material->g));
+			dae_xml_next_float(n2, &next, &(material->b));
+			dae_xml_next_float(n2, &next, &(material->a));
+		}
+	}
+
+	/* specular */
+	n1 = dae_xml_get_child_by_tagname(local->node, "specular");
+	if(n1 != NULL) {
+		n2 = dae_xml_get_child_by_tagname(n1, "color");
+		if(n2 != NULL) {
+			next = NULL;
+			dae_xml_next_float(n2, &next, &(material->specular[0]));
+			dae_xml_next_float(n2, &next, &(material->specular[1]));
+			dae_xml_next_float(n2, &next, &(material->specular[2]));
+			dae_xml_next_float(n2, &next, &(material->specular[3]));
+		}
+	}
+
+	return TRUE;
+}
+
 gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 {
 	G3DObject *object = local->user_data;
 	G3DFace *face;
+	G3DMaterial *material;
 	xmlNodePtr pnode, vnode;
-	gchar *scnt, *nextp = NULL, *nextv = NULL;
+	gchar *scnt, *smat, *nextp = NULL, *nextv = NULL;
 	guint32 count;
 	gint i, j, nv, tmp;
 	GSList *inputs, *item;
@@ -186,13 +267,20 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 	/* get all inputs */
 	inputs = dae_get_inputs(local->node);
 
+	/* material */
+	material = g_slist_nth_data(object->materials, 0);
+	smat = dae_xml_get_attr(local->node, "material");
+	if(smat != NULL) {
+		material = dae_get_material_by_name(global, smat, local->level);
+		g_free(smat);
+	}
+
 	for(i = 0; i < count; i ++) {
 		if(dae_xml_next_int(vnode, &nextv, &nv) && (nv > 0)) {
 			face = g_new0(G3DFace, 1);
 			face->vertex_count = nv;
 			face->vertex_indices = g_new0(guint32, nv);
-			face->material = (G3DMaterial *)
-				g_slist_nth_data(object->materials, 0);
+			face->material = material;
 			object->faces = g_slist_append(object->faces, face);
 
 			for(j = 0; j < nv; j ++) {
@@ -223,6 +311,12 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 	}
 
 	return TRUE;
+}
+
+gboolean dae_cb_profile_COMMON(DaeGlobalData *global, DaeLocalData *local)
+{
+	return dae_xml_parse(global, local->node, dae_chunks_profile_COMMON,
+		local->level, local->user_data);
 }
 
 gboolean dae_cb_rotate(DaeGlobalData *global, DaeLocalData *local)
@@ -297,6 +391,12 @@ gboolean dae_cb_source(DaeGlobalData *global, DaeLocalData *local)
 	return FALSE;
 }
 
+gboolean dae_cb_technique(DaeGlobalData *global, DaeLocalData *local)
+{
+	return dae_xml_parse(global, local->node, dae_chunks_technique,
+		local->level, local->user_data);
+}
+
 gboolean dae_cb_translate(DaeGlobalData *global, DaeLocalData *local)
 {
 	G3DObject *object = local->user_data;
@@ -329,8 +429,9 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 {
 	G3DObject *object = local->user_data;
 	G3DFace *face;
+	G3DMaterial *material;
 	xmlNodePtr pnode;
-	gchar *scnt, *nextp = NULL;
+	gchar *scnt, *smat, *nextp = NULL;
 	guint32 count;
 	gint i, j, tmp;
 	GSList *inputs, *item;
@@ -350,12 +451,19 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 	/* get all inputs */
 	inputs = dae_get_inputs(local->node);
 
+	/* material */
+	material = g_slist_nth_data(object->materials, 0);
+	smat = dae_xml_get_attr(local->node, "material");
+	if(smat != NULL) {
+		material = dae_get_material_by_name(global, smat, local->level);
+		g_free(smat);
+	}
+
 	for(i = 0; i < count; i ++) {
 		face = g_new0(G3DFace, 1);
 		face->vertex_count = 3;
 		face->vertex_indices = g_new0(guint32, 3);
-		face->material = (G3DMaterial *)
-			g_slist_nth_data(object->materials, 0);
+		face->material = material;
 		object->faces = g_slist_append(object->faces, face);
 
 		for(j = 0; j < 3; j ++) {

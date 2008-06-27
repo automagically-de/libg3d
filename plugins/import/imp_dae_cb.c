@@ -4,6 +4,7 @@
 #include <g3d/material.h>
 #include <g3d/matrix.h>
 #include <g3d/object.h>
+#include <g3d/texture.h>
 
 #include "imp_dae_cb.h"
 #include "imp_dae_chunks.h"
@@ -17,6 +18,7 @@ typedef struct {
 		SEM_NORMAL,
 		SEM_TEXCOORD
 	} semantic;
+	gchar *source;
 } DaeInput;
 
 /*****************************************************************************/
@@ -52,6 +54,91 @@ G3DMaterial *dae_get_material_by_name(DaeGlobalData *global, const gchar *id,
 			level, material);
 	}
 	return material;
+}
+
+static GSList *dae_get_inputs(xmlNodePtr node)
+{
+	xmlNodePtr inode = NULL;
+	gchar *soff, *ssem;
+	DaeInput *input;
+	GSList *inputs = NULL;
+
+	while(dae_xml_next_child_by_tagname(node, &inode, "input")) {
+		input = g_new0(DaeInput, 1);
+		soff = dae_xml_get_attr(inode, "offset");
+		if(soff) {
+			input->offset = atoi(soff);
+			g_free(soff);
+		}
+		ssem = dae_xml_get_attr(inode, "semantic");
+		if(ssem) {
+			if(strcmp(ssem, "VERTEX") == 0)
+				input->semantic = SEM_VERTEX;
+			else if(strcmp(ssem, "NORMAL") == 0)
+				input->semantic = SEM_NORMAL;
+			else if(strcmp(ssem, "TEXCOORD") == 0)
+				input->semantic = SEM_TEXCOORD;
+			else {
+				g_warning("DAE: unknown input semantic '%s'", ssem);
+				input->semantic = SEM_UNKNOWN;
+			}
+			g_free(ssem);
+		}
+		input->source = dae_xml_get_attr(inode, "source");
+		inputs = g_slist_append(inputs, input);
+	}
+	return inputs;
+}
+
+static void dae_inputs_free(GSList *inputs)
+{
+	GSList *item;
+	DaeInput *input;
+
+	for(item = inputs; item != NULL; item = item->next) {
+		input = (DaeInput *)item->data;
+		if(input->source)
+			g_free(input->source);
+		g_free(input);
+		item->data = NULL;
+	}
+	g_slist_free(inputs);
+}
+
+static gboolean dae_load_source(DaeLibrary *lib, gchar *id,
+	gfloat **asrc, guint32 *nsrc)
+{
+	xmlNodePtr snode, fnode;
+	gchar *scnt, *next = NULL;
+	gint i;
+
+	snode = dae_library_lookup(lib, "source", id + 1);
+	if(snode == NULL)
+		return FALSE;
+	g_debug("dae_load_source: got 'source' node");
+
+	fnode = dae_xml_get_child_by_tagname(snode, "float_array");
+	if(fnode == NULL)
+		return FALSE;
+
+	g_debug("dae_load_source: got 'float_array' node");
+
+	scnt = dae_xml_get_attr(fnode, "count");
+	if(scnt == NULL)
+		return FALSE;
+	*nsrc = atoi(scnt);
+	g_free(scnt);
+	if(*nsrc == 0)
+		return FALSE;
+
+	g_debug("dae_load_source: got 'count' attribute");
+
+	*asrc = g_new0(gfloat, *nsrc);
+	for(i = 0; i < *nsrc; i ++)
+		if(!dae_xml_next_float(fnode, &next, &((*asrc)[i])))
+			return FALSE;
+
+	return TRUE;
 }
 
 /*****************************************************************************/
@@ -134,6 +221,42 @@ gboolean dae_cb_mesh(DaeGlobalData *global, DaeLocalData *local)
 		local->level, local->user_data);
 }
 
+gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
+{
+	G3DMaterial *material = (G3DMaterial *)local->user_data;
+	xmlNodePtr n1, n2;
+	gchar *siid = NULL;
+
+	g_return_val_if_fail(material != NULL, FALSE);
+
+	g_debug("DAE: dae_cb_newparam");
+
+	n1 = dae_xml_get_child_by_tagname(local->node, "surface");
+	if(n1 != NULL) {
+		n2 = dae_xml_get_child_by_tagname(n1, "init_from");
+		if(n2 != NULL)
+			siid = g_strdup((gchar *)n2->children->content);
+	}
+	if(siid == NULL)
+		return FALSE;
+
+	g_debug("DAE: looking up image '%s'", siid);
+
+	n1 = dae_library_lookup(global->lib, "image", siid);
+	g_free(siid);
+	if(n1 == NULL)
+		return FALSE;
+
+	n2 = dae_xml_get_child_by_tagname(n1, "init_from");
+	if(n2 == NULL)
+		return FALSE;
+
+	material->tex_image = g3d_texture_load_cached(global->context,
+		global->model, (gchar *)n2->children->content);
+
+	return TRUE;
+}
+
 gboolean dae_cb_node(DaeGlobalData *global, DaeLocalData *local)
 {
 	G3DObject *object, *pobject;
@@ -168,39 +291,6 @@ gboolean dae_cb_node(DaeGlobalData *global, DaeLocalData *local)
 		return TRUE;
 	}
 	return FALSE;
-}
-
-static GSList *dae_get_inputs(xmlNodePtr node)
-{
-	xmlNodePtr inode = NULL;
-	gchar *soff, *ssem;
-	DaeInput *input;
-	GSList *inputs = NULL;
-
-	while(dae_xml_next_child_by_tagname(node, &inode, "input")) {
-		input = g_new0(DaeInput, 1);
-		soff = dae_xml_get_attr(inode, "offset");
-		if(soff) {
-			input->offset = atoi(soff);
-			g_free(soff);
-		}
-		ssem = dae_xml_get_attr(inode, "semantic");
-		if(ssem) {
-			if(strcmp(ssem, "VERTEX") == 0)
-				input->semantic = SEM_VERTEX;
-			else if(strcmp(ssem, "NORMAL") == 0)
-				input->semantic = SEM_NORMAL;
-			else if(strcmp(ssem, "TEXCOORD") == 0)
-				input->semantic = SEM_TEXCOORD;
-			else {
-				g_warning("DAE: unknown input semantic '%s'", ssem);
-				input->semantic = SEM_UNKNOWN;
-			}
-			g_free(ssem);
-		}
-		inputs = g_slist_append(inputs, input);
-	}
-	return inputs;
 }
 
 gboolean dae_cb_phong(DaeGlobalData *global, DaeLocalData *local)
@@ -247,10 +337,11 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 	G3DMaterial *material;
 	xmlNodePtr pnode, vnode;
 	gchar *scnt, *smat, *nextp = NULL, *nextv = NULL;
-	guint32 count;
+	guint32 count, normal_count, tex_count, flags = 0;
 	gint i, j, nv, tmp;
 	GSList *inputs, *item;
 	DaeInput *input;
+	gfloat *normal_data = NULL, *tex_data = NULL;
 
 	g_return_val_if_fail(object != NULL, FALSE);
 
@@ -264,9 +355,6 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 	vnode = dae_xml_get_child_by_tagname(local->node, "vcount");
 	g_return_val_if_fail((pnode != NULL) && (vnode != NULL), FALSE);
 
-	/* get all inputs */
-	inputs = dae_get_inputs(local->node);
-
 	/* material */
 	material = g_slist_nth_data(object->materials, 0);
 	smat = dae_xml_get_attr(local->node, "material");
@@ -275,13 +363,37 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 		g_free(smat);
 	}
 
+	/* get all inputs */
+	inputs = dae_get_inputs(local->node);
+	for(item = inputs; item != NULL; item = item->next) {
+		input = (DaeInput *)item->data;
+		if(input->semantic == SEM_NORMAL)
+			if(dae_load_source(global->lib, input->source,
+				&normal_data, &normal_count))
+				flags |= G3D_FLAG_FAC_NORMALS;
+		if(input->semantic == SEM_TEXCOORD)
+			if(dae_load_source(global->lib, input->source,
+				&tex_data, &tex_count) && (material->tex_image != NULL))
+				flags |= G3D_FLAG_FAC_TEXMAP;
+	}
+
 	for(i = 0; i < count; i ++) {
 		if(dae_xml_next_int(vnode, &nextv, &nv) && (nv > 0)) {
 			face = g_new0(G3DFace, 1);
 			face->vertex_count = nv;
 			face->vertex_indices = g_new0(guint32, nv);
 			face->material = material;
+			face->flags = flags;
 			object->faces = g_slist_append(object->faces, face);
+
+			if(face->flags & G3D_FLAG_FAC_NORMALS) {
+				face->normals = g_new0(gfloat, nv * 3);
+			}
+			if(face->flags & G3D_FLAG_FAC_TEXMAP) {
+				face->tex_image = material->tex_image;
+				face->tex_vertex_count = nv;
+				face->tex_vertex_data = g_new0(gfloat, nv * 2);
+			}
 
 			for(j = 0; j < nv; j ++) {
 				for(item = inputs; item != NULL; item = item->next) {
@@ -292,8 +404,22 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 							face->vertex_indices[j] = tmp;
 							break;
 						case SEM_NORMAL:
+							if(flags & G3D_FLAG_FAC_NORMALS) {
+								face->normals[j * 3 + 0] =
+									normal_data[tmp * 3 + 0];
+								face->normals[j * 3 + 1] =
+									normal_data[tmp * 3 + 1];
+								face->normals[j * 3 + 2] =
+									normal_data[tmp * 3 + 2];
+							}
 							break;
 						case SEM_TEXCOORD:
+							if(flags & G3D_FLAG_FAC_TEXMAP) {
+								face->tex_vertex_data[j * 2 + 0] =
+									tex_data[tmp * 2 + 0];
+								face->tex_vertex_data[j * 2 + 1] =
+									tex_data[tmp * 2 + 1];
+							}
 							break;
 						case SEM_UNKNOWN:
 							break;
@@ -309,6 +435,12 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 #endif
 		}
 	}
+
+	if(tex_data)
+		g_free(tex_data);
+	if(normal_data)
+		g_free(normal_data);
+	dae_inputs_free(inputs);
 
 	return TRUE;
 }
@@ -432,7 +564,8 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 	G3DMaterial *material;
 	xmlNodePtr pnode;
 	gchar *scnt, *smat, *nextp = NULL;
-	guint32 count;
+	guint32 count, normal_count, tex_count, flags = 0;
+	gfloat *normal_data = NULL, *tex_data = NULL;
 	gint i, j, tmp;
 	GSList *inputs, *item;
 	DaeInput *input;
@@ -448,9 +581,6 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 	pnode = dae_xml_get_child_by_tagname(local->node, "p");
 	g_return_val_if_fail(pnode != NULL, FALSE);
 
-	/* get all inputs */
-	inputs = dae_get_inputs(local->node);
-
 	/* material */
 	material = g_slist_nth_data(object->materials, 0);
 	smat = dae_xml_get_attr(local->node, "material");
@@ -459,12 +589,40 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 		g_free(smat);
 	}
 
+	/* get all inputs */
+	inputs = dae_get_inputs(local->node);
+	for(item = inputs; item != NULL; item = item->next) {
+		input = (DaeInput *)item->data;
+		if(input->semantic == SEM_NORMAL)
+			if(dae_load_source(global->lib, input->source,
+				&normal_data, &normal_count)) {
+				g_debug("dae_cb_triangles: normals loaded");
+				flags |= G3D_FLAG_FAC_NORMALS;
+			}
+		if(input->semantic == SEM_TEXCOORD)
+			if(dae_load_source(global->lib, input->source,
+				&tex_data, &tex_count) && (material->tex_image != NULL)) {
+				g_debug("dae_cb_triangles: texture coordinates loaded");
+				flags |= G3D_FLAG_FAC_TEXMAP;
+			}
+	}
+
 	for(i = 0; i < count; i ++) {
 		face = g_new0(G3DFace, 1);
 		face->vertex_count = 3;
 		face->vertex_indices = g_new0(guint32, 3);
 		face->material = material;
+		face->flags = flags;
 		object->faces = g_slist_append(object->faces, face);
+
+		if(face->flags & G3D_FLAG_FAC_NORMALS) {
+			face->normals = g_new0(gfloat, 3 * 3);
+		}
+		if(face->flags & G3D_FLAG_FAC_TEXMAP) {
+			face->tex_image = material->tex_image;
+			face->tex_vertex_count = 3;
+			face->tex_vertex_data = g_new0(gfloat, 3 * 2);
+		}
 
 		for(j = 0; j < 3; j ++) {
 			for(item = inputs; item != NULL; item = item->next) {
@@ -475,8 +633,22 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 						face->vertex_indices[j] = tmp;
 						break;
 					case SEM_NORMAL:
+						if(flags & G3D_FLAG_FAC_NORMALS) {
+							face->normals[j * 3 + 0] =
+								normal_data[tmp * 3 + 0];
+							face->normals[j * 3 + 1] =
+								normal_data[tmp * 3 + 1];
+							face->normals[j * 3 + 2] =
+								normal_data[tmp * 3 + 2];
+						}
 						break;
 					case SEM_TEXCOORD:
+						if(flags & G3D_FLAG_FAC_TEXMAP) {
+							face->tex_vertex_data[j * 2 + 0] = 1.0 -
+								tex_data[tmp * 2 + 0];
+							face->tex_vertex_data[j * 2 + 1] = 1.0 -
+								tex_data[tmp * 2 + 1];
+						}
 						break;
 					case SEM_UNKNOWN:
 						break;
@@ -490,6 +662,11 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 #endif
 		}
 	}
+	if(tex_data)
+		g_free(tex_data);
+	if(normal_data)
+		g_free(normal_data);
+	dae_inputs_free(inputs);
 
 	return TRUE;
 }

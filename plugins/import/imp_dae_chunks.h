@@ -42,7 +42,7 @@ static DaeChunkDesc dae_chunks_node[] = {
 
 static DaeChunkDesc dae_chunks_profile_COMMON[] = {
 	{ "extra",           NULL },
-	{ "newparam",        NULL },
+	{ "newparam",        dae_cb_newparam },
 	{ "technique",       dae_cb_technique },
 	{ NULL, NULL }
 };

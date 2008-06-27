@@ -111,6 +111,7 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 	image = g3d_texture_load(context, filename);
 	if(image != NULL)
 	{
+		image->tex_id = g_str_hash(filename);
 		g3d_texture_prepare(image);
 		g_hash_table_insert(model->tex_images, (gpointer)g_strdup(filename),
 			image);

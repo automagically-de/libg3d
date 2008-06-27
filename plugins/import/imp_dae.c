@@ -21,6 +21,7 @@
 */
 
 #include <string.h>
+#include <locale.h>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -37,8 +38,8 @@ static int dae_input_read_cb(gpointer ctx, gchar *buffer, gint len)
 	return g3d_stream_read((G3DStream *)ctx, buffer, 1, len);
 }
 
-static gboolean dae_load_scene(G3DModel *model, DaeLibrary *lib,
-	xmlDocPtr xmldoc);
+static gboolean dae_load_scene(G3DContext *context, G3DStream *stream,
+	G3DModel *model, DaeLibrary *lib, xmlDocPtr xmldoc);
 
 /*****************************************************************************/
 
@@ -49,12 +50,13 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	DaeLibrary *lib;
 	gboolean retval = FALSE;
 
+	setlocale(LC_NUMERIC, "C");
 	xmlInitParser();
 
 	xmldoc = xmlReadIO(dae_input_read_cb, NULL, stream, stream->uri, NULL, 0);
 	if(xmldoc) {
 		lib = dae_library_load(xmldoc);
-		retval = dae_load_scene(model, lib, xmldoc);
+		retval = dae_load_scene(context, stream, model, lib, xmldoc);
 
 		dae_library_cleanup(lib);
 		xmlFreeDoc(xmldoc);
@@ -78,12 +80,12 @@ gchar **plugin_extensions(void)
 /*****************************************************************************/
 /* COLLADA specific stuff                                                    */
 
-static gboolean dae_load_scene(G3DModel *model, DaeLibrary *lib,
-	xmlDocPtr xmldoc)
+static gboolean dae_load_scene(G3DContext *context, G3DStream *stream,
+	G3DModel *model, DaeLibrary *lib, xmlDocPtr xmldoc)
 {
 	DaeGlobalData *global;
 	DaeLocalData *local;
-	xmlNodePtr scenenode, node = NULL, instance;
+	xmlNodePtr scenenode, node = NULL, instance = NULL;
 	gchar *name;
 
 	scenenode = dae_xml_get_child_by_tagname(
@@ -95,12 +97,16 @@ static gboolean dae_load_scene(G3DModel *model, DaeLibrary *lib,
 	}
 
 	global = g_new0(DaeGlobalData, 1);
+	global->context = context;
+	global->stream = stream;
 	global->model = model;
 	global->xmldoc = xmldoc;
 	global->lib = lib;
 
 	while(dae_xml_next_child(lib, scenenode, &node, &instance, &name)) {
+#if DEBUG > 2
 		g_debug("DAE: got node %s", name);
+#endif
 		if(strcmp(name, "visual_scene") == 0) {
 			local = g_new0(DaeLocalData, 1);
 			local->node = node;

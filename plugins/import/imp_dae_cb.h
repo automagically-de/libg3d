@@ -7,6 +7,8 @@
 #include "imp_dae_library.h"
 
 typedef struct {
+	G3DContext *context;
+	G3DStream *stream;
 	G3DModel *model;
 	DaeLibrary *lib;
 	xmlDocPtr xmldoc;
@@ -16,6 +18,7 @@ typedef struct {
 	xmlNodePtr parent;
 	xmlNodePtr node;
 	xmlNodePtr instance;
+	guint32 level;
 	gpointer user_data;
 } DaeLocalData;
 
@@ -27,7 +30,17 @@ typedef struct {
 } DaeChunkDesc;
 
 gboolean dae_cb_geometry(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_matrix(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_mesh(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_node(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_rotate(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_scale(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_source(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_translate(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_vertices(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_vertices__input(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_visual_scene(DaeGlobalData *global, DaeLocalData *local);
 
 #endif /* _IMP_DAE_CB_H */

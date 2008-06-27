@@ -387,7 +387,7 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 
 	if(plugin->loadmodelstream_func != NULL) {
 		/* try to load the model via the more generic G3DStream interface */
-		stream = g3d_stream_open_file(filename, "rb");
+		stream = g3d_stream_open_file(basename, "rb");
 		retval = plugin->loadmodelstream_func(context, stream, model,
 			plugin->user_data);
 		g3d_stream_close(stream);

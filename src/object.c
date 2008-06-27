@@ -149,6 +149,7 @@ gboolean g3d_object_transform_normals(G3DObject *object, gfloat *matrix)
 gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
 {
 	guint32 i;
+	GSList *oitem;
 
 	/* transform vertices */
 	for(i = 0; i < object->vertex_count; i ++)
@@ -163,6 +164,10 @@ gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
 #if G3D_OBJECT_TRANSFORM_NORMALS
 	g3d_object_transform_normals(object, matrix);
 #endif
+
+	/* transform sub-objects */
+	for(oitem = object->objects; oitem != NULL; oitem = oitem->next)
+		g3d_object_transform((G3DObject *)oitem->data, matrix);
 
 	return TRUE;
 }

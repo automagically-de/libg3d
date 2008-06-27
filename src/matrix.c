@@ -168,16 +168,13 @@ gboolean g3d_matrix_transpose(gfloat *matrix)
 gboolean g3d_matrix_dump(gfloat *matrix)
 {
 #if DEBUG > 0
-	gint32 row, col;
+	gint32 row;
 
 	for(row = 0; row < 4; row ++)
 	{
-		g_printerr("[Matrix]");
-		for(col = 0; col < 4; col ++)
-		{
-			g_printerr(" %-2.2f", matrix[col * 4 + row]);
-		}
-		g_printerr("\n");
+		g_debug("[Matrix] % 2.2f  % 2.2f  % 2.2f  % 2.2f",
+			matrix[0 * 4 + row], matrix[1 * 4 + row],
+			matrix[2 * 4 + row], matrix[3 * 4 + row]);
 	}
 
 	return TRUE;

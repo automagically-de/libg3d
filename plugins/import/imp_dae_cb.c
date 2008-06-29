@@ -28,7 +28,6 @@ G3DMaterial *dae_get_material_by_name(DaeGlobalData *global, const gchar *id,
 {
 	G3DMaterial *material;
 	GSList *mitem;
-	gchar *tmp;
 	xmlNodePtr matnode;
 
 	/* try to find material */
@@ -44,10 +43,7 @@ G3DMaterial *dae_get_material_by_name(DaeGlobalData *global, const gchar *id,
 		material);
 
 	/* find material in library */
-	/* FIXME: name -> id mapping */
-	tmp = g_strdup_printf("%sID", id);
-	matnode = dae_library_lookup(global->lib, "material", tmp);
-	g_free(tmp);
+	matnode = dae_library_lookup(global->lib, "symbol", id);
 
 	if(matnode) {
 		dae_xml_parse(global, matnode, dae_chunks_material,
@@ -143,6 +139,12 @@ static gboolean dae_load_source(DaeLibrary *lib, gchar *id,
 
 /*****************************************************************************/
 
+gboolean dae_cb_bind_material(DaeGlobalData *global, DaeLocalData *local)
+{
+	return dae_xml_parse(global, local->node, dae_chunks_bind_material,
+		local->level, local->user_data);
+}
+
 gboolean dae_cb_effect(DaeGlobalData *global, DaeLocalData *local)
 {
 	return dae_xml_parse(global, local->node, dae_chunks_effect,
@@ -151,42 +153,25 @@ gboolean dae_cb_effect(DaeGlobalData *global, DaeLocalData *local)
 
 gboolean dae_cb_geometry(DaeGlobalData *global, DaeLocalData *local)
 {
-	G3DObject *object, *pobject;
+	G3DObject *object;
 	G3DMaterial *material;
-	gchar *name;
 
-	pobject = (G3DObject *)local->user_data;
-	if(pobject == NULL)
-		return FALSE;
+	object = (G3DObject *)local->user_data;
+	g_return_val_if_fail(object != NULL, FALSE);
 
-#if 1
-	object = pobject;
-#else
-	name = dae_xml_get_attr(local->node, "name");
-	if(name == NULL)
-		name = dae_xml_get_attr(local->node, "id");
-	if(name == NULL)
-		return FALSE;
-
-	object = g_new0(G3DObject, 1);
-	object->name = name;
-	pobject->objects = g_slist_append(pobject->objects, object);
-#endif
 	material = g3d_material_new();
 	material->name = g_strdup("(default material)");
 	object->materials = g_slist_append(object->materials, material);
 
-	/* parse instanced stuff */
-	if(dae_xml_parse(global, local->node, dae_chunks_geometry,
-		local->level, object)) {
-		if(local->instance) {
-			/* parse original node */
-			return dae_xml_parse(global, local->instance,
-				dae_chunks_geometry, local->level, object);
-		}
-		return TRUE;
+	if(local->instance) {
+		/* parse original node */
+		dae_xml_parse(global, local->instance,
+			dae_chunks_geometry, local->level, object);
 	}
-	return FALSE;
+
+	/* parse instanced stuff */
+	return dae_xml_parse(global, local->node, dae_chunks_geometry,
+		local->level, object);
 }
 
 gboolean dae_cb_matrix(DaeGlobalData *global, DaeLocalData *local)
@@ -527,6 +512,31 @@ gboolean dae_cb_technique(DaeGlobalData *global, DaeLocalData *local)
 {
 	return dae_xml_parse(global, local->node, dae_chunks_technique,
 		local->level, local->user_data);
+}
+
+/* instance_geometry::bind_material::technique_common */
+gboolean dae_cb_technique_common(DaeGlobalData *global, DaeLocalData *local)
+{
+	xmlNodePtr node = NULL, tnode;
+	gchar *symbol, *target;
+
+	while(dae_xml_next_child_by_tagname(local->node, &node,
+		"instance_material")) {
+		symbol = dae_xml_get_attr(node, "symbol");
+		if(symbol == NULL)
+			continue;
+		target = dae_xml_get_attr(node, "target");
+		if(target == NULL) {
+			g_free(symbol);
+			continue;
+		}
+		tnode = dae_library_lookup(global->lib, "material", target + 1);
+		if(tnode)
+			dae_library_add(global->lib, "symbol", symbol, tnode);
+		g_free(symbol);
+		g_free(target);
+	}
+	return TRUE;
 }
 
 gboolean dae_cb_translate(DaeGlobalData *global, DaeLocalData *local)

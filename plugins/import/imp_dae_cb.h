@@ -29,6 +29,7 @@ typedef struct {
 	DaeCallback callback;
 } DaeChunkDesc;
 
+gboolean dae_cb_bind_material(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_effect(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_geometry(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_matrix(DaeGlobalData *global, DaeLocalData *local);
@@ -42,6 +43,7 @@ gboolean dae_cb_rotate(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_scale(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_source(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_technique(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_technique_common(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_translate(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_vertices(DaeGlobalData *global, DaeLocalData *local);

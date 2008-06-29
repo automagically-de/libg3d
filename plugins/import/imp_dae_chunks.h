@@ -35,6 +35,7 @@ static DaeChunkDesc dae_chunks_mesh[] = {
 
 static DaeChunkDesc dae_chunks_node[] = {
 	{ "camera",           NULL },
+	{ "controller",       NULL },
 	{ "geometry",         dae_cb_geometry },
 	{ "light",            NULL },
 	{ "matrix",           dae_cb_matrix },
@@ -53,6 +54,8 @@ static DaeChunkDesc dae_chunks_profile_COMMON[] = {
 };
 
 static DaeChunkDesc dae_chunks_technique[] = {
+	{ "blinn",            dae_cb_phong },
+	{ "lambert",          dae_cb_phong },
 	{ "phong",            dae_cb_phong },
 	{ NULL, NULL }
 };

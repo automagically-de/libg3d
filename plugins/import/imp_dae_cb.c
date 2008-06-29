@@ -23,8 +23,8 @@ typedef struct {
 
 /*****************************************************************************/
 
-G3DMaterial *dae_get_material_by_name(DaeGlobalData *global, const gchar *id,
-	guint32 level)
+static G3DMaterial *dae_get_material_by_name(DaeGlobalData *global,
+	const gchar *id, guint32 level)
 {
 	G3DMaterial *material;
 	GSList *mitem;
@@ -111,13 +111,10 @@ static gboolean dae_load_source(DaeLibrary *lib, gchar *id,
 	snode = dae_library_lookup(lib, "source", id + 1);
 	if(snode == NULL)
 		return FALSE;
-	g_debug("dae_load_source: got 'source' node");
 
 	fnode = dae_xml_get_child_by_tagname(snode, "float_array");
 	if(fnode == NULL)
 		return FALSE;
-
-	g_debug("dae_load_source: got 'float_array' node");
 
 	scnt = dae_xml_get_attr(fnode, "count");
 	if(scnt == NULL)
@@ -126,8 +123,6 @@ static gboolean dae_load_source(DaeLibrary *lib, gchar *id,
 	g_free(scnt);
 	if(*nsrc == 0)
 		return FALSE;
-
-	g_debug("dae_load_source: got 'count' attribute");
 
 	*asrc = g_new0(gfloat, *nsrc);
 	for(i = 0; i < *nsrc; i ++)
@@ -214,8 +209,6 @@ gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 
 	g_return_val_if_fail(material != NULL, FALSE);
 
-	g_debug("DAE: dae_cb_newparam");
-
 	n1 = dae_xml_get_child_by_tagname(local->node, "surface");
 	if(n1 != NULL) {
 		n2 = dae_xml_get_child_by_tagname(n1, "init_from");
@@ -224,8 +217,6 @@ gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 	}
 	if(siid == NULL)
 		return FALSE;
-
-	g_debug("DAE: looking up image '%s'", siid);
 
 	n1 = dae_library_lookup(global->lib, "image", siid);
 	g_free(siid);
@@ -606,13 +597,11 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 		if(input->semantic == SEM_NORMAL)
 			if(dae_load_source(global->lib, input->source,
 				&normal_data, &normal_count)) {
-				g_debug("dae_cb_triangles: normals loaded");
 				flags |= G3D_FLAG_FAC_NORMALS;
 			}
 		if(input->semantic == SEM_TEXCOORD)
 			if(dae_load_source(global->lib, input->source,
 				&tex_data, &tex_count) && (material->tex_image != NULL)) {
-				g_debug("dae_cb_triangles: texture coordinates loaded");
 				flags |= G3D_FLAG_FAC_TEXMAP;
 			}
 	}
@@ -654,9 +643,9 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 						break;
 					case SEM_TEXCOORD:
 						if(flags & G3D_FLAG_FAC_TEXMAP) {
-							face->tex_vertex_data[j * 2 + 0] = 1.0 -
+							face->tex_vertex_data[j * 2 + 0] =
 								tex_data[tmp * 2 + 0];
-							face->tex_vertex_data[j * 2 + 1] = 1.0 -
+							face->tex_vertex_data[j * 2 + 1] =
 								tex_data[tmp * 2 + 1];
 						}
 						break;

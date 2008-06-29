@@ -393,7 +393,7 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 							if(flags & G3D_FLAG_FAC_TEXMAP) {
 								face->tex_vertex_data[j * 2 + 0] =
 									tex_data[tmp * 2 + 0];
-								face->tex_vertex_data[j * 2 + 1] =
+								face->tex_vertex_data[j * 2 + 1] = 1.0 -
 									tex_data[tmp * 2 + 1];
 							}
 							break;
@@ -645,7 +645,7 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 						if(flags & G3D_FLAG_FAC_TEXMAP) {
 							face->tex_vertex_data[j * 2 + 0] =
 								tex_data[tmp * 2 + 0];
-							face->tex_vertex_data[j * 2 + 1] =
+							face->tex_vertex_data[j * 2 + 1] = 1.0 -
 								tex_data[tmp * 2 + 1];
 						}
 						break;

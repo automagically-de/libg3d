@@ -26,6 +26,10 @@
 #include <g3d/matrix.h>
 #include <g3d/primitive.h>
 #include <g3d/object.h>
+#include <g3d/texture.h>
+
+static gboolean test_primitive_transfrom(G3DModel *model);
+static gboolean test_texture_uv(G3DContext *context, G3DModel *model);
 
 /*****************************************************************************/
 /* plugin interface                                                          */
@@ -33,6 +37,25 @@
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer user_data)
+{
+	return test_texture_uv(context, model);
+}
+
+gchar *plugin_description(G3DContext *context)
+{
+	return g_strdup(
+		"Test plugin\n"
+		);
+}
+
+gchar **plugin_extensions(G3DContext *context)
+{
+	return g_strsplit("test", ":", 0);
+}
+
+/****************************************************************************/
+
+static gboolean test_primitive_transfrom(G3DModel *model)
 {
 	G3DObject *sphere, *cntr;
 	G3DMaterial *material;
@@ -77,15 +100,41 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	return TRUE;
 }
 
-gchar *plugin_description(G3DContext *context)
+static gboolean test_texture_uv(G3DContext *context, G3DModel *model)
 {
-	return g_strdup(
-		"Test plugin\n"
-		);
-}
+	G3DObject *box;
+	G3DMaterial *material;
+	G3DFace *face;
+	GSList *item;
 
-gchar **plugin_extensions(G3DContext *context)
-{
-	return g_strsplit("test", ":", 0);
-}
+	material = g3d_material_new();
+	material->name = g_strdup("default texture");
+	material->tex_image = g3d_texture_load_cached(context, model,
+		"test-texture.png");
 
+	box = g3d_primitive_box(1.0, 1.0, 1.0, material);
+	for(item = box->faces; item != NULL; item = item->next) {
+		face = (G3DFace *)item->data;
+		face->tex_image = material->tex_image;
+		face->flags |= G3D_FLAG_FAC_TEXMAP;
+
+#define MIN_U 0.0
+#define MAX_U 1.0
+#define MIN_V -0.5
+#define MAX_V 1.5
+
+		face->tex_vertex_data[0 * 2 + 0] = MIN_U;
+		face->tex_vertex_data[0 * 2 + 1] = MIN_V;
+		face->tex_vertex_data[1 * 2 + 0] = MIN_U;
+		face->tex_vertex_data[1 * 2 + 1] = MAX_V;
+		face->tex_vertex_data[2 * 2 + 0] = MAX_U;
+		face->tex_vertex_data[2 * 2 + 1] = MAX_V;
+		face->tex_vertex_data[3 * 2 + 0] = MAX_U;
+		face->tex_vertex_data[3 * 2 + 1] = MIN_V;
+	}
+
+	model->objects = g_slist_append(model->objects, box);
+	model->materials = g_slist_append(model->materials, material);
+
+	return TRUE;
+}

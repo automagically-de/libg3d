@@ -346,14 +346,11 @@ gchar *g3d_plugins_get_filetype(const gchar *filename)
 	return lcext;
 }
 
-gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
-	G3DModel *model)
+static G3DPlugin *get_plugin_for_type(G3DContext *context,
+	const gchar *filename)
 {
-	G3DPlugin *plugin = NULL;
-	G3DStream *stream;
-	gchar *lcext, *basename, *dirname;
-	gboolean retval = FALSE;
-	gchar *olddir;
+	G3DPlugin *plugin;
+	gchar *lcext;
 
 #ifdef USE_LIBMAGIC
 	plugin = plugins_magic_lookup(context, filename);
@@ -364,7 +361,7 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 		/* try to get type by extension */
 		lcext = g3d_plugins_get_filetype(filename);
 		if(lcext == NULL)
-			return FALSE;
+			return NULL;
 
 		plugin = g_hash_table_lookup(context->exts_import, lcext);
 
@@ -374,8 +371,24 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	if(plugin == NULL)
 	{
 		g_warning("no handler for file '%s' found", filename);
-		return FALSE;
+		return NULL;
 	}
+
+	return plugin;
+}
+
+gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
+	G3DModel *model)
+{
+	G3DPlugin *plugin = NULL;
+	G3DStream *stream;
+	gchar *basename, *dirname;
+	gboolean retval = FALSE;
+	gchar *olddir;
+
+	plugin = get_plugin_for_type(context, filename);
+	if(plugin == NULL)
+		return FALSE;
 
 	basename = g_path_get_basename(filename);
 	dirname = g_path_get_dirname(filename);
@@ -411,6 +424,27 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	g_free(olddir);
 
 	return retval;
+}
+
+gboolean g3d_plugins_load_model_from_stream(G3DContext *context,
+	G3DStream *stream, G3DModel *model, const gchar *type)
+{
+	G3DPlugin *plugin = NULL;
+	gboolean retval = FALSE;
+
+	g_return_val_if_fail(stream != NULL, FALSE);
+	g_return_val_if_fail(type != NULL, FALSE);
+
+	plugin = get_plugin_for_type(context, type);
+	if(plugin == NULL)
+		return FALSE;
+
+	if((plugin->loadmodelstream_func != NULL) && plugin->loadmodelstream_func(
+		context, stream, model, plugin->user_data)) {
+		model->plugin = plugin;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 gboolean g3d_plugins_load_image(G3DContext *context, const gchar *filename,

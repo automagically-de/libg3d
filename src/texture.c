@@ -112,7 +112,9 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 	if(image != NULL)
 	{
 		image->tex_id = g_str_hash(filename);
+#if 0
 		g3d_texture_prepare(image);
+#endif
 		g_hash_table_insert(model->tex_images, (gpointer)g_strdup(filename),
 			image);
 	}
@@ -153,10 +155,11 @@ gboolean g3d_texture_prepare(G3DImage *texture)
 		memset(np, 0xFF, nw * nh * 4);
 
 		/* copy image data */
-		for(y = 0; y < texture->height; y ++)
+		for(y = 0; y < nh; y ++)
 			memcpy(np + ((nh - y - 1) * nw * 4),
 				texture->pixeldata +
-					((texture->height - y - 1) * texture->width * 4),
+					(((texture->height - y - 1) % texture->height) *
+					texture->width * 4),
 				texture->width * 4);
 
 		/* calculate scaling factor */

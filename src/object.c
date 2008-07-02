@@ -327,7 +327,9 @@ gboolean g3d_object_optimize(G3DObject *object)
 
 			if(face->flags & G3D_FLAG_FAC_TEXMAP)
 			{
+#if 0
 				g3d_texture_prepare(face->tex_image);
+#endif
 				object->_tex_images[index] = face->tex_image->tex_id;
 				su = face->tex_image->tex_scale_u;
 				sv = face->tex_image->tex_scale_v;

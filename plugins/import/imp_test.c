@@ -108,29 +108,39 @@ static gboolean test_texture_uv(G3DContext *context, G3DModel *model)
 	GSList *item;
 
 	material = g3d_material_new();
+	material->r = 1.0;
+	material->g = 0.8;
+	material->b = 0.2;
+	material->a = 0.9;
 	material->name = g_strdup("default texture");
 	material->tex_image = g3d_texture_load_cached(context, model,
 		"test-texture.png");
 
 	box = g3d_primitive_box(1.0, 1.0, 1.0, material);
-	for(item = box->faces; item != NULL; item = item->next) {
-		face = (G3DFace *)item->data;
-		face->tex_image = material->tex_image;
-		face->flags |= G3D_FLAG_FAC_TEXMAP;
+	box->name = g_strdup("test box");
+
+	if(material->tex_image != NULL) {
+		material->tex_image->tex_env = G3D_TEXENV_REPLACE;
+
+		for(item = box->faces; item != NULL; item = item->next) {
+			face = (G3DFace *)item->data;
+			face->tex_image = material->tex_image;
+			face->flags |= G3D_FLAG_FAC_TEXMAP;
 
 #define MIN_U 0.0
 #define MAX_U 1.0
 #define MIN_V -0.5
 #define MAX_V 1.5
 
-		face->tex_vertex_data[0 * 2 + 0] = MIN_U;
-		face->tex_vertex_data[0 * 2 + 1] = MIN_V;
-		face->tex_vertex_data[1 * 2 + 0] = MIN_U;
-		face->tex_vertex_data[1 * 2 + 1] = MAX_V;
-		face->tex_vertex_data[2 * 2 + 0] = MAX_U;
-		face->tex_vertex_data[2 * 2 + 1] = MAX_V;
-		face->tex_vertex_data[3 * 2 + 0] = MAX_U;
-		face->tex_vertex_data[3 * 2 + 1] = MIN_V;
+			face->tex_vertex_data[0 * 2 + 0] = MIN_U;
+			face->tex_vertex_data[0 * 2 + 1] = MIN_V;
+			face->tex_vertex_data[1 * 2 + 0] = MIN_U;
+			face->tex_vertex_data[1 * 2 + 1] = MAX_V;
+			face->tex_vertex_data[2 * 2 + 0] = MAX_U;
+			face->tex_vertex_data[2 * 2 + 1] = MAX_V;
+			face->tex_vertex_data[3 * 2 + 0] = MAX_U;
+			face->tex_vertex_data[3 * 2 + 1] = MIN_V;
+		}
 	}
 
 	model->objects = g_slist_append(model->objects, box);

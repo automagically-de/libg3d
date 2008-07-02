@@ -34,10 +34,14 @@ if HAVE_LIBXML2
 pluginimp_LTLIBRARIES += \
 	imp_dae.la \
 	imp_osm.la
+if HAVE_LIBGSF
+pluginimp_LTLIBRARIES += \
+	imp_kmz.la
+endif # HAVE_LIBGSF
 endif # HAVE_LIBXML2
+if HAVE_LIBGSF
 pluginimp_LTLIBRARIES += \
 	imp_max.la
-if HAVE_LIBGSF
 endif # HAVE_LIBGSF
 endif # EXPERIMENTAL
 
@@ -91,6 +95,8 @@ imp_heightfield_la_SOURCES = imp_heightfield.c
 imp_iob_la_SOURCES = imp_iob.c imp_iob.h imp_iob_chunks.h \
 	imp_iob_callbacks.c imp_iob_callbacks.h
 imp_joe_la_SOURCES = imp_joe.c
+imp_kmz_la_SOURCES = imp_kmz.c
+imp_kmz_la_LIBADD = @GLIB_LIBS@ @LIBGSF_LIBS@ @LIBXML2_LIBS@
 imp_leocad_la_SOURCES = imp_leocad.c imp_leocad_library.h imp_leocad_library.c
 imp_lwo_la_SOURCES = imp_lwo.c imp_lwo.h imp_lwo_chunks.h \
 	imp_lwo_callbacks.c imp_lwo_callbacks.h

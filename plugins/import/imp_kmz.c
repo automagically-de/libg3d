@@ -21,12 +21,16 @@
 */
 
 #include <locale.h>
+#include <string.h>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/plugins.h>
+
+static gchar * kmz_find_model(xmlDocPtr xmldoc);
 
 static int kml_stream_read_cb(gpointer ctx, gchar *buffer, gint len)
 {
@@ -37,7 +41,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
 {
 	G3DStream *stream_dockml, *stream_model;
+	gchar *daename;
 	xmlDocPtr xmldoc;
+	gboolean retval = FALSE;
 
 	setlocale(LC_NUMERIC, "C");
 
@@ -54,13 +60,29 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	if(xmldoc) {
 		g_debug("KMZ: parsed doc.kml");
 
+		daename = kmz_find_model(xmldoc);
+		if(daename != NULL) {
+#if DEBUG > 1
+			g_debug("KMZ: loading '%s' from '%s'", daename, filename);
+#endif
+			stream_model = g3d_stream_open_zip(filename, daename);
+			if(stream_model != NULL) {
+				retval = g3d_plugins_load_model_from_stream(context,
+					stream_model, model, daename);
+				g3d_stream_close(stream_model);
+			} else {
+				g_warning("KMZ: failed to find '%s' in '%s'", daename,
+					filename);
+			}
+		}
+
 		xmlFreeDoc(xmldoc);
 	}
 
 	g3d_stream_close(stream_dockml);
 	xmlCleanupParser();
 
-	return TRUE;
+	return retval;
 }
 
 gchar *plugin_description(void)
@@ -71,5 +93,59 @@ gchar *plugin_description(void)
 gchar **plugin_extensions(void)
 {
 	return g_strsplit("kmz", ":", 0);
+}
+
+/*****************************************************************************/
+
+static xmlNodePtr kmz_find_node(xmlNodePtr parentnode, const gchar *path)
+{
+	gchar *slash, *elem;
+	xmlNodePtr node, pathnode;
+	gboolean last = FALSE;
+
+	slash = strchr(path, '/');
+	if(slash)
+		elem = g_strndup(path, slash - path);
+	else {
+		elem = g_strdup(path);
+		last = TRUE;
+	}
+
+	if(strlen(elem) == 0)
+		return NULL;
+
+	for(node = parentnode->children; node != NULL; node = node->next) {
+		if(node->type != XML_ELEMENT_NODE)
+			continue;
+		if(xmlStrcmp(node->name, (xmlChar *)elem) == 0) {
+			if(last) {
+				g_free(elem);
+				return node;
+			} else {
+				pathnode = kmz_find_node(node, slash + 1);
+				if(pathnode != NULL) {
+					g_free(elem);
+					return pathnode;
+				}
+			}
+		}
+	}
+	g_free(elem);
+	return NULL;
+}
+
+static gchar * kmz_find_model(xmlDocPtr xmldoc)
+{
+	xmlNodePtr rootnode, hrefnode;
+
+	rootnode = xmlDocGetRootElement(xmldoc);
+	if(rootnode == NULL)
+		return NULL;
+
+	hrefnode = kmz_find_node(rootnode, "Folder/Placemark/Model/Link/href");
+	if(hrefnode) {
+		return (gchar *)hrefnode->children->content;
+	}
+	return NULL;
 }
 

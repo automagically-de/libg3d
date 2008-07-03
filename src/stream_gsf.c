@@ -20,6 +20,8 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <string.h>
+
 #include <gsf/gsf-input.h>
 #include <gsf/gsf-infile.h>
 #include <gsf/gsf-input-stdio.h>
@@ -34,6 +36,7 @@ typedef struct {
 	GsfInfile *infile_msole;
 	GsfInfile *infile_zip;
 	GsfInput *input_subfile;
+	gchar *uri;
 } G3DStreamGsf;
 
 static gsize g3d_stream_gsf_read(gpointer ptr, gsize size, gsize nmemb,
@@ -82,9 +85,30 @@ static gint g3d_stream_gsf_close(gpointer data)
 		g_object_unref(sg->infile_msole);
 	if(sg->infile_zip)
 		g_object_unref(sg->infile_zip);
+	if(sg->uri)
+		g_free(sg->uri);
 	g_object_unref(sg->input_container);
 	g_free(sg);
 	return 0;
+}
+
+static GsfInput *stream_gsf_chdir(GsfInput *input, gchar *dirname)
+{
+	GsfInput *parent = input, *newinput;
+	gchar **dirs, **dir;
+
+	dirs = g_strsplit(dirname, "/", 0);
+	for(dir = dirs; *dir != NULL; dir ++) {
+		newinput = gsf_infile_child_by_name(GSF_INFILE(parent),
+			*dir);
+		if((newinput == NULL) || (!GSF_IS_INFILE(newinput))) {
+			g_strfreev(dirs);
+			return NULL;
+		}
+		parent = newinput;
+	}
+	g_strfreev(dirs);
+	return newinput;
 }
 
 G3DStream *g3d_stream_open_zip(const gchar *filename, const gchar *subfile)
@@ -92,6 +116,8 @@ G3DStream *g3d_stream_open_zip(const gchar *filename, const gchar *subfile)
 	G3DStreamGsf *sg;
 	GError *error = NULL;
 	guint32 flags = 0;
+	GsfInput *input_dir;
+	gchar *basename, *dirname;
 
 	sg = g_new0(G3DStreamGsf, 1);
 
@@ -114,17 +140,20 @@ G3DStream *g3d_stream_open_zip(const gchar *filename, const gchar *subfile)
 		return NULL;
 	}
 
-	sg->input_subfile = gsf_infile_child_by_name(sg->infile_zip, subfile);
-	if(error != NULL) {
-		g_warning("error opening contained file '%s' in '%s': %s",
-			subfile, filename, error->message);
-		g_object_unref(sg->infile_zip);
-		g_object_unref(sg->input_container);
-		g_error_free(error);
-		g_free(sg);
-		return NULL;
+	if(strchr(subfile, '/')) {
+		basename = g_path_get_basename(subfile);
+		dirname = g_path_get_dirname(subfile);
+		input_dir = stream_gsf_chdir(GSF_INPUT(sg->infile_zip), dirname);
+		sg->input_subfile = gsf_infile_child_by_name(GSF_INFILE(input_dir),
+			basename);
+		g_free(basename);
+		g_free(dirname);
+	} else {
+		sg->input_subfile = gsf_infile_child_by_name(sg->infile_zip, subfile);
 	}
+
 	if(!GSF_IS_INPUT(sg->input_subfile)) {
+		g_warning("error: %s is not an input file", subfile);
 		g_object_unref(sg->infile_zip);
 		g_object_unref(sg->input_container);
 		g_free(sg);
@@ -134,7 +163,9 @@ G3DStream *g3d_stream_open_zip(const gchar *filename, const gchar *subfile)
 	flags |= (1 << G3D_STREAM_READABLE);
 	flags |= (1 << G3D_STREAM_SEEKABLE);
 
-	return g3d_stream_new_custom(flags, filename,
+	sg->uri = g_strdup_printf("zip://%s:%s", filename, subfile);
+
+	return g3d_stream_new_custom(flags, sg->uri,
 		g3d_stream_gsf_read, NULL,
 		g3d_stream_gsf_seek, g3d_stream_gsf_tell,
 		g3d_stream_gsf_size, g3d_stream_gsf_eof,

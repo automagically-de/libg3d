@@ -31,10 +31,13 @@
 
 #include "imp_max_chunks.h"
 
+
+
 static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	const gchar *filename, const gchar *subfile);
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
-	guint32 level, gint32 parentid, gpointer object, guint32 *l2cnt);
+	guint32 level, gint32 parentid, gpointer object, guint32 *l2cnt,
+	GNode *tree);
 static MaxChunk *max_get_chunk_desc(guint16 id, gint32 parentid,
 	gboolean container);
 
@@ -68,6 +71,12 @@ typedef struct {
 	gint32 data2034;
 	GSList *children;
 } MaxNode;
+
+typedef struct {
+	guint32 l2id;
+	guint32 id;
+	gchar *text;
+} MaxTreeItem;
 
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model)
@@ -113,6 +122,23 @@ char **plugin_extensions(void)
  * max specific
  *****************************************************************************/
 
+static void max_walk_tree(GNode *tree, guint32 level)
+{
+	GNode *node;
+	MaxTreeItem *mtitem;
+	static const gchar *padding = "                                    ";
+
+	mtitem = (MaxTreeItem *)tree->data;
+
+	g_debug("\\%s(%u)[0x%04X][0x%04X] %s",
+		padding + (strlen(padding) - level), level,
+		mtitem->l2id, mtitem->id, mtitem->text);
+
+	for(node = tree->children; node != NULL; node = node->next) {
+		max_walk_tree(node, level + 1);
+	}
+}
+
 static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	const gchar *filename, const gchar *subfile)
 {
@@ -120,6 +146,12 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	MaxGlobalData *global;
 	gint32 fsize;
 	guint32 l2cnt = 0;
+	MaxTreeItem *rootitem;
+	GNode *tree;
+
+	rootitem = g_new0(MaxTreeItem, 1);
+	rootitem->text = g_strdup("ROOT");
+	tree = g_node_new(rootitem);
 
 	ssf = g3d_stream_open_structured_file(filename, subfile);
 	if(ssf == NULL) {
@@ -139,7 +171,11 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	global->padding = "                                               ";
 	global->subfile = subfile;
 
-	while(max_read_chunk(global, &fsize, 1 /* level */, IDNONE, NULL, &l2cnt));
+	while(max_read_chunk(global, &fsize, 1 /* level */, IDNONE, NULL, &l2cnt,
+		tree));
+
+	g_debug("MAX tree:");
+	max_walk_tree(tree, 0);
 
 	g_free(global);
 	g3d_stream_close(ssf);
@@ -147,14 +183,35 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	return TRUE;
 }
 
+static GNode *max_find_node(GNode *tree, guint32 id)
+{
+	GNode *node, *found;
+	MaxTreeItem *mtitem;
+
+	mtitem = (MaxTreeItem *)tree->data;
+	if(mtitem->l2id == id)
+		return tree;
+
+	for(node = tree->children; node != NULL; node = node->next) {
+		found = max_find_node(node, id);
+		if(found != NULL)
+			return found;
+	}
+
+	return NULL;
+}
+
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
-	guint32 level, gint32 parentid, gpointer object, guint32 *l2cnt)
+	guint32 level, gint32 parentid, gpointer object, guint32 *l2cnt,
+	GNode *tree)
 {
 	guint16 id;
 	guint32 length;
 	gboolean container;
 	MaxChunk *chunk;
 	MaxLocalData *local;
+	MaxTreeItem *mtitem;
+	GNode *pnode, *node;
 
 	if(nb && (*nb < 6))
 		return FALSE;
@@ -174,7 +231,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 
 	chunk = max_get_chunk_desc(id, parentid, container);
 
-#if DEBUG > 0
+#if DEBUG > 4
 	g_debug("\\%s(%d)[0x%04X][0x%04X][%c%c] %s -- %d (%d) bytes @ 0x%08x",
 		(global->padding + (strlen(global->padding) - level)), level,
 		id, (l2cnt ? *l2cnt : 0xFFFF), (container ? 'c' : ' '),
@@ -183,6 +240,31 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 		length - 6, length,
 		(guint32)g3d_stream_tell(global->stream) - 6);
 #endif
+
+	node = tree;
+	if(level == 2) {
+		pnode = max_find_node(tree, id);
+		if(pnode != NULL) {
+			mtitem = g_new0(MaxTreeItem, 1);
+			mtitem->l2id = *l2cnt;
+			mtitem->id = id;
+			mtitem->text = g_strdup("L2ITEM");
+			node = g_node_append_data(pnode, mtitem);
+		} else {
+			mtitem = g_new0(MaxTreeItem, 1);
+			mtitem->l2id = 0xFFFF;
+			mtitem->id = id;
+			mtitem->text = g_strdup_printf("OUTOFTREE: 0x%04X", id);
+			node = g_node_append_data(tree, mtitem);
+		}
+	} else if(level > 2) {
+		mtitem = g_new0(MaxTreeItem, 1);
+		mtitem->l2id = 0xFFFF;
+		mtitem->id = id;
+		mtitem->text = g_strdup_printf("REGITEM: 0x%04X: %s",
+			id, chunk ? chunk->desc : "unknown");
+		node = g_node_append_data(tree, mtitem);
+	}
 
 	local = g_new0(MaxLocalData, 1);
 	local->id = id;
@@ -195,10 +277,10 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	if(chunk && chunk->callback)
 		chunk->callback(global, local);
 #endif
-	if(container && (level < 2))
+	if(container/* && (level < 2)*/)
 		while(local->nb > 0)
 			if(!max_read_chunk(global, &(local->nb), level + 1, id,
-				local->object, l2cnt))
+				local->object, l2cnt, node))
 				return FALSE;
 
 	if(local->nb > 0)

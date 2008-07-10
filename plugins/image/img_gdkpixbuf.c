@@ -28,23 +28,65 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include <g3d/types.h>
+#include <g3d/stream.h>
+
+static gboolean gdkpixbuf_init(void);
+static gboolean gdkpixbuf_postprocess(GdkPixbuf *pixbuf, G3DImage *image,
+	const gchar *uri);
+
+#define BUFSIZE 1024
+
+gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
+	G3DImage *image, gpointer user_data)
+{
+	GdkPixbuf *pixbuf;
+	GdkPixbufLoader *loader;
+	GError *error;
+	guint8 buffer[BUFSIZE];
+	gsize n;
+	gboolean retval;
+
+	if(!gdkpixbuf_init())
+		return FALSE;
+
+	loader = gdk_pixbuf_loader_new();
+	while(!g3d_stream_eof(stream)) {
+		n = g3d_stream_read(stream, buffer, 1, BUFSIZE);
+		if(n <= 0)
+			break;
+		if(!gdk_pixbuf_loader_write(loader, buffer, n, &error)) {
+			g_warning("error loading image data from stream: %s",
+				error->message);
+			g_error_free(error);
+			g_object_unref(loader);
+			return FALSE;
+		}
+	}
+
+	if(!gdk_pixbuf_loader_close(loader, &error)) {
+		g_warning("error loading image data from stream: %s",
+			error->message);
+		g_error_free(error);
+		g_object_unref(loader);
+		return FALSE;
+	}
+
+	pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
+	gdk_pixbuf_ref(pixbuf);
+
+	retval = gdkpixbuf_postprocess(pixbuf, image, stream->uri);
+
+	g_object_unref(loader);
+	return retval;
+}
 
 gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 	G3DImage *image, gpointer user_data)
 {
 	GdkPixbuf *pixbuf;
-	guint32 x, y, nchannels;
-	guchar *p;
-	static gboolean init = TRUE;
 
-	if(init) {
-		/* initialize GDK */
-		/* FIXME: problem if already initialized with gtk_init()? */
-		gint argc = 0;
-		if(!gdk_init_check(&argc, NULL))
-			return FALSE;
-		init = FALSE;
-	}
+	if(!gdkpixbuf_init())
+		return FALSE;
 
 	pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
 	if(pixbuf == NULL)
@@ -53,55 +95,7 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 		return FALSE;
 	}
 
-	if(gdk_pixbuf_get_colorspace(pixbuf) != GDK_COLORSPACE_RGB)
-	{
-		g_warning("GdkPixbuf: %s: colorspace is not RGB", filename);
-		gdk_pixbuf_unref(pixbuf);
-		return FALSE;
-	}
-
-	nchannels = gdk_pixbuf_get_n_channels(pixbuf);
-	if(nchannels < 3)
-	{
-		g_warning("GdkPixbuf: %s: has only %d channels", filename,
-			gdk_pixbuf_get_n_channels(pixbuf));
-		gdk_pixbuf_unref(pixbuf);
-		return FALSE;
-	}
-
-	image->width = gdk_pixbuf_get_width(pixbuf);
-	image->height = gdk_pixbuf_get_height(pixbuf);
-	image->depth = 32;
-	image->name = g_path_get_basename(filename);
-	image->pixeldata = g_new0(guint8, image->width * image->height * 4);
-
-	for(y = 0; y < image->height; y ++)
-		for(x = 0; x < image->width; x ++)
-		{
-			p = gdk_pixbuf_get_pixels(pixbuf) + y *
-				gdk_pixbuf_get_rowstride(pixbuf) + x * nchannels;
-
-			image->pixeldata[(y * image->width + x) * 4 + 0] = p[0];
-			image->pixeldata[(y * image->width + x) * 4 + 1] = p[1];
-			image->pixeldata[(y * image->width + x) * 4 + 2] = p[2];
-			if(gdk_pixbuf_get_n_channels(pixbuf) >= 4)
-				image->pixeldata[(y * image->width + x) * 4 + 3] = p[3];
-		}
-
-	/* set alpha to 1.0 */
-	if(gdk_pixbuf_get_n_channels(pixbuf) < 4)
-		for(y = 0; y < image->height; y ++)
-			for(x = 0; x < image->width; x ++)
-				image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
-
-	gdk_pixbuf_unref(pixbuf);
-
-#if DEBUG > 0
-	g_print("GdkPixbuf: image '%s' loaded (%dx%d)\n",
-		image->name, image->width, image->height);
-#endif
-
-	return TRUE;
+	return gdkpixbuf_postprocess(pixbuf, image, filename);
 }
 
 gchar *plugin_description(G3DContext *context)
@@ -133,3 +127,77 @@ gchar **plugin_extensions(G3DContext *context)
 	g_free(extensions);
 	return retval;
 }
+
+/*****************************************************************************/
+
+static gboolean gdkpixbuf_init(void)
+{
+	static gboolean init = TRUE;
+
+	if(init) {
+		/* initialize GDK */
+		/* FIXME: problem if already initialized with gtk_init()? */
+		gint argc = 0;
+		if(!gdk_init_check(&argc, NULL))
+			return FALSE;
+		init = FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean gdkpixbuf_postprocess(GdkPixbuf *pixbuf, G3DImage *image,
+	const gchar *uri)
+{
+	guint32 x, y, nchannels;
+	guchar *p;
+
+	if(gdk_pixbuf_get_colorspace(pixbuf) != GDK_COLORSPACE_RGB) {
+		g_warning("GdkPixbuf: %s: colorspace is not RGB", uri);
+		gdk_pixbuf_unref(pixbuf);
+		return FALSE;
+	}
+
+	nchannels = gdk_pixbuf_get_n_channels(pixbuf);
+	if(nchannels < 3)
+	{
+		g_warning("GdkPixbuf: %s: has only %d channels", uri,
+			gdk_pixbuf_get_n_channels(pixbuf));
+		gdk_pixbuf_unref(pixbuf);
+		return FALSE;
+	}
+
+	image->width = gdk_pixbuf_get_width(pixbuf);
+	image->height = gdk_pixbuf_get_height(pixbuf);
+	image->depth = 32;
+	image->name = g_path_get_basename(uri);
+	image->pixeldata = g_new0(guint8, image->width * image->height * 4);
+
+	for(y = 0; y < image->height; y ++)
+		for(x = 0; x < image->width; x ++)
+		{
+			p = gdk_pixbuf_get_pixels(pixbuf) + y *
+				gdk_pixbuf_get_rowstride(pixbuf) + x * nchannels;
+
+			image->pixeldata[(y * image->width + x) * 4 + 0] = p[0];
+			image->pixeldata[(y * image->width + x) * 4 + 1] = p[1];
+			image->pixeldata[(y * image->width + x) * 4 + 2] = p[2];
+			if(gdk_pixbuf_get_n_channels(pixbuf) >= 4)
+				image->pixeldata[(y * image->width + x) * 4 + 3] = p[3];
+		}
+
+	/* set alpha to 1.0 */
+	if(gdk_pixbuf_get_n_channels(pixbuf) < 4)
+		for(y = 0; y < image->height; y ++)
+			for(x = 0; x < image->width; x ++)
+				image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
+
+	gdk_pixbuf_unref(pixbuf);
+
+#if DEBUG > 0
+	g_print("GdkPixbuf: image '%s' loaded (%dx%d)\n",
+		image->name, image->width, image->height);
+#endif
+
+	return TRUE;
+}
+

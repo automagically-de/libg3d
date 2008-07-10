@@ -117,6 +117,8 @@ static gboolean plugins_loaddirectory(G3DContext *context,
 				PLUGIN_GET_SYMBOL("plugin_load_model_from_stream",
 					plugin->loadmodelstream_func);
 				PLUGIN_GET_SYMBOL("plugin_load_image", plugin->loadimage_func);
+				PLUGIN_GET_SYMBOL("plugin_load_image_from_stream",
+					plugin->loadimagestream_func);
 
 				/* append plugin to list */
 				context->plugins = g_slist_append(context->plugins, plugin);

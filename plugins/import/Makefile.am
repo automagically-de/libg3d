@@ -64,11 +64,10 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-AM_LFLAGS = -o${LEX_OUTPUT_ROOT}.c
-
 LIBADD = \
 	@GLIB_LIBS@
 
+AM_LFLAGS = -o${LEX_OUTPUT_ROOT}.c --header-file=${LEX_OUTPUT_ROOT}.h -R
 LIBTOOL += --quiet
 
 imp_3dmf_la_SOURCES = imp_3dmf.c
@@ -122,9 +121,7 @@ imp_stl_la_SOURCES = imp_stl.c
 imp_ta_la_SOURCES = imp_ta.c imp_ta_3do_palette.h \
 	imp_ta_3do.c imp_ta_3do.h
 imp_test_la_SOURCES = imp_test.c
-imp_vrml_la_SOURCES = imp_vrml_v1.l imp_vrml.c
+imp_vrml_la_SOURCES = imp_vrml_v1.l imp_vrml_v1.h imp_vrml.c
 imp_vrml_la_LIBADD = ${LEXLIB}
 
-# by default imp_vrml_v1.c seems to be included in package, so add .h too
-# also removes strong dependancy on flex
 EXTRA_DIST = imp_vrml_v1.c imp_vrml_v1.h

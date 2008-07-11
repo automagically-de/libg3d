@@ -41,7 +41,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 {
 	GdkPixbuf *pixbuf;
 	GdkPixbufLoader *loader;
-	GError *error;
+	GError *error = NULL;
 	guint8 buffer[BUFSIZE];
 	gsize n;
 	gboolean retval;

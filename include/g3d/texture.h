@@ -29,6 +29,9 @@ G_BEGIN_DECLS
 
 G3DImage *g3d_texture_load(G3DContext *context, const gchar *filename);
 
+G3DImage *g3d_texture_load_from_stream(G3DContext *context, G3DModel *model,
+	G3DStream *stream);
+
 /**
  * g3d_texture_load_cached:
  * @context: a valid context

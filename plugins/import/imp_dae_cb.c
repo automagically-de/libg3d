@@ -5,6 +5,7 @@
 #include <g3d/matrix.h>
 #include <g3d/object.h>
 #include <g3d/texture.h>
+#include <g3d/stream.h>
 
 #include "imp_dae_cb.h"
 #include "imp_dae_chunks.h"
@@ -204,8 +205,12 @@ gboolean dae_cb_mesh(DaeGlobalData *global, DaeLocalData *local)
 gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 {
 	G3DMaterial *material = (G3DMaterial *)local->user_data;
+	G3DStream *imgstream = NULL;
 	xmlNodePtr n1, n2;
-	gchar *siid = NULL;
+	gchar *siid = NULL, *filename;
+#ifdef HAVE_LIBGSF
+	gchar *container, *subfile, *pipe;
+#endif
 
 	g_return_val_if_fail(material != NULL, FALSE);
 
@@ -227,10 +232,34 @@ gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 	if(n2 == NULL)
 		return FALSE;
 
-	material->tex_image = g3d_texture_load_cached(global->context,
-		global->model, (gchar *)n2->children->content);
+	filename = (gchar *)n2->children->content;
 
-	return TRUE;
+	if(strncmp(global->stream->uri, "zip://", 6) == 0) {
+#ifdef HAVE_LIBGSF
+		/* .dae was loaded from .kmz, get texture from .kmz, too */
+		pipe = strchr(global->stream->uri, '|');
+		if(pipe != NULL) {
+			container = g_strndup(global->stream->uri + 6,
+				(pipe - global->stream->uri) - 6);
+			g_debug("DAE: container file: %s", container);
+			subfile = filename;
+			while(strncmp(subfile, "../", 3) == 0)
+				subfile += 3;
+			imgstream = g3d_stream_open_zip(container, subfile);
+		}
+#endif
+	} else {
+		imgstream = g3d_stream_open_file(filename, "rb");
+	}
+
+	if(imgstream != NULL) {
+		material->tex_image = g3d_texture_load_from_stream(global->context,
+			global->model, imgstream);
+		g3d_stream_close(imgstream);
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 gboolean dae_cb_node(DaeGlobalData *global, DaeLocalData *local)

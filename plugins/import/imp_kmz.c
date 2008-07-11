@@ -68,7 +68,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 			stream_model = g3d_stream_open_zip(filename, daename);
 			if(stream_model != NULL) {
 				retval = g3d_plugins_load_model_from_stream(context,
-					stream_model, model, daename);
+					stream_model, model);
 				g3d_stream_close(stream_model);
 			} else {
 				g_warning("KMZ: failed to find '%s' in '%s'", daename,

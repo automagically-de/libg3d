@@ -163,7 +163,7 @@ G3DStream *g3d_stream_open_zip(const gchar *filename, const gchar *subfile)
 	flags |= (1 << G3D_STREAM_READABLE);
 	flags |= (1 << G3D_STREAM_SEEKABLE);
 
-	sg->uri = g_strdup_printf("zip://%s:%s", filename, subfile);
+	sg->uri = g_strdup_printf("zip://%s|%s", filename, subfile);
 
 	return g3d_stream_new_custom(flags, sg->uri,
 		g3d_stream_gsf_read, NULL,

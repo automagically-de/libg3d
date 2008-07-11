@@ -24,6 +24,7 @@
 #include <string.h>
 #include <g3d/types.h>
 #include <g3d/plugins.h>
+#include <g3d/stream.h>
 #include <g3d/texture.h>
 
 static gboolean dump_ppm(G3DImage *image, const gchar *filename);
@@ -90,6 +91,31 @@ G3DImage *g3d_texture_load(G3DContext *context, const gchar *filename)
 	g_free(image);
 	g_free(realfile);
 
+	return NULL;
+}
+
+G3DImage *g3d_texture_load_from_stream(G3DContext *context, G3DModel *model,
+	G3DStream *stream)
+{
+	G3DImage *image;
+
+	if(model->tex_images == NULL)
+		model->tex_images = g_hash_table_new(g_str_hash, g_str_equal);
+
+	image = g_hash_table_lookup(model->tex_images, stream->uri);
+	if(image != NULL)
+		return image;
+
+	image = g_new0(G3DImage, 1);
+	image->tex_scale_u = 1.0;
+	image->tex_scale_v = 1.0;
+
+	if(g3d_plugins_load_image_from_stream(context, stream, image)) {
+		image->tex_id = g_str_hash(stream->uri);
+		g_hash_table_insert(model->tex_images, g_strdup(stream->uri), image);
+		return image;
+	}
+	g_free(image);
 	return NULL;
 }
 

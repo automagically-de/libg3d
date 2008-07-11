@@ -80,10 +80,13 @@ gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model);
 
 gboolean g3d_plugins_load_model_from_stream(G3DContext *context,
-	G3DStream *stream, G3DModel *model, const gchar *type);
+	G3DStream *stream, G3DModel *model);
 
 gboolean g3d_plugins_load_image(G3DContext *context, const gchar *filename,
 	G3DImage *image);
+
+gboolean g3d_plugins_load_image_from_stream(G3DContext *context,
+	G3DStream *stream, G3DImage *image);
 
 gchar **g3d_plugins_get_image_extensions(G3DContext *context);
 

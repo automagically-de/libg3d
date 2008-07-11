@@ -707,7 +707,7 @@ goto find_rule; \
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "imp_vrml_v1.l"
-/* $Id: imp_vrml_v1.l 127 2006-12-21 23:16:09Z mmmaddd $ */
+/* $Id$ */
 /*
     libg3d - 3D object loading library
 
@@ -729,7 +729,7 @@ goto find_rule; \
 */
 
 
-/* $Id:$ */
+/* $Id$ */
 /*
 libg3d - 3D object loading library
 Copyright (C) 2005-2008  Markus Dahms <mad@automagically.de>

@@ -1,4 +1,4 @@
-/* $Id: imp_maya.c 75 2006-11-06 10:52:56Z mmmaddd $ */
+/* $Id$ */
 
 /*
     libg3d - 3D object loading library

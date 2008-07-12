@@ -30,12 +30,16 @@
 
 static gchar *skp_read_char(G3DStream *stream);
 static gchar *skp_read_wchar(G3DStream *stream);
-static gboolean skp_parse_version_map(G3DStream *stream);
+static gboolean skp_parse_version_map(G3DStream *stream, guint32 *max_nlen,
+	guint32 *max_version);
+static gchar *skp_find_section(G3DStream *stream, guint32 max_nlen,
+	guint32 max_version, guint32 *version);
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	gchar *smagic, *sversion, *stmp, *ssection;
+	guint32 max_nlen = 0, max_version = 0, version = 0;
 
 	smagic = skp_read_wchar(stream);
 	if(smagic == NULL) {
@@ -63,8 +67,15 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	if(ssection) {
 		g_debug("SKP: section '%s'", ssection);
 		if(strcmp(ssection, "CVersionMap") == 0)
-			skp_parse_version_map(stream);
+			skp_parse_version_map(stream, &max_nlen, &max_version);
 		g_free(ssection);
+	}
+
+	ssection = skp_find_section(stream, max_nlen, max_version, &version);
+	while(ssection != NULL) {
+		g_debug("\t%s v%u @ 0x%08x", ssection, version,
+			g3d_stream_tell(stream));
+		ssection = skp_find_section(stream, max_nlen, max_version, &version);
 	}
 
 	return FALSE;
@@ -132,7 +143,8 @@ static gchar *skp_read_wchar(G3DStream *stream)
 	return text;
 }
 
-static gboolean skp_parse_version_map(G3DStream *stream)
+static gboolean skp_parse_version_map(G3DStream *stream, guint32 *max_nlen,
+	guint32 *max_version)
 {
 	gchar *part;
 	guint32 version;
@@ -148,7 +160,54 @@ static gboolean skp_parse_version_map(G3DStream *stream)
 			g_free(part);
 			return TRUE;
 		}
+
+		if(version > *max_version)
+			*max_version = version;
+		if(strlen(part) > *max_nlen)
+			*max_nlen = strlen(part);
+
 		g_free(part);
 	}
 	return FALSE;
+}
+
+static gchar *skp_find_section(G3DStream *stream, guint32 max_nlen,
+	guint32 max_version, guint32 *version)
+{
+	goffset offset;
+	guint32 ver, nlen;
+	gchar *name;
+
+	while(!g3d_stream_eof(stream) && (g3d_stream_read_int8(stream) != 0xFF));
+
+	if(g3d_stream_eof(stream))
+		return NULL;
+
+	offset = g3d_stream_tell(stream);
+	if(g3d_stream_read_int8(stream) != 0xFF) {
+		g3d_stream_seek(stream, offset, G_SEEK_SET);
+		return skp_find_section(stream, max_nlen, max_version, version);
+	}
+
+	ver = g3d_stream_read_int16_le(stream);
+	if(ver > max_version) {
+		g3d_stream_seek(stream, offset, G_SEEK_SET);
+		return skp_find_section(stream, max_nlen, max_version, version);
+	}
+
+	nlen = g3d_stream_read_int16_le(stream);
+	if(nlen > max_nlen) {
+		g3d_stream_seek(stream, offset, G_SEEK_SET);
+		return skp_find_section(stream, max_nlen, max_version, version);
+	}
+
+	name = g_new0(gchar, nlen + 1);
+	g3d_stream_read(stream, name, 1, nlen);
+	if(name[0] != 'C') {
+		g_free(name);
+		g3d_stream_seek(stream, offset, G_SEEK_SET);
+		return skp_find_section(stream, max_nlen, max_version, version);
+	}
+	*version = ver;
+	return name;
 }

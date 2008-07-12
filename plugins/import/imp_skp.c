@@ -27,19 +27,23 @@
 #include <g3d/read.h>
 #include <g3d/stream.h>
 
+#include "imp_skp.h"
+#include "imp_skp_chunks.h"
 
-static gchar *skp_read_char(G3DStream *stream);
-static gchar *skp_read_wchar(G3DStream *stream);
 static gboolean skp_parse_version_map(G3DStream *stream, guint32 *max_nlen,
 	guint32 *max_version);
 static gchar *skp_find_section(G3DStream *stream, guint32 max_nlen,
 	guint32 max_version, guint32 *version);
+static SkpChunkDesc *skp_get_chunk_desc(gchar *cname);
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	gchar *smagic, *sversion, *stmp, *ssection;
 	guint32 max_nlen = 0, max_version = 0, version = 0;
+	SkpChunkDesc *desc;
+	SkpGlobalData *global;
+	SkpLocalData *local;
 
 	smagic = skp_read_wchar(stream);
 	if(smagic == NULL) {
@@ -71,14 +75,42 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		g_free(ssection);
 	}
 
+	global = g_new0(SkpGlobalData, 1);
+	global->context = context;
+	global->model = model;
+	global->stream = stream;
+
 	ssection = skp_find_section(stream, max_nlen, max_version, &version);
 	while(ssection != NULL) {
-		g_debug("\t%s v%u @ 0x%08x", ssection, version,
-			g3d_stream_tell(stream));
-		ssection = skp_find_section(stream, max_nlen, max_version, &version);
-	}
+		g_debug("\t%-30s v%-2u @ 0x%08x", ssection, version,
+			(guint32)g3d_stream_tell(stream));
+		desc = skp_get_chunk_desc(ssection);
+		if(desc == NULL) {
+			g_warning("SKP: unknown chunk type '%s'", ssection);
+		} else {
+			if((version > desc->max_ver) || (version < desc->min_ver)) {
+				g_warning("SKP: %s: unhandled version %u (%u - %u)",
+					ssection, version, desc->min_ver, desc->max_ver);
+			} else {
+				if(desc->callback) {
+					local = g_new0(SkpLocalData, 1);
+					local->id = desc->id;
+					local->version = version;
 
-	return FALSE;
+					desc->callback(global, local);
+
+					g_free(local);
+				}
+			} /* version check */
+		} /* has desc */
+
+		ssection = skp_find_section(stream, max_nlen, max_version, &version);
+	} /* sections */
+
+	/* clean up */
+	g_free(global);
+
+	return TRUE;
 }
 
 gchar *plugin_description(void)
@@ -94,7 +126,7 @@ gchar **plugin_extensions(void)
 
 /*****************************************************************************/
 
-static gchar *skp_read_char(G3DStream *stream)
+gchar *skp_read_char(G3DStream *stream)
 {
 	guint32 magic, n;
 	gchar *text;
@@ -112,7 +144,7 @@ static gchar *skp_read_char(G3DStream *stream)
 	return text;
 }
 
-static gchar *skp_read_wchar(G3DStream *stream)
+gchar *skp_read_wchar(G3DStream *stream)
 {
 	gint32 i;
 	guint32 magic, n;
@@ -122,7 +154,9 @@ static gchar *skp_read_wchar(G3DStream *stream)
 
 	magic = g3d_stream_read_int32_be(stream);
 	if((magic & 0xFFFFFF00) != 0xfffeff00) {
-		g_warning("SKP: wrong UTF-16 magic: 0x%08x", magic);
+#if DEBUG > 1
+		g_debug("SKP: wrong UTF-16 magic: 0x%08x", magic);
+#endif
 		return NULL;
 	}
 	n = magic & 0x000000FF;
@@ -142,6 +176,8 @@ static gchar *skp_read_wchar(G3DStream *stream)
 
 	return text;
 }
+
+/*****************************************************************************/
 
 static gboolean skp_parse_version_map(G3DStream *stream, guint32 *max_nlen,
 	guint32 *max_version)
@@ -209,5 +245,17 @@ static gchar *skp_find_section(G3DStream *stream, guint32 max_nlen,
 		return skp_find_section(stream, max_nlen, max_version, version);
 	}
 	*version = ver;
+
 	return name;
+}
+
+static SkpChunkDesc *skp_get_chunk_desc(gchar *cname)
+{
+	guint32 i;
+
+	for(i = 0; skp_chunks[i].id != NULL; i ++) {
+		if(strcmp(cname, skp_chunks[i].id) == 0)
+			return &(skp_chunks[i]);
+	}
+	return NULL;
 }

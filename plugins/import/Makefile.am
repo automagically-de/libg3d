@@ -118,7 +118,8 @@ imp_r4_la_SOURCES = imp_r4.c imp_r4_chunks.h \
 	imp_r4_callbacks.c imp_r4_callbacks.h
 imp_rbh_la_SOURCES = imp_rbh.c imp_rbh_chunks.h \
 	imp_rbh_callbacks.c imp_rbh_callbacks.h
-imp_skp_la_SOURCES = imp_skp.c
+imp_skp_la_SOURCES = imp_skp.c imp_skp.h \
+	imp_skp_chunks.h imp_skp_callbacks.h imp_skp_callbacks.c
 imp_stl_la_SOURCES = imp_stl.c
 imp_ta_la_SOURCES = imp_ta.c imp_ta_3do_palette.h \
 	imp_ta_3do.c imp_ta_3do.h

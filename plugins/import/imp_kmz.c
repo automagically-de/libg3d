@@ -143,9 +143,11 @@ static gchar * kmz_find_model(xmlDocPtr xmldoc)
 		return NULL;
 
 	hrefnode = kmz_find_node(rootnode, "Folder/Placemark/Model/Link/href");
-	if(hrefnode) {
+	if(hrefnode)
 		return (gchar *)hrefnode->children->content;
-	}
+	hrefnode = kmz_find_node(rootnode, "Placemark/Model/Link/href");
+	if(hrefnode)
+		return (gchar *)hrefnode->children->content;
 	return NULL;
 }
 

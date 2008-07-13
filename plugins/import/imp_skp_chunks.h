@@ -34,8 +34,8 @@ typedef struct {
 
 static SkpChunkDesc skp_chunks[] = {
 	{ "CArcCurve",              1,  1,  NULL },
-	{ "CAttributeContainer",    0,  0,  NULL },
-	{ "CAttributeNamed",        0,  0,  NULL },
+	{ "CAttributeContainer",    0,  0,  skp_cb_attribute_container },
+	{ "CAttributeNamed",        0,  0,  skp_cb_attribute_named },
 	{ "CCamera",                4,  5,  NULL },
 	{ "CComponentDefinition",   10, 10, NULL },
 	{ "CComponentInstance",     4,  4,  NULL },
@@ -49,6 +49,7 @@ static SkpChunkDesc skp_chunks[] = {
 	{ "CLayer",                 2,  2,  NULL },
 	{ "CLoop",                  1,  1,  NULL },
 	{ "CMaterial",              12, 12, skp_cb_material },
+	{ "CRelationship",          0,  0,  NULL },
 	{ "CSkFont",                0,  1,  NULL },
 	{ "CSkpStyle",              1,  1,  NULL },
 	{ "CThumbnail",             1,  1,  NULL },

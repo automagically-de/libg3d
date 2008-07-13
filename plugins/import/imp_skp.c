@@ -71,6 +71,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	if(ssection) {
 		g_debug("SKP: section '%s'", ssection);
 		if(strcmp(ssection, "CVersionMap") == 0)
+			g_debug("\\CVersionMap");
 			skp_parse_version_map(stream, &max_nlen, &max_version);
 		g_free(ssection);
 	}
@@ -82,7 +83,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	ssection = skp_find_section(stream, max_nlen, max_version, &version);
 	while(ssection != NULL) {
-		g_debug("\t%-30s v%-2u @ 0x%08x", ssection, version,
+		g_debug("\\%-30s v%-2u @ 0x%08x", ssection, version,
 			(guint32)g3d_stream_tell(stream));
 		desc = skp_get_chunk_desc(ssection);
 		if(desc == NULL) {
@@ -157,6 +158,7 @@ gchar *skp_read_wchar(G3DStream *stream)
 #if DEBUG > 1
 		g_debug("SKP: wrong UTF-16 magic: 0x%08x", magic);
 #endif
+		g3d_stream_seek(stream, -4, G_SEEK_CUR);
 		return NULL;
 	}
 	n = magic & 0x000000FF;

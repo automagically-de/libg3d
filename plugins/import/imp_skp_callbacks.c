@@ -7,6 +7,7 @@
 gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 {
 	gchar *name, *tmp;
+	guint8 u1, u2, u3;
 	guint32 x1, type, size;
 	gfloat r, g, b, a;
 	G3DMaterial *material;
@@ -16,6 +17,7 @@ gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 	name = skp_read_wchar(global->stream);
 	while(name) {
 		tmp = NULL;
+		size = 0;
 
 		material = g3d_material_new();
 		material->name = g_strdup(name);
@@ -34,12 +36,67 @@ gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 				material->g = g / 255.0;
 				material->b = b / 255.0;
 				material->a = a / 255.0;
+#if DEBUG > 0
+				g_debug(
+					"SKP: material: %-30s 0x%04x, "
+					"color (%.1f, %.1f, %.1f)",
+					name, type, material->r, material->g, material->b);
+#endif
 				break;
 
 			case 0x0001: /* texture */
-				g3d_stream_read_int8(global->stream);
-				g3d_stream_read_int8(global->stream);
-				g3d_stream_read_int8(global->stream);
+				u1 = g3d_stream_read_int8(global->stream);
+				u2 = g3d_stream_read_int8(global->stream);
+				u3 = g3d_stream_read_int8(global->stream);
+				if(u3 == 0x80) {
+					/* number of textures? */
+					x1 = g3d_stream_read_int32_le(global->stream);
+					if(x1 > 0) {
+						size = g3d_stream_read_int32_le(global->stream);
+						g3d_stream_seek(global->stream, size, G_SEEK_CUR);
+					}
+				} else {
+					x1 = 0x0004;
+				}
+				switch(x1) {
+					case 0x0000:
+						g3d_stream_seek(global->stream, 12, G_SEEK_CUR);
+						break;
+					case 0x0001:
+						g3d_stream_seek(global->stream, 20, G_SEEK_CUR);
+						break;
+					case 0x0002:
+						g3d_stream_seek(global->stream, 16, G_SEEK_CUR);
+						break;
+					case 0x0004:
+						g3d_stream_seek(global->stream, 16, G_SEEK_CUR);
+						break;
+					default:
+						g3d_stream_seek(global->stream, 16, G_SEEK_CUR);
+						g_debug("SKP: mat0001: x1=%x: "
+							"%02X%02X %02X%02X %02X%02X %02X%02X", x1,
+							g3d_stream_read_int8(global->stream),
+							g3d_stream_read_int8(global->stream),
+							g3d_stream_read_int8(global->stream),
+							g3d_stream_read_int8(global->stream),
+							g3d_stream_read_int8(global->stream),
+							g3d_stream_read_int8(global->stream),
+							g3d_stream_read_int8(global->stream),
+							g3d_stream_read_int8(global->stream));
+						break;
+				}
+				tmp = skp_read_wchar(global->stream);
+				g3d_stream_seek(global->stream, 8, G_SEEK_CUR);
+#if DEBUG > 0
+				g_debug(
+					"SKP: material: %-30s 0x%04x, %02X, %02X, %02X, 0x%08x\n"
+					"\ttexture (%d bytes, 0x%08x): %s",
+					name, type, u1, u2, u3, x1, size,
+					(guint32)g3d_stream_tell(global->stream), tmp);
+#endif
+
+				break;
+
 			case 0x0101: /* texture */
 				/* number of textures? */
 				x1 = g3d_stream_read_int32_le(global->stream);
@@ -48,6 +105,12 @@ gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 				g3d_stream_seek(global->stream, 16, G_SEEK_CUR);
 				tmp = skp_read_wchar(global->stream);
 				g3d_stream_seek(global->stream, 8, G_SEEK_CUR);
+#if DEBUG > 0
+				g_debug(
+					"SKP: material: %-30s 0x%04x, 0x%08x\n"
+					"\ttexture (%i bytes): %s",
+					name, type, x1, size, tmp);
+#endif
 				break;
 
 			default:
@@ -57,9 +120,6 @@ gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 		}
 
 		x1 = g3d_stream_read_int32_be(global->stream);
-		g_debug("SKP: material: %-30s 0x%04x, 0x%08x, '%s'",
-			name, type, x1, tmp ? tmp : "(null)");
-
 		switch(x1 & 0x00FFL) {
 			case 0x00:
 				g3d_stream_seek(global->stream, 21, G_SEEK_CUR);

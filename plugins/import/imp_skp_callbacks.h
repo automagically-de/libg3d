@@ -41,9 +41,12 @@ typedef gboolean (* SkpCallback)(SkpGlobalData *global, SkpLocalData *local);
 
 /* callbacks */
 
+gboolean skp_cb_arc_curve(SkpGlobalData *global, SkpLocalData *local);
 gboolean skp_cb_attribute_container(SkpGlobalData *global,
 	SkpLocalData *local);
 gboolean skp_cb_attribute_named(SkpGlobalData *global, SkpLocalData *local);
+gboolean skp_cb_face_texture_coords(SkpGlobalData *global,
+	SkpLocalData *local);
 gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local);
 gboolean skp_cb_vertex(SkpGlobalData *global, SkpLocalData *local);
 

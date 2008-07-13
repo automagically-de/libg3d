@@ -33,7 +33,7 @@ typedef struct {
 } SkpChunkDesc;
 
 static SkpChunkDesc skp_chunks[] = {
-	{ "CArcCurve",              1,  1,  NULL },
+	{ "CArcCurve",              1,  1,  skp_cb_arc_curve },
 	{ "CAttributeContainer",    0,  0,  skp_cb_attribute_container },
 	{ "CAttributeNamed",        0,  0,  skp_cb_attribute_named },
 	{ "CCamera",                4,  5,  NULL },
@@ -44,7 +44,7 @@ static SkpChunkDesc skp_chunks[] = {
 	{ "CEdge",                  2,  2,  NULL },
 	{ "CEdgeUse",               1,  1,  NULL },
 	{ "CFace",                  3,  3,  NULL },
-	{ "CFaceTextureCoords",     4,  4,  NULL },
+	{ "CFaceTextureCoords",     4,  4,  skp_cb_face_texture_coords },
 	{ "CGroup",                 1,  1,  NULL },
 	{ "CLayer",                 2,  2,  NULL },
 	{ "CLoop",                  1,  1,  NULL },

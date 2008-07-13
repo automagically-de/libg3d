@@ -4,13 +4,22 @@
 #include "imp_skp.h"
 #include "imp_skp_callbacks.h"
 
+gboolean skp_cb_arc_curve(SkpGlobalData *global, SkpLocalData *local)
+{
+	guint16 w1;
+
+	w1 = g3d_stream_read_int16_le(global->stream);
+	g_return_val_if_fail(w1 == 0x0000, FALSE);
+
+	return TRUE;
+}
+
 gboolean skp_cb_attribute_container(SkpGlobalData *global, SkpLocalData *local)
 {
 	guint16 w1;
 
 	w1 = g3d_stream_read_int16_le(global->stream);
-	if(w1 != 0x0000)
-		g_debug("SKP: CAttributeContainer: 0x%04X", w1);
+	g_return_val_if_fail(w1 == 0x0000, FALSE);
 
 	return TRUE;
 }
@@ -75,6 +84,25 @@ gboolean skp_cb_attribute_named(SkpGlobalData *global, SkpLocalData *local)
 
 		g_free(name);
 		name = skp_read_wchar(global->stream);
+	}
+	return TRUE;
+}
+
+gboolean skp_cb_face_texture_coords(SkpGlobalData *global, SkpLocalData *local)
+{
+	gint32 i;
+	guint16 w1;
+	gfloat f1, f2, f3, f4;
+
+	w1 = g3d_stream_read_int16_le(global->stream);
+	g_return_val_if_fail(w1 == 0x0000, FALSE);
+
+	for(i = 0; i < 24; i ++) {
+		f1 = g3d_stream_read_float_le(global->stream);
+		f2 = g3d_stream_read_float_le(global->stream);
+		f3 = g3d_stream_read_float_le(global->stream);
+		f4 = g3d_stream_read_float_le(global->stream);
+		g_debug("\tf: %.4f, %.4f, %.4f, %.4f", f1, f2, f3, f4);
 	}
 	return TRUE;
 }
@@ -165,7 +193,7 @@ gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 #if DEBUG > 0
 				g_debug(
 					"\tmaterial: %-30s 0x%04x, %02X, %02X, %02X, 0x%08x\n"
-					"\t\ttexture (%d bytes, 0x%08x): %s",
+					"\t\ttexture (%d bytes, 0x%08x):\n\t\t%s",
 					name, type, u1, u2, u3, x1, size,
 					(guint32)g3d_stream_tell(global->stream), tmp);
 #endif
@@ -183,7 +211,7 @@ gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 #if DEBUG > 0
 				g_debug(
 					"\tmaterial: %-30s 0x%04x, 0x%08x\n"
-					"\t\ttexture (%i bytes): %s",
+					"\t\ttexture (%i bytes):\n\t\t%s",
 					name, type, x1, size, tmp);
 #endif
 				break;
@@ -220,7 +248,24 @@ gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 
 gboolean skp_cb_vertex(SkpGlobalData *global, SkpLocalData *local)
 {
-	g3d_stream_read_int16_le(global->stream);
+	guint16 w1;
+	gfloat f1, f2, f3;
+	guint32 x1;
+	gint32 i;
+
+	w1 = g3d_stream_read_int16_le(global->stream);
+	g_return_val_if_fail(w1 == 0x0000, FALSE);
+
+	x1 = g3d_stream_read_int32_le(global->stream);
+	g_debug("\tx: 0x%08x", x1);
+
+	for(i = 0; i < 20; i ++) {
+		f1 = g3d_stream_read_float_le(global->stream);
+		f2 = g3d_stream_read_float_le(global->stream);
+		f3 = g3d_stream_read_float_le(global->stream);
+
+		g_debug("\tVertex: %.5f, %.5f, %.5f", f1, f2, f3);
+	}
 
 	return FALSE;
 }

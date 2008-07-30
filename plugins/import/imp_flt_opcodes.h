@@ -69,10 +69,10 @@ static FltOpcode flt_opcodes[] = {
 	{   63, "external reference",                  0, NULL },
 	{   64, "texture palette",                     0, NULL },
 
-	{   67, "vertex palette",                      0, NULL },
+	{   67, "vertex palette",                      0, flt_cb_0067 },
 	{   68, "vertex with color",                   0, NULL },
 	{   69, "vertex with color and normal",        0, flt_cb_0069 },
-	{   70, "vertex with color, normal and UV",    0, NULL },
+	{   70, "vertex with color, normal and UV",    0, flt_cb_0070 },
 	{   71, "vertex with color and UV",            0, NULL },
 	{   72, "vertex list",                         0, flt_cb_0072 },
 	{   73, "level of detail",                     0, NULL },

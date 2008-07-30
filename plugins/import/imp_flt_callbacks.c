@@ -19,6 +19,9 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
+#include <string.h>
+
 #include <g3d/read.h>
 #include <g3d/material.h>
 #include <g3d/model.h>
@@ -38,7 +41,7 @@ gboolean flt_cb_0002(FltGlobalData *gd, FltLocalData *ld)
 		pobj->objects = g_slist_append(pobj->objects, object);
 	else
 		gd->model->objects = g_slist_append(gd->model->objects, object);
-	ld->object = object;
+	ld->g3dobj = object;
 
 	/* group ID */
 	fread(namebuf, 1, 8, gd->f);
@@ -62,7 +65,7 @@ gboolean flt_cb_0004(FltGlobalData *gd, FltLocalData *ld)
 		pobj->objects = g_slist_append(pobj->objects, object);
 	else
 		gd->model->objects = g_slist_append(gd->model->objects, object);
-	ld->object = object;
+	ld->g3dobj = object;
 
 	material = g3d_material_new();
 	material->name = g_strdup("fallback material");
@@ -108,13 +111,42 @@ gboolean flt_cb_0004(FltGlobalData *gd, FltLocalData *ld)
 /* face */
 gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld)
 {
+	G3DObject *object = ld->g3dobj;
+	G3DMaterial *material;
+	G3DFace *face;
+
+	g_return_val_if_fail(object != NULL, FALSE);
+
+	if(object->materials == NULL) {
+		material = g3d_material_new();
+		material->name = g_strdup("(default material)");
+		object->materials = g_slist_append(object->materials, material);
+	}
+
+	face = g_new0(G3DFace, 1);
+	face->material = g_slist_nth_data(object->materials, 0);
+	object->faces = g_slist_append(object->faces, face);
+	ld->level_object = face;
+
+	if(object->vertex_count == 0) {
+		if(gd->vertex_palette) {
+			/* copy vertex palette to object */
+			g_debug("FLT: 0005: copying vertex palette (%d entries) to object",
+				gd->vertex_palette->n_entries);
+			object->vertex_count = gd->vertex_palette->n_entries;
+			object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+			memcpy(object->vertex_data, gd->vertex_palette->vertex_data,
+				object->vertex_count * 3 * sizeof(gfloat));
+		}
+	}
+
 	return TRUE;
 }
 
 /* push level */
 gboolean flt_cb_0010(FltGlobalData *gd, FltLocalData *ld)
 {
-	g_queue_push_head(gd->oqueue, ld->object);
+	g_queue_push_head(gd->oqueue, ld->g3dobj);
 
 	gd->level ++;
 	return TRUE;
@@ -123,7 +155,8 @@ gboolean flt_cb_0010(FltGlobalData *gd, FltLocalData *ld)
 /* pop level */
 gboolean flt_cb_0011(FltGlobalData *gd, FltLocalData *ld)
 {
-	g_queue_pop_head(gd->oqueue);
+	ld->g3dobj = g_queue_pop_head(gd->oqueue);
+	ld->level_object = NULL;
 
 	if(gd->level > 0)
 		gd->level --;
@@ -162,44 +195,157 @@ gboolean flt_cb_0032(FltGlobalData *gd, FltLocalData *ld)
 	return TRUE;
 }
 
+static gboolean flt_inc_vertex_palette(FltGlobalData *gd)
+{
+	g_return_val_if_fail(gd->vertex_palette != NULL, FALSE);
+
+	gd->vertex_palette->n_entries ++;
+	gd->vertex_palette->offsets = g_realloc(
+		gd->vertex_palette->offsets,
+		gd->vertex_palette->n_entries * sizeof(goffset));
+	gd->vertex_palette->vertex_data = g_realloc(
+		gd->vertex_palette->vertex_data,
+		gd->vertex_palette->n_entries * 3 * sizeof(gfloat));
+	gd->vertex_palette->normal_data = g_realloc(
+		gd->vertex_palette->normal_data,
+		gd->vertex_palette->n_entries * 3 * sizeof(gfloat));
+	gd->vertex_palette->tex_vertex_data = g_realloc(
+		gd->vertex_palette->tex_vertex_data,
+		gd->vertex_palette->n_entries * 2 * sizeof(gfloat));
+	gd->vertex_palette->vertex_materials = g_realloc(
+		gd->vertex_palette->vertex_materials,
+		gd->vertex_palette->n_entries * sizeof(G3DMaterial *));
+	return TRUE;
+}
+
+/* vertex palette */
+gboolean flt_cb_0067(FltGlobalData *gd, FltLocalData *ld)
+{
+	gd->vertex_palette = g_new0(FltVertexPalette, 1);
+	gd->vertex_palette->offset = 8;
+	return TRUE;
+}
+
+/* vertex with color and normal record */
 gboolean flt_cb_0069(FltGlobalData *gd, FltLocalData *ld)
 {
-	G3DObject *object;
-	gint32 i;
+	gint32 i, index;
 
-	object = g3d_model_get_object_by_name(gd->model, "default object");
-	if(object == NULL)
-	{
-		object = g_new0(G3DObject, 1);
-		object->name = g_strdup("default object");
-		gd->model->objects = g_slist_append(gd->model->objects, object);
+	if(!flt_inc_vertex_palette(gd))
+		return FALSE;
+
+	index = gd->vertex_palette->n_entries - 1;
+	gd->vertex_palette->offsets[index] = gd->vertex_palette->offset;
+	gd->vertex_palette->offset += ld->nb + 4;
+
+	/* color name index */
+	g3d_read_int16_be(gd->f);
+	ld->nb -= 2;
+
+	/* flags */
+	g3d_read_int16_be(gd->f);
+	ld->nb -= 2;
+
+	/* vertex coordinate */
+	for(i = 0; i < 3; i ++) {
+		gd->vertex_palette->vertex_data[index * 3 + i] =
+			g3d_read_double_be(gd->f);
+		ld->nb -= 8;
 	}
 
-	object->vertex_count += 1;
-	object->vertex_data = g_realloc(object->vertex_data,
-		object->vertex_count * 3 * sizeof(gfloat));
+	/* vertex normal */
+	for(i = 0; i < 3; i ++) {
+		gd->vertex_palette->normal_data[index * 3 + i] =
+			g3d_read_float_be(gd->f);
+		ld->nb -= 4;
+	}
 
-	i = object->vertex_count - 1;
-	object->vertex_data[i * 3 + 0] = g3d_read_double_be(gd->f);
-	object->vertex_data[i * 3 + 1] = g3d_read_double_be(gd->f);
-	object->vertex_data[i * 3 + 2] = g3d_read_double_be(gd->f);
-	ld->nb -= 24;
+	/* TODO: color stuff */
 
 	return TRUE;
+}
+
+/* vertex with color, normal and uv record */
+gboolean flt_cb_0070(FltGlobalData *gd, FltLocalData *ld)
+{
+	gint32 i, index;
+
+	if(!flt_inc_vertex_palette(gd))
+		return FALSE;
+
+	index = gd->vertex_palette->n_entries - 1;
+	gd->vertex_palette->offsets[index] = gd->vertex_palette->offset;
+	gd->vertex_palette->offset += ld->nb + 4;
+
+	/* color name index */
+	g3d_read_int16_be(gd->f);
+	ld->nb -= 2;
+
+	/* flags */
+	g3d_read_int16_be(gd->f);
+	ld->nb -= 2;
+
+	/* vertex coordinate */
+	for(i = 0; i < 3; i ++) {
+		gd->vertex_palette->vertex_data[index * 3 + i] =
+			g3d_read_double_be(gd->f);
+		ld->nb -= 8;
+	}
+
+	/* vertex normal */
+	for(i = 0; i < 3; i ++) {
+		gd->vertex_palette->normal_data[index * 3 + i] =
+			g3d_read_float_be(gd->f);
+		ld->nb -= 4;
+	}
+
+	/* vertex texture coordinate */
+	for(i = 0; i < 2; i ++) {
+		gd->vertex_palette->tex_vertex_data[index * 2 + i] =
+			g3d_read_float_be(gd->f);
+		ld->nb -= 4;
+	}
+
+	/* TODO: color stuff */
+
+	return TRUE;
+}
+
+static gint32 flt_vertex_palette_index_from_offset(FltGlobalData *gd,
+	goffset offset)
+{
+	FltVertexPalette *pal = gd->vertex_palette;
+	gint i;
+
+	g_return_val_if_fail(pal != NULL, -1);
+
+	for(i = 0; (i < pal->n_entries) && (pal->offsets[i] < offset); i ++);
+	if((i < pal->n_entries) && (pal->offsets[i] == offset))
+		return i;
+	g_warning("FLT: flt_vertex_palette_index_from_offset: "
+		"could not get index for offset %li (i=%d)", (long int)offset, i);
+	return -1;
 }
 
 /* vertex list */
 gboolean flt_cb_0072(FltGlobalData *gd, FltLocalData *ld)
 {
-	G3DFace *face;
-	gint32 i;
+	G3DFace *face = ld->level_object;
+	gint32 i, index;
+	guint32 n;
 
-	for(i = 0; i < 1; i ++)
-	{
-		printf("FLT: 0072: %d\n", g3d_read_int32_be(gd->f));
+	g_return_val_if_fail(face != NULL, FALSE);
+
+	n = ld->nb / 4;
+	face->vertex_count = n;
+	face->vertex_indices = g_new0(guint32, n);
+
+	for(i = 0; i < n; i ++) {
+		index = flt_vertex_palette_index_from_offset(gd,
+			g3d_read_int32_be(gd->f));
+		face->vertex_indices[i] = index;
 		ld->nb -= 4;
 	}
-
 	return TRUE;
 }
 

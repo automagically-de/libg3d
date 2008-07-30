@@ -38,7 +38,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	FltOpcode *oi;
 	FltGlobalData *gd;
 	FltLocalData *ld;
-	G3DObject *object = NULL;
+	G3DObject *g3dobj = NULL;
+	gpointer level_object = NULL;
 	gchar *pad;
 
 	f = fopen(filename, "rb");
@@ -64,7 +65,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		ld = g_new0(FltLocalData, 1);
 		ld->opcode = opcode;
 		ld->nb = rlen - 4;
-		ld->object = object;
+		ld->g3dobj = g3dobj;
+		ld->level_object = level_object;
 
 		if(opcode == 0)
 		{
@@ -73,20 +75,16 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 
 		oi = flt_opcode_info(opcode);
-		if(oi != NULL)
-		{
-			pad = g_strnfill(gd->level, ' ');
-			if((oi->callback == NULL) || (DEBUG > 2))
-				printf("FLT:%s* %s (%d, %d bytes)\n", pad, oi->description,
-					opcode,	rlen);
-			g_free(pad);
 
-			/* handle record */
-			if(oi->callback != NULL)
-				oi->callback(gd, ld);
-		}
-		else
-			printf("FLT: unknown opcode (%d, %d bytes)\n", opcode, rlen);
+		pad = g_strnfill(gd->level, ' ');
+		g_debug("\\%s[%04d][%c] %8d: %s", pad, opcode,
+			oi ? (oi->callback ? 'f' : ' ') : ' ',
+			rlen,
+			oi ? oi->description : "unknown");
+		g_free(pad);
+
+		if(oi && oi->callback)
+			oi->callback(gd, ld);
 
 		if(ld->nb > 0)
 		{
@@ -95,11 +93,20 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 
 		/* free local data */
-		object = ld->object;
+		g3dobj = ld->g3dobj;
+		level_object = ld->level_object;
 		g_free(ld);
 	}
 
 	g_queue_free(gd->oqueue);
+	if(gd->vertex_palette) {
+		g_free(gd->vertex_palette->offsets);
+		g_free(gd->vertex_palette->vertex_data);
+		g_free(gd->vertex_palette->normal_data);
+		g_free(gd->vertex_palette->tex_vertex_data);
+		g_free(gd->vertex_palette->vertex_materials);
+		g_free(gd->vertex_palette);
+	}
 	g_free(gd);
 	fclose(f);
 

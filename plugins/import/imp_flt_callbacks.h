@@ -27,16 +27,28 @@
 #include <g3d/types.h>
 
 typedef struct {
+	guint32 n_entries;
+	goffset *offsets;                /* n * goffset */
+	gfloat *vertex_data;             /* 3 x n * gfloat */
+	gfloat *normal_data;             /* 3 x n * gfloat */
+	gfloat *tex_vertex_data;         /* 2 x n * gfloat */
+	G3DMaterial **vertex_materials;  /* n * G3DMaterial* */
+	goffset offset;
+} FltVertexPalette;
+
+typedef struct {
 	G3DContext *context;
 	G3DModel *model;
 	FILE *f;
 	guint32 level;
 	GQueue *oqueue;
+	FltVertexPalette *vertex_palette;
 } FltGlobalData;
 
 typedef struct {
 	guint32 opcode;
-	gpointer object;
+	G3DObject *g3dobj;
+	gpointer level_object;
 	gint32 nb;
 } FltLocalData;
 
@@ -49,7 +61,9 @@ gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0010(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0011(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0032(FltGlobalData *gd, FltLocalData *ld);
+gboolean flt_cb_0067(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0069(FltGlobalData *gd, FltLocalData *ld);
+gboolean flt_cb_0070(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0072(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0085(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0086(FltGlobalData *gd, FltLocalData *ld);

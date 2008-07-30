@@ -226,6 +226,38 @@ gboolean flt_cb_0067(FltGlobalData *gd, FltLocalData *ld)
 	return TRUE;
 }
 
+/* vertex with color record */
+gboolean flt_cb_0068(FltGlobalData *gd, FltLocalData *ld)
+{
+	gint32 i, index;
+
+	if(!flt_inc_vertex_palette(gd))
+		return FALSE;
+
+	index = gd->vertex_palette->n_entries - 1;
+	gd->vertex_palette->offsets[index] = gd->vertex_palette->offset;
+	gd->vertex_palette->offset += ld->nb + 4;
+
+	/* color name index */
+	g3d_read_int16_be(gd->f);
+	ld->nb -= 2;
+
+	/* flags */
+	g3d_read_int16_be(gd->f);
+	ld->nb -= 2;
+
+	/* vertex coordinate */
+	for(i = 0; i < 3; i ++) {
+		gd->vertex_palette->vertex_data[index * 3 + i] =
+			g3d_read_double_be(gd->f);
+		ld->nb -= 8;
+	}
+
+	/* TODO: color stuff */
+
+	return TRUE;
+}
+
 /* vertex with color and normal record */
 gboolean flt_cb_0069(FltGlobalData *gd, FltLocalData *ld)
 {
@@ -297,6 +329,45 @@ gboolean flt_cb_0070(FltGlobalData *gd, FltLocalData *ld)
 		gd->vertex_palette->normal_data[index * 3 + i] =
 			g3d_read_float_be(gd->f);
 		ld->nb -= 4;
+	}
+
+	/* vertex texture coordinate */
+	for(i = 0; i < 2; i ++) {
+		gd->vertex_palette->tex_vertex_data[index * 2 + i] =
+			g3d_read_float_be(gd->f);
+		ld->nb -= 4;
+	}
+
+	/* TODO: color stuff */
+
+	return TRUE;
+}
+
+/* vertex with color and uv record */
+gboolean flt_cb_0071(FltGlobalData *gd, FltLocalData *ld)
+{
+	gint32 i, index;
+
+	if(!flt_inc_vertex_palette(gd))
+		return FALSE;
+
+	index = gd->vertex_palette->n_entries - 1;
+	gd->vertex_palette->offsets[index] = gd->vertex_palette->offset;
+	gd->vertex_palette->offset += ld->nb + 4;
+
+	/* color name index */
+	g3d_read_int16_be(gd->f);
+	ld->nb -= 2;
+
+	/* flags */
+	g3d_read_int16_be(gd->f);
+	ld->nb -= 2;
+
+	/* vertex coordinate */
+	for(i = 0; i < 3; i ++) {
+		gd->vertex_palette->vertex_data[index * 3 + i] =
+			g3d_read_double_be(gd->f);
+		ld->nb -= 8;
 	}
 
 	/* vertex texture coordinate */

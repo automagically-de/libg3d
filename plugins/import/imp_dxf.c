@@ -25,36 +25,49 @@
 #include <locale.h>
 
 #include <g3d/types.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
-#include <g3d/read.h>
 
-int dxf_read_section(FILE *f, G3DModel *model, G3DObject *object, int bin);
-gint dxf_read_code(FILE *f, int binary);
-char *dxf_read_string(FILE *f, char *value, int binary);
-gdouble dxf_read_float64(FILE *f, int binary);
-int dxf_skip_section(FILE *f, int binary);
+#define DXF_MAX_LINE 512
+#define DXF_CODE_INVALID 0xDEADBEEF
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+typedef struct {
+	G3DContext *context;
+	G3DModel *model;
+	G3DStream *stream;
+	gboolean binary;
+	guint32 line;
+} DxfGlobalData;
+
+gint32 dxf_read_section(DxfGlobalData *global, G3DObject *object);
+gint32 dxf_read_code(DxfGlobalData *global);
+gchar *dxf_read_string(DxfGlobalData *global, gchar *value);
+gdouble dxf_read_float64(DxfGlobalData *global);
+gboolean dxf_skip_section(DxfGlobalData *global);
+
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	FILE *f;
-	char binmagic[22];
-	int binarydxf = 0;
+	gchar binmagic[22];
 	G3DObject *object;
 	G3DMaterial *material;
+	DxfGlobalData *global;
+
+	global = g_new0(DxfGlobalData, 1);
+	global->context = context;
+	global->model = model;
+	global->stream = stream;
+	global->line = 1;
 
 	setlocale(LC_NUMERIC, "C");
 
-	f = fopen(filename, "r");
-	if(f == NULL)
-	{
-		g_warning("can't open file '%s'", filename);
-		return FALSE;
+	if((g3d_stream_read(stream, binmagic, 1, 22) == 22) &&
+		 (strncmp(binmagic, "AutoCAD Binary DXF", 18) == 0))
+		global->binary = TRUE;
+	else {
+		setlocale(LC_NUMERIC, "C");
+		g3d_stream_seek(stream, 0, G_SEEK_SET);
 	}
-
-	if((fread(binmagic, 1, 22, f) == 22) &&
-		 (strncmp(binmagic, "AutoCAD Binary DXF", 18) == 0)) binarydxf = 1;
-	else rewind(f);
 
 	object = g_new0(G3DObject, 1);
 	object->name = g_strdup("DXF Object");
@@ -65,98 +78,88 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	material->flags |= G3D_FLAG_MAT_TWOSIDE;
 	object->materials = g_slist_append(object->materials, material);
 
-	while(!feof(f))
-	{
-		int retval = dxf_read_section(f, model, object, binarydxf);
-		if(retval != TRUE)
-		{
-			fclose(f);
-			if(retval == 0xE0F) return TRUE;
+	while(!g3d_stream_eof(stream)) {
+		int retval = dxf_read_section(global, object);
+		if(retval != TRUE) {
+			if(retval == 0xE0F)
+				return TRUE;
 			g_printerr("error in section..\n");
 			return FALSE;
 		}
 	}
-
-	fclose(f);
 	return TRUE;
 }
 
-char *plugin_description(void)
+gchar *plugin_description(void)
 {
 	return g_strdup(
 		"Import plugin for AutoCAD DXF files\n");
 }
 
-char **plugin_extensions(void)
+gchar **plugin_extensions(void)
 {
 	return g_strsplit("dxf", ":", 0);
 }
 
 /*****************************************************************************/
 
-int dxf_read_section(FILE *f, G3DModel *model, G3DObject *object, int bin)
+gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 {
 	gint grpcode;
 	G3DFace *face = NULL;
-	char val_str[256]; /* length of line, 255 should be enough */
+	gchar val_str[DXF_MAX_LINE + 1];
+	gint32 key;
+	gchar str[DXF_MAX_LINE + 1];
+	gdouble val_f64;
 
-	grpcode = dxf_read_code(f, bin);
-	if(grpcode != 0) 
-	{
+	grpcode = dxf_read_code(global);
+	if(grpcode != 0) {
 #if DEBUG > 0
 		g_printerr("unexpected group code: %d (0 expected)\n", grpcode);
 #endif
 		return FALSE;
 	}
-	dxf_read_string(f, val_str, bin);
-	if(strcmp("EOF", val_str) == 0) return 0xE0F;
-	if(strcmp("SECTION", val_str) != 0) 
-	{
+	dxf_read_string(global, val_str);
+	if(strcmp("EOF", val_str) == 0)
+		return 0xE0F;
+	if(strcmp("SECTION", val_str) != 0) {
 #if DEBUG > 0
 		g_printerr("SECTION expected, found: %s\n", val_str);
 #endif
 		return FALSE;
 	}
-	grpcode = dxf_read_code(f, bin);
-	if(grpcode != 2) 
-	{
+	grpcode = dxf_read_code(global);
+	if(grpcode != 2) {
 #if DEBUG > 0
 		g_printerr("unexpected group code: %d (2 expected)\n", grpcode);
 #endif
 		return FALSE;
 	}
-	dxf_read_string(f, val_str, bin);
-	
+	dxf_read_string(global, val_str);
+
 	if((strcmp(val_str, "HEADER") == 0) ||
 		 (strcmp(val_str, "CLASSES") == 0) ||
 		 (strcmp(val_str, "TABLES") == 0) ||
 		 (strcmp(val_str, "BLOCKS") == 0) ||
-		 (strcmp(val_str, "OBJECTS") == 0))
-	{
+		 (strcmp(val_str, "OBJECTS") == 0)) {
 #if DEBUG > 0
 		g_printerr("skipping section: %s\n", val_str);
 #endif
-		dxf_skip_section(f, bin);
-	}
-	else if(strcmp(val_str, "ENTITIES") == 0)
-	{
-		int key;
-		char str[128];
-		gdouble val_f64;
+		dxf_skip_section(global);
+	} else if(strcmp(val_str, "ENTITIES") == 0) {
 #if DEBUG > 0
 		g_printerr("processing entities section...\n");
 #endif
-		while(1)
-		{
-			key = dxf_read_code(f, bin);
+		while(1) {
+			key = dxf_read_code(global);
 			switch(key)
 			{
-				case -1:
+				case DXF_CODE_INVALID:
 					return 0xE0F;
 					break;
 				case 0:
 					face = NULL;
-					dxf_read_string(f, str, bin);
+					dxf_read_string(global, str);
 					if(strcmp(str, "ENDSEC") == 0) return TRUE;
 					else if(strcmp("3DFACE", str) == 0)
 					{
@@ -190,14 +193,14 @@ int dxf_read_section(FILE *f, G3DModel *model, G3DObject *object, int bin)
 					break;
 
 				case 8:
-					dxf_read_string(f, str, bin);
+					dxf_read_string(global, str);
 					break;
 
 				case 10: case 20: case 30:
 				case 11: case 21: case 31:
 				case 12: case 22: case 32:
 				case 13: case 23: case 33:
-					val_f64 = dxf_read_float64(f, bin);
+					val_f64 = dxf_read_float64(global);
 					if(face != NULL)
 					{
 						object->vertex_data[
@@ -209,53 +212,55 @@ int dxf_read_section(FILE *f, G3DModel *model, G3DObject *object, int bin)
 
 				case 50:
 				case 210: case 220: case 230:
-					dxf_read_float64(f, bin);
+					dxf_read_float64(global);
 					break;
 
 				default:
 #if DEBUG > 0
 					g_printerr("unhandled key: %d, try to skip... "
-						"(pos in file: %ld)\n", key, ftell(f));
+						"(%s in file: %ld)\n", key,
+						global->binary ? "offset" : "line",
+						global->binary ?
+							(long int)g3d_stream_tell(global->stream) :
+							(long int)global->line);
 #endif
-					if(bin)
+					if(global->binary)
 						return FALSE; /* unable to skip unknown type */
-					else
-						fgets(str, 128, f);
+					else {
+						g3d_stream_read_line(global->stream, str,
+							DXF_MAX_LINE);
+						global->line ++;
+					}
 			}
 		}
-#if 0
-		dxf_skip_section(f, bin);
-#endif
 	}
 	else
 	{
 #if DEBUG > 0
 		g_printerr("unknown section '%s', skipping...\n", val_str);
 #endif
-		dxf_skip_section(f, bin);
+		dxf_skip_section(global);
 	}
 	return TRUE;
 }
 
-char *dxf_read_string(FILE *f, char *value, int binary)
+gchar *dxf_read_string(DxfGlobalData *global, gchar *value)
 {
-	if(binary)
-	{
+	if(global->binary) {
 		int pos = 0;
 		int c;
 		do
 		{
-			c = fgetc(f);
+			c = g3d_stream_read_int8(global->stream);
 			value[pos] = (char)c;
 			pos++;
 		} while(c != '\0');
 		return value;
-	}
-	else
-	{
-		char line[128];
+	} else {
+		gchar line[DXF_MAX_LINE + 1];
 
-		fgets(line, 128, f);
+		g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
+		global->line ++;
 		if(sscanf(line, "%s", value) == 1)
 			return g_strchomp(value);
 		if(sscanf(line, " %s", value) == 1)
@@ -264,40 +269,39 @@ char *dxf_read_string(FILE *f, char *value, int binary)
 	}
 }
 
-gint dxf_read_code(FILE *f, int binary)
+gint32 dxf_read_code(DxfGlobalData *global)
 {
-	if(binary)
-	{
-		return g3d_read_int8(f);
-	}
-	else
-	{
-		int val;
-		char line[256];
+	gint32 val = DXF_CODE_INVALID;
+	gchar line[DXF_MAX_LINE + 1];
 
-		fgets(line, 256, f);
-		if(sscanf(line, "%d", &val) == 1)
-			return val;
-		if(sscanf(line, " %d", &val) == 1)
-			return val;
-		else return -1;
+	if(global->binary)
+		return g3d_stream_read_int8(global->stream);
+	else {
+		g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
+		global->line ++;
+		if((sscanf(line, "%d", &val) != 1) &&
+			(sscanf(line, " %d", &val) != 1))
+			return DXF_CODE_INVALID;
+		if(val == 999) { /* comment */
+			g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
+			global->line ++;
+			return dxf_read_code(global);
+		}
+		return val;
 	}
 }
 
-gdouble dxf_read_float64(FILE *f, int binary)
+gdouble dxf_read_float64(DxfGlobalData *global)
 {
-	if(binary)
-	{
-		gint64 i64 = (gint64)g3d_read_int32_le(f) |
-			((gint64)g3d_read_int32_le(f) << 32);
-		return (gdouble)i64;
-	}
+	if(global->binary)
+		return g3d_stream_read_double_le(global->stream);
 	else
 	{
 		gdouble val;
-		char line[256];
+		gchar line[DXF_MAX_LINE];
 
-		fgets(line, 256, f);
+		g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
+		global->line ++;
 		if(sscanf(line, "%lf", &val) == 1)
 			return val;
 		if(sscanf(line, " %lf", &val) == 1)
@@ -307,30 +311,25 @@ gdouble dxf_read_float64(FILE *f, int binary)
 	}
 }
 
-int dxf_skip_section(FILE *f, int binary)
+gboolean dxf_skip_section(DxfGlobalData *global)
 {
-	if(binary)
-	{
-		while(!feof(f))
-		{
-			int c, read;
-			char buf[7];
-			do { c = fgetc(f); } while(c != 0);
-			read = fread(buf, 1, 7, f);
-			if((read == 7) && (strncmp(buf, "ENDSEC", 6) == 0)) return TRUE;
-			else fseek(f, -read, SEEK_CUR);
+	gchar c, buf[7], line[DXF_MAX_LINE];
+	gsize read;
+
+	while(!g3d_stream_eof(global->stream))
+		if(global->binary) {
+			do { c = g3d_stream_read_int8(global->stream); } while(c != 0);
+			read = g3d_stream_read(global->stream, buf, 1, 7);
+			if((read == 7) && (strncmp(buf, "ENDSEC", 6) == 0))
+				return TRUE;
+			else
+				g3d_stream_seek(global->stream, -read, G_SEEK_CUR);
+		} else {
+			g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
+			global->line ++;
+			if(strncmp(line, "ENDSEC", 6) == 0)
+				return TRUE;
 		}
-	}
-	else
-	{
-		while(!feof(f))
-		{
-			char line[128];
-			
-			fgets(line, 128, f);
-			if(strncmp(line, "ENDSEC", 6) == 0) return TRUE;
-		}
-	}
 	return TRUE;
 }
 

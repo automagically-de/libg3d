@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <locale.h>
 
 #include <g3d/types.h>
 #include <g3d/plugins.h>
@@ -60,6 +61,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		while(!feof(f)) {
 			fgets(line, 1023, f);
 			if (strstr(line, "solid")) {
+				setlocale(LC_NUMERIC, "C");
 				type = STL_ASCII;
 				break;
 			}

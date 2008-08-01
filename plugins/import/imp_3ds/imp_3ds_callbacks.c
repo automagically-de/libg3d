@@ -275,7 +275,7 @@ gboolean x3ds_cb_0x4110(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		parent->nb -= 12;
 
-		if((i % 1000) == 0) x3ds_update_progress(global);
+		if((i % 1000) == 0) x3ds_update_progress(global, parent->level);
 	}
 	return TRUE;
 }
@@ -327,7 +327,7 @@ gboolean x3ds_cb_0x4120(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		object->faces = g_slist_append(object->faces, face);
 
-		if((i % 1000) == 0) x3ds_update_progress(global);
+		if((i % 1000) == 0) x3ds_update_progress(global, parent->level);
 	}
 
 	return TRUE;
@@ -393,7 +393,7 @@ gboolean x3ds_cb_0x4130(x3ds_global_data *global, x3ds_parent_data *parent)
 			} /* textured face */
 		} /* material != NULL */
 
-		if((i % 1000) == 0) x3ds_update_progress(global);
+		if((i % 1000) == 0) x3ds_update_progress(global, parent->level);
 	} /* 0..nfaces */
 
 	return TRUE;
@@ -419,7 +419,7 @@ gboolean x3ds_cb_0x4140(x3ds_global_data *global, x3ds_parent_data *parent)
 		object->tex_vertex_data[i * 2 + 1] = g3d_read_float_le(global->f);
 		parent->nb -= 8;
 
-		if((i % 1000) == 0) x3ds_update_progress(global);
+		if((i % 1000) == 0) x3ds_update_progress(global, parent->level);
 	}
 
 	return TRUE;
@@ -565,43 +565,44 @@ gboolean x3ds_cb_0x4150(x3ds_global_data *global, x3ds_parent_data *parent)
 /* mesh matrix */
 gboolean x3ds_cb_0x4160(x3ds_global_data *global, x3ds_parent_data *parent)
 {
-	gfloat matrix[16];
+	G3DObject *object;
+	gfloat matrix[16], scale[16];
 	gint32 i;
+	gfloat det;
 
 	g3d_matrix_identity(matrix);
 	for(i = 0; i < 12; i ++)
-		matrix[i] = g3d_read_float_le(global->f);
-
-#if 0
-	for(w = 0; w < 4; w ++)
-	{
-		for(h = 0; h < 3; h ++)
-		{
-			matrix[w * 4 + h] = g3d_read_float_le(global->f);
-		}
-	}
-#endif
-
+		matrix[(i / 3) * 4 + (i % 3)] = g3d_read_float_le(global->f);
 	parent->nb -= 48;
 
-/* #define X3DS_MESH_TRANSFORM */
-#ifdef X3DS_MESH_TRANSFORM
-	if(parent->object)
-	{
-		gint32 i;
-		G3DObject *object = (G3DObject *)parent->object;
+	det = g3d_matrix_determinant(matrix);
 
-		for(i = 0; i < object->vertex_count; i ++)
-		{
-			g3d_vector_transform(
-				&(object->vertex_data[i * 3 + 0]),
-				&(object->vertex_data[i * 3 + 1]),
-				&(object->vertex_data[i * 3 + 2]),
-				matrix);
-		}
-	}
+	g3d_matrix_dump(matrix);
+	g_debug("det: %f", det);
+
+
+	if(det < 0.0) {
+#if 0
+		g3d_matrix_identity(scale);
+		g3d_matrix_scale(-1.0, 1.0, 1.0, scale);
+		g3d_matrix_multiply(scale, matrix, matrix);
+		g3d_matrix_dump(matrix);
 #endif
+#define X3DS_MESH_TRANSFORM 0
+#if X3DS_MESH_TRANSFORM
+		object = parent->object;
+		if(object) {
+			object->transformation = g_new0(G3DTransformation, 1);
+			memcpy(object->transformation->matrix, matrix, 16 * sizeof(gfloat));
+		}
 
+#if 0
+		if(parent->object) {
+			g3d_object_transform(parent->object, matrix);
+		}
+#endif
+#endif
+	}
 	return TRUE;
 }
 
@@ -893,20 +894,23 @@ gboolean x3ds_cb_0xB020(x3ds_global_data *global, x3ds_parent_data *parent)
 		y = g3d_read_float_le(global->f);
 		z = g3d_read_float_le(global->f);
 		parent->nb -= 12;
-#if DEBUG > 2
-		g_printerr("[3DS]: POS_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f) (0x%X)\n",
-			fnum, x, y, z, fflags);
+#if DEBUG > 3
+		g_printerr("[3DS]: POS_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f) (0x%X) "
+			"object: %s\n",
+			fnum, x, y, z, fflags, object->name);
 #endif
 
 #if X3DS_ENABLE_POS_TRACK_TAG
 		if(fnum == 0)
 		{
+#if 1
 			for(j = 0; j < object->vertex_count; j ++)
 			{
 				object->vertex_data[j * 3 + 0] -= x;
 				object->vertex_data[j * 3 + 1] -= y;
 				object->vertex_data[j * 3 + 2] -= z;
 			}
+#endif
 		}
 #endif
 	}
@@ -949,6 +953,7 @@ gboolean x3ds_cb_0xB021(x3ds_global_data *global, x3ds_parent_data *parent)
 #endif
 		if(fnum == -1)
 		{
+#if 1
 			g3d_matrix_identity(matrix);
 			g3d_matrix_rotate(rot, x, y, z, matrix);
 
@@ -960,6 +965,7 @@ gboolean x3ds_cb_0xB021(x3ds_global_data *global, x3ds_parent_data *parent)
 					&(object->vertex_data[j * 3 + 2]),
 					matrix);
 			}
+#endif
 		}
 	}
 

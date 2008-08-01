@@ -187,20 +187,22 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 		parent->nb -= chunk_len;
 
 		/* update progress bar */
-		x3ds_update_progress(global);
+		x3ds_update_progress(global, parent->level);
 	}
 
 	return TRUE;
 }
 
-void x3ds_update_progress(x3ds_global_data *global)
+void x3ds_update_progress(x3ds_global_data *global, guint32 level)
 {
 	long int fpos;
 
 	/* update progress bar */
-	fpos = ftell(global->f);
-	g3d_context_update_progress_bar(global->context,
-		((gfloat)fpos / (gfloat)global->max_fpos), TRUE);
+	if(level < 4) {
+		fpos = ftell(global->f);
+		g3d_context_update_progress_bar(global->context,
+			((gfloat)fpos / (gfloat)global->max_fpos), TRUE);
+	}
 }
 
 gint32 x3ds_read_cstr(FILE *f, char *string)

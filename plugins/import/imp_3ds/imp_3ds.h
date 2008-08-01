@@ -49,7 +49,7 @@ typedef gboolean (* x3ds_callback)(x3ds_global_data *global,
 
 
 gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent);
-void x3ds_update_progress(x3ds_global_data *global);
+void x3ds_update_progress(x3ds_global_data *global, guint32 level);
 gint32 x3ds_read_cstr(FILE *f, char *string);
 G3DObject *x3ds_newobject(G3DModel *model, const char *name);
 void x3ds_debug(int level, char *format, ...);

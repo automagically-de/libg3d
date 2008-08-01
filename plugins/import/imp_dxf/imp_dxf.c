@@ -127,6 +127,8 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 		return dxf_section_HEADER(global);
 	else if(strcmp(val_str, "TABLES") == 0)
 		return dxf_section_TABLES(global);
+	else if(strcmp(val_str, "ENTITIES") == 0)
+		return dxf_section_ENTITIES(global);
 
 	if(
 		 (strcmp(val_str, "CLASSES") == 0) ||

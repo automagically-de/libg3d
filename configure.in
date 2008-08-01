@@ -112,6 +112,37 @@ AC_OUTPUT(
 	plugins/Makefile
 	plugins/image/Makefile
 	plugins/import/Makefile
+	plugins/import/imp_3dmf/Makefile
+	plugins/import/imp_3ds/Makefile
+	plugins/import/imp_ac3d/Makefile
+	plugins/import/imp_ar/Makefile
+	plugins/import/imp_ase/Makefile
+	plugins/import/imp_cob/Makefile
+	plugins/import/imp_dae/Makefile
+	plugins/import/imp_dxf/Makefile
+	plugins/import/imp_flt/Makefile
+	plugins/import/imp_glb/Makefile
+	plugins/import/imp_heightfield/Makefile
+	plugins/import/imp_iob/Makefile
+	plugins/import/imp_joe/Makefile
+	plugins/import/imp_kmz/Makefile
+	plugins/import/imp_leocad/Makefile
+	plugins/import/imp_lwo/Makefile
+	plugins/import/imp_max/Makefile
+	plugins/import/imp_maya/Makefile
+	plugins/import/imp_md2/Makefile
+	plugins/import/imp_md3/Makefile
+	plugins/import/imp_nff/Makefile
+	plugins/import/imp_obj/Makefile
+	plugins/import/imp_osm/Makefile
+	plugins/import/imp_q3o/Makefile
+	plugins/import/imp_r4/Makefile
+	plugins/import/imp_rbh/Makefile
+	plugins/import/imp_skp/Makefile
+	plugins/import/imp_stl/Makefile
+	plugins/import/imp_ta/Makefile
+	plugins/import/imp_test/Makefile
+	plugins/import/imp_vrml/Makefile
 	src/Makefile
 	programs/Makefile
 	tests/Makefile

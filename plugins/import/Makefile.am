@@ -1,120 +1,33 @@
 SUBDIRS = \
+	imp_3dmf \
+	imp_3ds \
+	imp_ac3d \
+	imp_ar \
+	imp_ase \
+	imp_cob \
+	imp_dae \
 	imp_dxf \
+	imp_flt \
+	imp_glb \
+	imp_heightfield \
+	imp_iob \
+	imp_joe \
+	imp_kmz \
+	imp_leocad \
+	imp_lwo \
 	imp_max \
+	imp_maya \
+	imp_md2 \
+	imp_md3 \
+	imp_nff \
+	imp_obj \
+	imp_osm \
+	imp_q3o \
+	imp_r4 \
+	imp_rbh \
+	imp_skp \
+	imp_stl \
+	imp_ta \
 	imp_test \
 	imp_vrml
-
-pluginimpdir = $(pkglibdir)/plugins/import
-
-pluginimp_LTLIBRARIES = \
-	imp_3dmf.la \
-	imp_3ds.la \
-	imp_ac3d.la \
-	imp_ar.la \
-	imp_cob.la \
-	imp_glb.la \
-	imp_heightfield.la \
-	imp_iob.la \
-	imp_joe.la \
-	imp_leocad.la \
-	imp_lwo.la \
-	imp_md2.la \
-	imp_md3.la \
-	imp_nff.la \
-	imp_obj.la \
-	imp_q3o.la
-
-if EXPERIMENTAL
-pluginimp_LTLIBRARIES += \
-	imp_ase.la \
-	imp_flt.la \
-	imp_maya.la \
-	imp_r4.la \
-	imp_rbh.la \
-	imp_skp.la \
-	imp_stl.la \
-	imp_ta.la
-if HAVE_LIBXML2
-pluginimp_LTLIBRARIES += \
-	imp_dae.la \
-	imp_osm.la
-if HAVE_LIBGSF
-pluginimp_LTLIBRARIES += \
-	imp_kmz.la
-endif # HAVE_LIBGSF
-endif # HAVE_LIBXML2
-endif # EXPERIMENTAL
-
-AM_CFLAGS = \
-	-Wall -ansi -pedantic \
-	-DG_LOG_DOMAIN=\"LibG3D\" \
-	@DBG_CFLAGS@ -DDEBUG=@DEBUG@ \
-	@GLIB_CFLAGS@
-
-if HAVE_LIBXML2
-AM_CFLAGS += @LIBXML2_CFLAGS@
-endif # HAVE_LIBXML2
-if HAVE_LIBGSF
-AM_CFLAGS += @LIBGSF_CFLAGS@
-endif # HAVE_LIBGSF
-
-INCLUDES = -I$(top_builddir)/include
-
-AM_LDFLAGS = \
-	-module \
-	@PLUGINS_LDFLAGS@
-
-LIBADD = \
-	@GLIB_LIBS@
-
-LIBTOOL += --quiet
-
-imp_3dmf_la_SOURCES = imp_3dmf.c
-imp_3ds_la_SOURCES = imp_3ds.c imp_3ds.h imp_3ds_chunks.h \
-	imp_3ds_callbacks.c imp_3ds_callbacks.h
-imp_ac3d_la_SOURCES = imp_ac3d.c
-imp_ar_la_SOURCES = imp_ar.c imp_ar.h \
-	imp_ar_decompress.c imp_ar_decompress.h \
-	imp_ar_dof.c imp_ar_dof.h \
-	imp_ar_carini.c imp_ar_carini.h
-imp_ase_la_SOURCES = imp_ase.c
-imp_cob_la_SOURCES = imp_cob.c
-imp_dae_la_SOURCES = imp_dae.c \
-	imp_dae_xml.h imp_dae_xml.c \
-	imp_dae_library.h imp_dae_library.c \
-	imp_dae_cb.h imp_dae_cb.c imp_dae_chunks.h
-imp_dae_la_LIBADD = @GLIB_LIBS@ @LIBXML2_LIBS@
-imp_flt_la_SOURCES = imp_flt.c imp_flt.h \
-	imp_flt_opcodes.h \
-	imp_flt_callbacks.c imp_flt_callbacks.h
-imp_glb_la_SOURCES = imp_glb.c
-imp_heightfield_la_SOURCES = imp_heightfield.c
-imp_iob_la_SOURCES = imp_iob.c imp_iob.h imp_iob_chunks.h \
-	imp_iob_callbacks.c imp_iob_callbacks.h
-imp_joe_la_SOURCES = imp_joe.c
-imp_kmz_la_SOURCES = imp_kmz.c
-imp_kmz_la_LIBADD = @GLIB_LIBS@ @LIBGSF_LIBS@ @LIBXML2_LIBS@
-imp_leocad_la_SOURCES = imp_leocad.c imp_leocad_library.h imp_leocad_library.c
-imp_lwo_la_SOURCES = imp_lwo.c imp_lwo.h imp_lwo_chunks.h \
-	imp_lwo_callbacks.c imp_lwo_callbacks.h
-imp_maya_la_SOURCES = imp_maya.c imp_maya_chunks.h \
-	imp_maya_callbacks.c imp_maya_callbacks.h \
-	imp_maya_obj.c imp_maya_obj.h \
-	imp_maya_var.c imp_maya_var.h
-imp_md2_la_SOURCES = imp_md2.c imp_md2_normals.h
-imp_md3_la_SOURCES = imp_md3.c
-imp_nff_la_SOURCES = imp_nff.c
-imp_obj_la_SOURCES = imp_obj.c
-imp_osm_la_SOURCES = imp_osm.c
-imp_osm_la_LIBADD = @GLIB_LIBS@ @LIBXML2_LIBS@
-imp_q3o_la_SOURCES = imp_q3o.c
-imp_r4_la_SOURCES = imp_r4.c imp_r4_chunks.h \
-	imp_r4_callbacks.c imp_r4_callbacks.h
-imp_rbh_la_SOURCES = imp_rbh.c imp_rbh_chunks.h \
-	imp_rbh_callbacks.c imp_rbh_callbacks.h
-imp_skp_la_SOURCES = imp_skp.c imp_skp.h \
-	imp_skp_chunks.h imp_skp_callbacks.h imp_skp_callbacks.c
-imp_stl_la_SOURCES = imp_stl.c
-imp_ta_la_SOURCES = imp_ta.c imp_ta_3do_palette.h \
-	imp_ta_3do.c imp_ta_3do.h
 

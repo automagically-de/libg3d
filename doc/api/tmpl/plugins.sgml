@@ -111,6 +111,7 @@ Plugin interface
 @loadmodel_func: 
 @loadmodelstream_func: 
 @loadimage_func: 
+@loadimagestream_func: 
 @desc_func: 
 @ext_func: 
 @user_data: 

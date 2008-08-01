@@ -1,4 +1,5 @@
 #include <string.h>
+#include <math.h>
 
 #include "imp_dxf.h"
 #include "imp_dxf_vars.h"
@@ -125,6 +126,140 @@ gboolean dxf_section_TABLES(DxfGlobalData *global)
 				break;
 			default:
 				DXF_HANDLE_UNKNOWN(global, key, str, "TABLES");
+				break;
+		} /* key */
+	}
+	return dxf_skip_section(global);
+}
+
+static gboolean dxf_vertex_equals(gfloat *v1, gfloat *v2)
+{
+	return ((fabs(v1[0] - v2[0]) < 0.0001) &&
+		(fabs(v1[1] - v2[1]) < 0.0001) &&
+		(fabs(v1[2] - v2[2]) < 0.0001));
+}
+
+
+gboolean dxf_section_ENTITIES(DxfGlobalData *global)
+{
+	gint32 key;
+	gchar str[DXF_MAX_LINE + 1];
+	G3DObject *object;
+	G3DMaterial *material;
+	G3DFace *face = NULL;
+	gdouble dbl;
+	guint32 voff = 0;
+
+#if DEBUG > 0
+	g_debug("DXF: parsing ENTITIES section");
+#endif
+
+	object = g_slist_nth_data(global->model->objects, 0);
+	material = g_slist_nth_data(object->materials, 0);
+
+	while(TRUE) {
+		key = dxf_read_code(global);
+		switch(key) {
+			case DXF_CODE_INVALID:
+				return 0xE0F;
+				break;
+			case 0: /* string */
+				face = NULL;
+				dxf_read_string(global, str);
+				DXF_TEST_ENDSEC(str);
+				if(strcmp(str, "3DFACE") == 0) {
+					face = g_new0(G3DFace, 1);
+					face->material = material;
+					face->vertex_count = 3;
+					face->vertex_indices = g_new0(guint32, 3);
+					voff = object->vertex_count;
+					face->vertex_indices[0] = voff;
+					face->vertex_indices[1] = voff + 1;
+					face->vertex_indices[2] = voff + 2;
+					object->vertex_count += 3;
+					object->vertex_data = g_realloc(object->vertex_data,
+						object->vertex_count * 3 * sizeof(gfloat));
+					object->faces = g_slist_append(object->faces, face);
+				}
+				break;
+			case 8:
+				dxf_read_string(global, str);
+				break;
+			case 10:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[voff * 3 + 0] = dbl;
+				break;
+			case 11:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[(voff + 1) * 3 + 0] = dbl;
+				break;
+			case 12:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[(voff + 2) * 3 + 0] = dbl;
+				break;
+			case 13:
+				dbl = dxf_read_float64(global);
+				if(face) {
+					face->vertex_count = 4;
+					face->vertex_indices = g_realloc(face->vertex_indices,
+						4 * sizeof(guint32));
+					face->vertex_indices[3] = voff + 3;
+					object->vertex_count ++;
+					object->vertex_data = g_realloc(object->vertex_data,
+						object->vertex_count * 3 * sizeof(gfloat));
+					object->vertex_data[(voff + 3) * 3 + 0] = dbl;
+				}
+				break;
+			case 20:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[voff * 3 + 1] = dbl;
+				break;
+			case 21:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[(voff + 1) * 3 + 1] = dbl;
+				break;
+			case 22:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[(voff + 2) * 3 + 1] = dbl;
+				break;
+			case 23:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[(voff + 3) * 3 + 1] = dbl;
+				break;
+			case 30:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[voff * 3 + 2] = dbl;
+				break;
+			case 31:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[(voff + 1) * 3 + 2] = dbl;
+				break;
+			case 32:
+				dbl = dxf_read_float64(global);
+				if(face)
+					object->vertex_data[(voff + 2) * 3 + 2] = dbl;
+				break;
+			case 33:
+				dbl = dxf_read_float64(global);
+				if(face) {
+					object->vertex_data[(voff + 3) * 3 + 2] = dbl;
+					if(dxf_vertex_equals(
+						object->vertex_data + (voff + 2) * 3,
+						object->vertex_data + (voff + 3) * 3))
+						face->vertex_count = 3;
+				}
+				break;
+			default:
+				DXF_HANDLE_UNKNOWN(global, key, str, "ENTITIES");
 				break;
 		} /* key */
 	}

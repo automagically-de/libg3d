@@ -69,7 +69,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	ssection = skp_read_char(stream);
 	if(ssection) {
-		g_debug("SKP: section '%s'", ssection);
 		if(strcmp(ssection, "CVersionMap") == 0)
 			g_debug("\\CVersionMap");
 			skp_parse_version_map(stream, &max_nlen, &max_version);
@@ -83,8 +82,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	ssection = skp_find_section(stream, max_nlen, max_version, &version);
 	while(ssection != NULL) {
-		g_debug("\\%-30s v%-2u @ 0x%08x", ssection, version,
-			(guint32)g3d_stream_tell(stream));
 		desc = skp_get_chunk_desc(ssection);
 		if(desc == NULL) {
 			g_warning("SKP: unknown chunk type '%s'", ssection);
@@ -126,6 +123,18 @@ gchar **plugin_extensions(void)
 }
 
 /*****************************************************************************/
+
+guint32 skp_read_xint16(G3DStream *stream)
+{
+	guint32 val;
+
+	val = g3d_stream_read_int16_le(stream);
+	if(val & 0x8000L) {
+		val &= 0x7FFF;
+		val |= (g3d_stream_read_int16_le(stream) << 16);
+	}
+	return val;
+}
 
 gchar *skp_read_char(G3DStream *stream)
 {
@@ -192,8 +201,9 @@ static gboolean skp_parse_version_map(G3DStream *stream, guint32 *max_nlen,
 		if(part == NULL)
 			return FALSE;
 		version = g3d_stream_read_int32_le(stream);
-
+#if DEBUG > 1
 		g_debug("\t%-30s %u", part, version);
+#endif
 		if(strcmp(part, "End-Of-Version-Map") == 0) {
 			g_free(part);
 			return TRUE;
@@ -214,6 +224,7 @@ static gchar *skp_find_section(G3DStream *stream, guint32 max_nlen,
 {
 	goffset offset;
 	guint32 ver, nlen;
+	guint16 w1;
 	gchar *name;
 
 	while(!g3d_stream_eof(stream) && (g3d_stream_read_int8(stream) != 0xFF));
@@ -247,6 +258,12 @@ static gchar *skp_find_section(G3DStream *stream, guint32 max_nlen,
 		return skp_find_section(stream, max_nlen, max_version, version);
 	}
 	*version = ver;
+
+	w1 = g3d_stream_read_int16_le(stream);
+	g3d_stream_seek(stream, -2, G_SEEK_CUR);
+
+	g_debug("\\%-30s v%-2u @ 0x%08x (0x%04x)", name, ver,
+		(guint32)g3d_stream_tell(stream), w1);
 
 	return name;
 }

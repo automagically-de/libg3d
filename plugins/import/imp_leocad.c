@@ -55,7 +55,7 @@ gpointer plugin_init(G3DContext *context)
 
 	if(library == NULL)
 	{
-#if DEBUG > 0
+#if DEBUG > 1
 		g_warning("LeoCAD: failed to load library");
 #endif
 		return NULL;

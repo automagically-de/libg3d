@@ -29,6 +29,7 @@ typedef struct {
 	G3DContext *context;
 	G3DModel *model;
 	G3DStream *stream;
+	guint16 layerid;
 } SkpGlobalData;
 
 typedef struct {
@@ -47,6 +48,7 @@ gboolean skp_cb_attribute_container(SkpGlobalData *global,
 gboolean skp_cb_attribute_named(SkpGlobalData *global, SkpLocalData *local);
 gboolean skp_cb_face_texture_coords(SkpGlobalData *global,
 	SkpLocalData *local);
+gboolean skp_cb_layer(SkpGlobalData *global, SkpLocalData *local);
 gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local);
 gboolean skp_cb_vertex(SkpGlobalData *global, SkpLocalData *local);
 

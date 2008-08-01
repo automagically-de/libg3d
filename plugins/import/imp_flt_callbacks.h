@@ -28,13 +28,20 @@
 
 typedef struct {
 	guint32 n_entries;
+	goffset offset;
+
 	goffset *offsets;                /* n * goffset */
+	guint32 *flags;                  /* n * guint32 */
+	G3DMaterial **vertex_materials;  /* n * G3DMaterial* */
 	gfloat *vertex_data;             /* 3 x n * gfloat */
 	gfloat *normal_data;             /* 3 x n * gfloat */
 	gfloat *tex_vertex_data;         /* 2 x n * gfloat */
-	G3DMaterial **vertex_materials;  /* n * G3DMaterial* */
-	goffset offset;
 } FltVertexPalette;
+
+#define FLT_FLAG_BROKEN_VERTEX_LIST (1 << 0)
+
+#define FLT_FLAG_NO_COLOR           (1 << 2)
+#define FLT_FLAG_PACKED_COLOR       (1 << 3)
 
 typedef struct {
 	G3DContext *context;
@@ -43,6 +50,8 @@ typedef struct {
 	guint32 level;
 	GQueue *oqueue;
 	FltVertexPalette *vertex_palette;
+	guint32 fversion;                /* format version */
+	guint32 flags;
 } FltGlobalData;
 
 typedef struct {
@@ -55,12 +64,14 @@ typedef struct {
 typedef gboolean (*FltCallbackFunc)(FltGlobalData *gd, FltLocalData *ld);
 
 /* callback functions */
+gboolean flt_cb_0001(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0002(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0004(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0010(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0011(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0032(FltGlobalData *gd, FltLocalData *ld);
+gboolean flt_cb_0064(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0067(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0068(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0069(FltGlobalData *gd, FltLocalData *ld);
@@ -69,5 +80,6 @@ gboolean flt_cb_0071(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0072(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0085(FltGlobalData *gd, FltLocalData *ld);
 gboolean flt_cb_0086(FltGlobalData *gd, FltLocalData *ld);
+gboolean flt_cb_0113(FltGlobalData *gd, FltLocalData *ld);
 
 #endif /* _IMP_FLT_CALLBACKS_H */

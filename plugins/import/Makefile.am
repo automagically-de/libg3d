@@ -1,3 +1,9 @@
+SUBDIRS = \
+	imp_dxf \
+	imp_max \
+	imp_test \
+	imp_vrml
+
 pluginimpdir = $(pkglibdir)/plugins/import
 
 pluginimp_LTLIBRARIES = \
@@ -6,7 +12,6 @@ pluginimp_LTLIBRARIES = \
 	imp_ac3d.la \
 	imp_ar.la \
 	imp_cob.la \
-	imp_dxf.la \
 	imp_glb.la \
 	imp_heightfield.la \
 	imp_iob.la \
@@ -17,8 +22,7 @@ pluginimp_LTLIBRARIES = \
 	imp_md3.la \
 	imp_nff.la \
 	imp_obj.la \
-	imp_q3o.la \
-	imp_vrml.la
+	imp_q3o.la
 
 if EXPERIMENTAL
 pluginimp_LTLIBRARIES += \
@@ -29,8 +33,7 @@ pluginimp_LTLIBRARIES += \
 	imp_rbh.la \
 	imp_skp.la \
 	imp_stl.la \
-	imp_ta.la \
-	imp_test.la
+	imp_ta.la
 if HAVE_LIBXML2
 pluginimp_LTLIBRARIES += \
 	imp_dae.la \
@@ -40,10 +43,6 @@ pluginimp_LTLIBRARIES += \
 	imp_kmz.la
 endif # HAVE_LIBGSF
 endif # HAVE_LIBXML2
-if HAVE_LIBGSF
-pluginimp_LTLIBRARIES += \
-	imp_max.la
-endif # HAVE_LIBGSF
 endif # EXPERIMENTAL
 
 AM_CFLAGS = \
@@ -68,7 +67,6 @@ AM_LDFLAGS = \
 LIBADD = \
 	@GLIB_LIBS@
 
-AM_LFLAGS = -o${LEX_OUTPUT_ROOT}.c --header-file=${LEX_OUTPUT_ROOT}.h -R
 LIBTOOL += --quiet
 
 imp_3dmf_la_SOURCES = imp_3dmf.c
@@ -86,7 +84,6 @@ imp_dae_la_SOURCES = imp_dae.c \
 	imp_dae_library.h imp_dae_library.c \
 	imp_dae_cb.h imp_dae_cb.c imp_dae_chunks.h
 imp_dae_la_LIBADD = @GLIB_LIBS@ @LIBXML2_LIBS@
-imp_dxf_la_SOURCES = imp_dxf.c
 imp_flt_la_SOURCES = imp_flt.c imp_flt.h \
 	imp_flt_opcodes.h \
 	imp_flt_callbacks.c imp_flt_callbacks.h
@@ -104,9 +101,6 @@ imp_maya_la_SOURCES = imp_maya.c imp_maya_chunks.h \
 	imp_maya_callbacks.c imp_maya_callbacks.h \
 	imp_maya_obj.c imp_maya_obj.h \
 	imp_maya_var.c imp_maya_var.h
-imp_max_la_SOURCES = imp_max.c \
-	imp_max_chunks.h imp_max_callbacks.c imp_max_callbacks.h
-imp_max_la_LIBADD = @GLIB_LIBS@ @LIBGSF_LIBS@
 imp_md2_la_SOURCES = imp_md2.c imp_md2_normals.h
 imp_md3_la_SOURCES = imp_md3.c
 imp_nff_la_SOURCES = imp_nff.c
@@ -123,8 +117,4 @@ imp_skp_la_SOURCES = imp_skp.c imp_skp.h \
 imp_stl_la_SOURCES = imp_stl.c
 imp_ta_la_SOURCES = imp_ta.c imp_ta_3do_palette.h \
 	imp_ta_3do.c imp_ta_3do.h
-imp_test_la_SOURCES = imp_test.c
-imp_vrml_la_SOURCES = imp_vrml_v1.l imp_vrml_v1.h imp_vrml.c
-imp_vrml_la_LIBADD = ${LEXLIB}
 
-EXTRA_DIST = imp_vrml_v1.c imp_vrml_v1.h

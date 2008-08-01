@@ -115,7 +115,7 @@ char *plugin_description(void)
 
 char **plugin_extensions(void)
 {
-	return g_strsplit("max", ":", 0);
+	return g_strsplit("max:gmax", ":", 0);
 }
 
 /*****************************************************************************
@@ -231,7 +231,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 
 	chunk = max_get_chunk_desc(id, parentid, container);
 
-#if DEBUG > 4
+#if DEBUG > 0
 	g_debug("\\%s(%d)[0x%04X][0x%04X][%c%c] %s -- %d (%d) bytes @ 0x%08x",
 		(global->padding + (strlen(global->padding) - level)), level,
 		id, (l2cnt ? *l2cnt : 0xFFFF), (container ? 'c' : ' '),

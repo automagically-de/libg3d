@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #include <g3d/types.h>
+#include <g3d/context.h>
 #include <g3d/read.h>
 #include <g3d/material.h>
 
@@ -96,11 +97,15 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		g3dobj = ld->g3dobj;
 		level_object = ld->level_object;
 		g_free(ld);
+
+		/* update caller */
+		g3d_context_update_interface(context);
 	}
 
 	g_queue_free(gd->oqueue);
 	if(gd->vertex_palette) {
 		g_free(gd->vertex_palette->offsets);
+		g_free(gd->vertex_palette->flags);
 		g_free(gd->vertex_palette->vertex_data);
 		g_free(gd->vertex_palette->normal_data);
 		g_free(gd->vertex_palette->tex_vertex_data);

@@ -34,7 +34,7 @@ typedef struct {
 } FltOpcode;
 
 static FltOpcode flt_opcodes[] = {
-	{    1, "header",                              0, NULL },
+	{    1, "header",                              0, flt_cb_0001 },
 	{    2, "group",                               0, flt_cb_0002 },
 
 	{    4, "object",                              0, flt_cb_0004 },
@@ -67,7 +67,7 @@ static FltOpcode flt_opcodes[] = {
 	{   61, "instance reference",                  0, NULL },
 	{   62, "instance definition",                 0, NULL },
 	{   63, "external reference",                  0, NULL },
-	{   64, "texture palette",                     0, NULL },
+	{   64, "texture palette",                     0, flt_cb_0064 },
 
 	{   67, "vertex palette",                      0, flt_cb_0067 },
 	{   68, "vertex with color",                   0, flt_cb_0068 },
@@ -114,7 +114,7 @@ static FltOpcode flt_opcodes[] = {
 
 	{  111, "light point",                         0, NULL },
 	{  112, "texture mapping palette",             0, NULL },
-	{  113, "material palette",                    0, NULL },
+	{  113, "material palette",                    0, flt_cb_0113 },
 	{  114, "name table",                          0, NULL },
 	{  115, "continuously adaptive terrain (CAT)", 0, NULL },
 	{  116, "CAT data",                            0, NULL },

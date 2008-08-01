@@ -46,7 +46,7 @@ static SkpChunkDesc skp_chunks[] = {
 	{ "CFace",                  3,  3,  NULL },
 	{ "CFaceTextureCoords",     4,  4,  skp_cb_face_texture_coords },
 	{ "CGroup",                 1,  1,  NULL },
-	{ "CLayer",                 2,  2,  NULL },
+	{ "CLayer",                 2,  2,  skp_cb_layer },
 	{ "CLoop",                  1,  1,  NULL },
 	{ "CMaterial",              12, 12, skp_cb_material },
 	{ "CRelationship",          0,  0,  NULL },

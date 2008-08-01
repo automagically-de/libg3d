@@ -1,9 +1,9 @@
-/* $Id:$ */
+/* $Id$ */
 
 /*
     libg3d - 3D object loading library
 
-    Copyright (C) 2005-2008  Markus Dahms <mad@automagically.de>
+    Copyright (C) 2005, 2006  Markus Dahms <mad@automagically.de>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -19,13 +19,26 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef _IMP_SKB_H
-#define _IMP_SKB_H
 
+#include <g3d/types.h>
 #include <g3d/stream.h>
 
-guint32 skp_read_xint16(G3DStream *stream);
-gchar *skp_read_char(G3DStream *stream);
-gchar *skp_read_wchar(G3DStream *stream);
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
+	G3DModel *model, gpointer user_data)
+{
 
-#endif /* _IMP_SKB_H */
+	return TRUE;
+}
+
+gchar *plugin_description(void)
+{
+	return g_strdup(
+		"Import plugin for ... files\n");
+}
+
+gchar **plugin_extensions(void)
+{
+	return g_strsplit("xxx", ":", 0);
+}
+
+/*****************************************************************************/

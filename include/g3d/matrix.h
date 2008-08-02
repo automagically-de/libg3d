@@ -120,6 +120,8 @@ gboolean g3d_matrix_scale(gfloat x, gfloat y, gfloat z, gfloat *rm);
  */
 gboolean g3d_matrix_transpose(gfloat *matrix);
 
+gfloat g3d_matrix_determinant(gfloat *matrix);
+
 /**
  * g3d_matrix_dump:
  * @matrix: the matrix

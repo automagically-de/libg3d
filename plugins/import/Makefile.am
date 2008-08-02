@@ -2,6 +2,7 @@ SUBDIRS = \
 	imp_3dmf \
 	imp_3ds \
 	imp_ac3d \
+	imp_acf \
 	imp_ar \
 	imp_ase \
 	imp_cob \

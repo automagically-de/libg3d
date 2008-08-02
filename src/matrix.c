@@ -165,6 +165,75 @@ gboolean g3d_matrix_transpose(gfloat *matrix)
 	return TRUE;
 }
 
+static gfloat det2x2(gfloat a1, gfloat a2, gfloat b1, gfloat b2)
+{
+	return a1 * b2 - a2 * b1;
+}
+
+static gfloat det3x3(gfloat a1, gfloat a2, gfloat a3,
+	gfloat b1, gfloat b2, gfloat b3,
+	gfloat c1, gfloat c2, gfloat c3)
+{
+	return
+		a1 * det2x2(b2, b3, c2, c3) -
+		b1 * det2x2(a2, a3, c2, c3) +
+		c1 * det2x2(a2, a3, b2, b3);
+}
+
+gfloat g3d_matrix_determinant(gfloat *matrix)
+{
+	gfloat a1, a2, a3, a4;
+	gfloat b1, b2, b3, b4;
+	gfloat c1, c2, c3, c4;
+	gfloat d1, d2, d3, d4;
+#if 0
+	a1 = matrix[0 * 4 + 0];
+	a2 = matrix[0 * 4 + 1];
+	a3 = matrix[0 * 4 + 2];
+	a4 = matrix[0 * 4 + 3];
+
+	b1 = matrix[1 * 4 + 0];
+	b2 = matrix[1 * 4 + 1];
+	b3 = matrix[1 * 4 + 2];
+	b4 = matrix[1 * 4 + 3];
+
+	c1 = matrix[2 * 4 + 0];
+	c2 = matrix[2 * 4 + 1];
+	c3 = matrix[2 * 4 + 2];
+	c4 = matrix[2 * 4 + 3];
+
+	d1 = matrix[3 * 4 + 0];
+	d2 = matrix[3 * 4 + 1];
+	d3 = matrix[3 * 4 + 2];
+	d4 = matrix[3 * 4 + 3];
+#else
+	a1 = matrix[0 * 4 + 0];
+	b1 = matrix[0 * 4 + 1];
+	c1 = matrix[0 * 4 + 2];
+	d1 = matrix[0 * 4 + 3];
+
+	a2 = matrix[1 * 4 + 0];
+	b2 = matrix[1 * 4 + 1];
+	c2 = matrix[1 * 4 + 2];
+	d2 = matrix[1 * 4 + 3];
+
+	a3 = matrix[2 * 4 + 0];
+	b3 = matrix[2 * 4 + 1];
+	c3 = matrix[2 * 4 + 2];
+	d3 = matrix[2 * 4 + 3];
+
+	a4 = matrix[3 * 4 + 0];
+	b4 = matrix[3 * 4 + 1];
+	c4 = matrix[3 * 4 + 2];
+	d4 = matrix[3 * 4 + 3];
+#endif
+	return
+		a1 * det3x3(b2, b3, b4, c2, c3, c4, d2, d3, d4) -
+		b1 * det3x3(a2, a3, a4, c2, c3, c4, d2, d3, d4) +
+		c1 * det3x3(a2, a3, a4, b2, b3, b4, d2, d3, d4) -
+		d1 * det3x3(a2, a3, a4, b2, b3, b4, c2, c3, c4);
+}
+
 gboolean g3d_matrix_dump(gfloat *matrix)
 {
 #if DEBUG > 0

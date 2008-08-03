@@ -9,7 +9,8 @@ typedef struct {
 	GHashTable *db;
 } AcfFile;
 
-AcfFile *acf_def_read(G3DStream *stream, AcfDef *def, gboolean bigendian);
+AcfFile *acf_def_read(G3DStream *stream, const AcfDef *def,
+	gboolean bigendian);
 void acf_def_free(AcfFile *acf);
 AcfValue *acf_def_lookup(AcfFile *acf, const gchar *name);
 void acf_def_dump(AcfValue *value);

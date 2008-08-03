@@ -2,7 +2,8 @@
 
 #include "imp_acf_def.h"
 
-AcfFile *acf_def_read(G3DStream *stream, AcfDef *def, gboolean bigendian)
+AcfFile *acf_def_read(G3DStream *stream, const AcfDef *def,
+	gboolean bigendian)
 {
 	AcfFile *acf;
 	AcfValue *value;

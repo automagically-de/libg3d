@@ -34,7 +34,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	AcfGlobalData *global;
-	AcfDef *def;
+	const AcfDef *def;
 	gboolean bigendian;
 	gchar magic;
 
@@ -55,8 +55,13 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	global = g_new0(AcfGlobalData, 1);
 	global->context = context;
 	global->model = model;
+	global->stream = stream;
 
 	def = acf_detect_version(global);
+	if(def == NULL) {
+		g_free(global);
+		return FALSE;
+	}
 
 	global->acf = acf_def_read(stream, def, bigendian);
 	if(global->acf == NULL) {
@@ -70,8 +75,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		return FALSE;
 	}
 
+#if 0
 	acf_def_free(global->acf);
 	g_free(global);
+#endif
 	return TRUE;
 }
 
@@ -88,6 +95,8 @@ gchar **plugin_extensions(void)
 
 /*****************************************************************************/
 
+#define ACF_OBJECT_MIN 44
+#define ACF_OBJECT_MAX 66
 #define ACF_BODY_NUMSEC 20
 #define ACF_BODY_SECVER 18
 #define ACF_VERTS_PER_OBJECT (ACF_BODY_NUMSEC * ACF_BODY_SECVER)
@@ -109,12 +118,15 @@ static gboolean acf_load_body(AcfGlobalData *global)
 	vyarm = acf_def_lookup(global->acf, "PARTS_Yarm");
 	vzarm = acf_def_lookup(global->acf, "PARTS_Zarm");
 
+	if(!(vpart_eq && vbody_x && vbody_y && vbody_z && vxarm && vyarm && vzarm))
+		return FALSE;
+
 	material = g3d_material_new();
 	material->name = g_strdup("(default material)");
 	global->model->materials = g_slist_append(global->model->materials,
 		material);
 
-	for(i = 44; i <= 66; i ++) {
+	for(i = ACF_OBJECT_MIN; i <= MIN(ACF_OBJECT_MAX, vpart_eq->num); i ++) {
 		if(!vpart_eq->xint[i])
 			continue;
 

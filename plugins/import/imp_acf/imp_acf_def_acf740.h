@@ -3,7 +3,7 @@
 
 #include "imp_acf_def_proto.h"
 
-static AcfDef acf_def_acf740[] = {
+static const AcfDef acf_def_acf740[] = {
 	{ XCHR, "HEADER_platform",                          1 },
 	{ XINT, "HEADER_version",                           1 },
 	{ XFLT, "HEADER_filler",                            1 },

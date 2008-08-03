@@ -30,6 +30,7 @@
 #include "imp_acf_detect.h"
 
 static gboolean acf_load_body(AcfGlobalData *global);
+static gboolean acf_load_wings(AcfGlobalData *global);
 
 gpointer plugin_init(G3DContext *context)
 {
@@ -85,6 +86,11 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	}
 
 	if(!acf_load_body(global)) {
+		acf_def_free(global->acf);
+		g_free(global);
+		return FALSE;
+	}
+	if(!acf_load_wings(global)) {
 		acf_def_free(global->acf);
 		g_free(global);
 		return FALSE;
@@ -208,5 +214,35 @@ static gboolean acf_load_body(AcfGlobalData *global)
 		}
 	}
 
+	return TRUE;
+}
+
+static gboolean acf_load_wings(AcfGlobalData *global)
+{
+	AcfValue *vpart_eq, *vrafl0, *vrafl1, *vtafl0, *vtafl1;
+	AcfValue *vctip, *vcroot, *vdihed, *vels;
+	gint32 i;
+	guint32 cnt;
+
+	ACF_REQUIRE_PART(vpart_eq, "PARTS_part_eq", XINT);
+	ACF_REQUIRE_PART(vrafl0,   "PARTS_Rafl0",   XCHR);
+	ACF_REQUIRE_PART(vrafl1,   "PARTS_Rafl1",   XCHR);
+	ACF_REQUIRE_PART(vtafl0,   "PARTS_Tafl0",   XCHR);
+	ACF_REQUIRE_PART(vtafl1,   "PARTS_Tafl1",   XCHR);
+	ACF_REQUIRE_PART(vcroot,   "PARTS_Croot",   XFLT);
+	ACF_REQUIRE_PART(vctip,    "PARTS_Ctip",    XFLT);
+	ACF_REQUIRE_PART(vdihed,   "PARTS_dihed",   XFLT);
+	ACF_REQUIRE_PART(vels,     "PARTS_els",     XINT);
+
+	cnt = vrafl0->num / vpart_eq->num;
+
+	for(i = 0; i < vpart_eq->num; i ++) {
+		g_debug("PARTS_Rafl0[%d]: %s", i, vrafl0->xchr + i * cnt);
+		g_debug("PARTS_Rafl1[%d]: %s", i, vrafl1->xchr + i * cnt);
+		g_debug("PARTS_Tafl0[%d]: %s", i, vtafl0->xchr + i * cnt);
+		g_debug("PARTS_Tafl1[%d]: %s", i, vtafl1->xchr + i * cnt);
+		g_debug("[%i] Croot=%.2f, Ctip=%.2f, dihed=%.2f, els=%i", i,
+			vcroot->xflt[i], vctip->xflt[i], vdihed->xflt[i], vels->xint[i]);
+	}
 	return TRUE;
 }

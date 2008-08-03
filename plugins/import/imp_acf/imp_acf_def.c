@@ -2,6 +2,8 @@
 
 #include "imp_acf_def.h"
 
+#define ACF_DEBUG_TYPES 2
+
 AcfFile *acf_def_read(G3DStream *stream, const AcfDef *def,
 	gboolean bigendian)
 {
@@ -21,7 +23,7 @@ AcfFile *acf_def_read(G3DStream *stream, const AcfDef *def,
 			case XCHR:
 				value->xchr = g_new0(gchar, value->num + 1);
 				g3d_stream_read(stream, value->xchr, 1, value->num);
-#if DEBUG > 0
+#if DEBUG > ACF_DEBUG_TYPES
 				g_debug("ACF: XCHR: %s = %s", value->name, value->xchr);
 #endif
 				break;
@@ -31,7 +33,7 @@ AcfFile *acf_def_read(G3DStream *stream, const AcfDef *def,
 					value->xint[j] = bigendian ?
 						g3d_stream_read_int32_be(stream) :
 						g3d_stream_read_int32_le(stream);
-#if DEBUG > 0
+#if DEBUG > ACF_DEBUG_TYPES
 				g_debug("ACF: XINT: %s(1/%d) = %i", value->name, value->num,
 					value->xint[0]);
 #endif
@@ -42,7 +44,7 @@ AcfFile *acf_def_read(G3DStream *stream, const AcfDef *def,
 					value->xflt[j] = bigendian ?
 						g3d_stream_read_float_be(stream) :
 						g3d_stream_read_float_le(stream);
-#if DEBUG > 0
+#if DEBUG > ACF_DEBUG_TYPES
 				g_debug("ACF: XFLT: %s(1/%d) = %f", value->name, value->num,
 					value->xflt[0]);
 #endif

@@ -1,0 +1,10 @@
+Airfoils:
+=========
+
+* get airfoil data in .dat format, e.g. from:
+  http://www.ae.uiuc.edu/m-selig/ads/archives/coord_seligFmt.tar.gz
+  (search for "UIUC Airfoil Coordinates Database" if this link is broken)
+* set the environment variable AIRFOIL_DIR to the path containing the
+  dat files
+* without airfoil data .acf models are still loadable, but wings and stuff
+  are missing

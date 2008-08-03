@@ -5,11 +5,13 @@
 #include <g3d/stream.h>
 
 #include "imp_acf_def.h"
+#include "imp_acf_airfoil.h"
 
 typedef struct {
 	G3DContext *context;
 	G3DModel *model;
 	G3DStream *stream;
+	AcfAirfoilDb *afldb;
 	AcfFile *acf;
 } AcfGlobalData;
 

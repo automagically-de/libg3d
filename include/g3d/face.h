@@ -50,6 +50,33 @@ void g3d_face_free(G3DFace *face);
 gboolean g3d_face_get_normal(G3DFace *face, G3DObject *object,
 	gfloat *nx, gfloat *ny, gfloat *nz);
 
+/**
+ * g3d_face_new_tri:
+ * @material: material to use for face
+ * @i1: index of first vertex
+ * @i2: index of second vertex
+ * @i3: index of third vertex
+ *
+ * creates a new triangle face.
+ *
+ * Returns: a new face
+ */
+static inline G3DFace *g3d_face_new_tri(G3DMaterial *material,
+	guint32 i1, guint32 i2, guint32 i3)
+{
+	G3DFace *face;
+
+	face = g_new0(G3DFace, 1);
+	face->material = material;
+	face->vertex_count = 3;
+	face->vertex_indices = g_new0(guint32, 3);
+	face->vertex_indices[0] = i1;
+	face->vertex_indices[1] = i2;
+	face->vertex_indices[2] = i3;
+
+	return face;
+}
+
 G_END_DECLS
 
 #endif /* __G3D_FACE_H__ */

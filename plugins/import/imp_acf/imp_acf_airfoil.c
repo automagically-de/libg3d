@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <locale.h>
 
 #include <glib.h>
 
@@ -16,6 +17,8 @@ AcfAirfoilDb *acf_airfoil_init(void)
 	const gchar *dirname, *filename;
 	gchar *path;
 	GError *error = NULL;
+
+	setlocale(LC_NUMERIC, "C");
 
 	dirname = g_getenv("AIRFOIL_DIR");
 	if(!(dirname && g_file_test(dirname, G_FILE_TEST_IS_DIR))) {
@@ -119,12 +122,14 @@ static AcfAirfoil *acf_airfoil_read(const gchar *path)
 		if(strlen(buffer) == 0)
 			continue;
 		if(sscanf(buffer, "%f %f", &x, &y) == 2) {
+			if((x < 0.0) || (x > 1.0))
+				continue;
 			off = afl->vertex_count;
 			afl->vertex_count ++;
 			afl->vertex_data = g_realloc(afl->vertex_data,
 				afl->vertex_count * 2 * sizeof(gfloat));
 			afl->vertex_data[off * 2 + 0] = x;
-			afl->vertex_data[off * 2 + 0] = y;
+			afl->vertex_data[off * 2 + 1] = y;
 		} else {
 #if DEBUG > 2
 			g_debug("ACF: airfoil: failed to parse line in %s: %s",

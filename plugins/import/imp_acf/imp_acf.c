@@ -20,9 +20,15 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <string.h>
+#include <math.h>
+
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/object.h>
 #include <g3d/material.h>
+#include <g3d/matrix.h>
+#include <g3d/vector.h>
 
 #include "imp_acf.h"
 #include "imp_acf_airfoil.h"
@@ -121,12 +127,35 @@ gchar **plugin_extensions(void)
 #define ACF_BODY_SECVER 18
 #define ACF_VERTS_PER_OBJECT (ACF_BODY_NUMSEC * ACF_BODY_SECVER)
 
-#define ACF_REQUIRE_PART(var, name, t) \
+#define ACF_REQUIRE_PART(var, name, t) do { \
 	var = acf_def_lookup(global->acf, name); \
 	if((var == NULL) || (var->type != t)) { \
 		g_warning("ACF: %s is missing or has wrong type", name); \
 		return FALSE; \
-	}
+	} } while(0);
+
+#define ACF_USE_PART(var, name, t) do { \
+	var = acf_def_lookup(global->acf, name); \
+	if((var != NULL) && (var->type != t)) { \
+		g_warning("ACF: %s has wrong type", name); \
+		var = NULL; \
+	} } while(0);
+
+static G3DFace *acf_new_triangle(G3DMaterial *material,
+	guint32 i1, guint32 i2, guint32 i3)
+{
+	G3DFace *face;
+
+	face = g_new0(G3DFace, 1);
+	face->material = material;
+	face->vertex_count = 3;
+	face->vertex_indices = g_new0(guint32, 3);
+	face->vertex_indices[0] = i1;
+	face->vertex_indices[1] = i2;
+	face->vertex_indices[2] = i3;
+
+	return face;
+}
 
 static gboolean acf_load_body(AcfGlobalData *global)
 {
@@ -195,22 +224,12 @@ static gboolean acf_load_body(AcfGlobalData *global)
 			object);
 
 		for(j = 0; j < (ACF_VERTS_PER_OBJECT - ACF_BODY_SECVER - 1); j ++) {
-			face = g_new0(G3DFace, 1);
-			face->material = material;
-			face->vertex_count = 3;
-			face->vertex_indices = g_new0(guint32, 3);
-			face->vertex_indices[0] = j + 1;
-			face->vertex_indices[1] = j;
-			face->vertex_indices[2] = j + ACF_BODY_SECVER;
-			object->faces = g_slist_append(object->faces, face);
-			face = g_new0(G3DFace, 1);
-			face->material = material;
-			face->vertex_count = 3;
-			face->vertex_indices = g_new0(guint32, 3);
-			face->vertex_indices[0] = j + ACF_BODY_SECVER;
-			face->vertex_indices[1] = j + ACF_BODY_SECVER + 1;
-			face->vertex_indices[2] = j + 1;
-			object->faces = g_slist_append(object->faces, face);
+			face = acf_new_triangle(material, j + 1, j, j + ACF_BODY_SECVER);
+			object->faces = g_slist_prepend(object->faces, face);
+
+			face = acf_new_triangle(material, j + ACF_BODY_SECVER,
+				j + ACF_BODY_SECVER + 1, j + 1);
+			object->faces = g_slist_prepend(object->faces, face);
 		}
 	}
 
@@ -219,30 +238,136 @@ static gboolean acf_load_body(AcfGlobalData *global)
 
 static gboolean acf_load_wings(AcfGlobalData *global)
 {
-	AcfValue *vpart_eq, *vrafl0, *vrafl1, *vtafl0, *vtafl1;
-	AcfValue *vctip, *vcroot, *vdihed, *vels;
-	gint32 i;
-	guint32 cnt;
+	AcfValue *vpart_eq, *vrafl0, *vtafl0;
+	AcfValue *vctip, *vcroot, *vdihed, *vsweep, *vels;
+	AcfValue *vxarm, *vyarm, *vzarm, *visleft, *vlatsign;
+	AcfValue *vslseg, *vsljnd, *vpartss, *vpartse;
+	AcfAirfoil *afrt, *aftp;
+	G3DObject *object;
+	G3DMaterial *material;
+	G3DFace *face;
+	gint32 i, j;
+	guint32 cnt, nverts;
+	gfloat m_dihed[16], m_sweep[16], m_trans[16];
+	gfloat vectp[3], vec[3], lf, ls;
 
 	ACF_REQUIRE_PART(vpart_eq, "PARTS_part_eq", XINT);
 	ACF_REQUIRE_PART(vrafl0,   "PARTS_Rafl0",   XCHR);
-	ACF_REQUIRE_PART(vrafl1,   "PARTS_Rafl1",   XCHR);
 	ACF_REQUIRE_PART(vtafl0,   "PARTS_Tafl0",   XCHR);
-	ACF_REQUIRE_PART(vtafl1,   "PARTS_Tafl1",   XCHR);
 	ACF_REQUIRE_PART(vcroot,   "PARTS_Croot",   XFLT);
 	ACF_REQUIRE_PART(vctip,    "PARTS_Ctip",    XFLT);
-	ACF_REQUIRE_PART(vdihed,   "PARTS_dihed",   XFLT);
 	ACF_REQUIRE_PART(vels,     "PARTS_els",     XINT);
+	ACF_REQUIRE_PART(vxarm,    "PARTS_Xarm",    XFLT);
+	ACF_REQUIRE_PART(vyarm,    "PARTS_Yarm",    XFLT);
+	ACF_REQUIRE_PART(vzarm,    "PARTS_Zarm",    XFLT);
+
+	ACF_USE_PART(vdihed, "PARTS_dihed",  XFLT);
+	if(vdihed == NULL)
+		ACF_REQUIRE_PART(vdihed, "PARTS_dihed1",  XFLT);
+	ACF_USE_PART(vsweep, "PARTS_sweep",  XFLT);
+	if(vsweep == NULL)
+		ACF_REQUIRE_PART(vsweep, "PARTS_sweep1",  XFLT);
+
+	ACF_REQUIRE_PART(vpartss,  "PARTS_s",           XFLT);
+	ACF_REQUIRE_PART(vpartse,  "PARTS_e",           XFLT);
+	ACF_REQUIRE_PART(vlatsign, "OVERFLOW_lat_sign", XFLT);
+	ACF_REQUIRE_PART(vslseg,   "PARTS_semilen_SEG", XFLT);
+	ACF_REQUIRE_PART(vsljnd,   "PARTS_semilen_JND", XFLT);
+
+	ACF_USE_PART(visleft, "OVERFLOW_is_left",  XINT);
+
+
+	material = g_slist_nth_data(global->model->materials, 0);
 
 	cnt = vrafl0->num / vpart_eq->num;
 
-	for(i = 0; i < vpart_eq->num; i ++) {
+	for(i = 8; i < vpart_eq->num; i ++) {
+		if(strlen(vrafl0->xchr + i * cnt) == 0)
+			continue;
+		if(vels->xint[i] == 0)
+			continue;
+#if DEBUG > 0
 		g_debug("PARTS_Rafl0[%d]: %s", i, vrafl0->xchr + i * cnt);
-		g_debug("PARTS_Rafl1[%d]: %s", i, vrafl1->xchr + i * cnt);
 		g_debug("PARTS_Tafl0[%d]: %s", i, vtafl0->xchr + i * cnt);
-		g_debug("PARTS_Tafl1[%d]: %s", i, vtafl1->xchr + i * cnt);
-		g_debug("[%i] Croot=%.2f, Ctip=%.2f, dihed=%.2f, els=%i", i,
-			vcroot->xflt[i], vctip->xflt[i], vdihed->xflt[i], vels->xint[i]);
+		g_debug(
+			"[%i] lat_sign=%.2f, Croot=%.2f, Ctip=%.2f, dihed=%.2f, els=%i", i,
+			vlatsign->xflt[i],
+			vcroot->xflt[i], vctip->xflt[i],
+			vdihed ? vdihed->xflt[i] : -1337.0,
+			vels->xint[i]);
+		g_debug("[%i] semilen_SEG=%.2f, semilen_JND=%.2f, parts_e=%.2f", i,
+			vslseg->xflt[i], vsljnd->xflt[i], vpartse->xflt[i]);
+		g_debug("PARTS_s[%i]: %f, %f ... %f, %f", i,
+			vpartss->xflt[i * 10 + 0], vpartss->xflt[i * 10 + 1],
+			vpartss->xflt[i * 10 + 8], vpartss->xflt[i * 10 + 9]);
+#endif
+		afrt = acf_airfoil_lookup(global->afldb, "naca16006.dat");
+		aftp = acf_airfoil_lookup(global->afldb, "naca16006.dat");
+		if((afrt == NULL) || (aftp == NULL))
+			continue;
+
+		if(afrt->vertex_count != aftp->vertex_count) {
+			g_warning("ACF: airfoil vertex count mismatch: %s=%d, %s=%d",
+				afrt->filename, afrt->vertex_count,
+				aftp->filename, aftp->vertex_count);
+			continue;
+		}
+		nverts = afrt->vertex_count;
+
+		object = g_new0(G3DObject, 1);
+		global->model->objects = g_slist_append(global->model->objects,
+			object);
+		object->name = g_strdup_printf("Wing[%d]", i);
+		object->vertex_count = afrt->vertex_count * 2;
+		object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+
+		lf = ((visleft && visleft->xint[i]) ? -1 : 1);
+		ls = (vlatsign ? vlatsign->xflt[i] : 1.0);
+
+		/* translation */
+		g3d_matrix_identity(m_trans);
+		g3d_matrix_translate(vxarm->xflt[i], vyarm->xflt[i], vzarm->xflt[i],
+			m_trans);
+
+		/* rotation matrices */
+		g3d_matrix_rotate(lf * vdihed->xflt[i] * G_PI / 180.0,
+			0.0, 0.0, 1.0, m_dihed);
+		g3d_matrix_rotate(lf * -1.0 * vsweep->xflt[i] * G_PI / 180.0,
+			0.0, 1.0, 0.0, m_sweep);
+
+		memset(vectp, 0, sizeof(vectp));
+		vectp[0] = vslseg->xflt[i];
+		g3d_vector_transform(vectp, vectp + 1, vectp + 2, m_dihed);
+		g3d_vector_transform(vectp, vectp + 1, vectp + 2, m_sweep);
+
+		for(j = 0; j < nverts; j ++) {
+			/* wing root */
+			vec[2] = afrt->vertex_data[j * 2 + 0] * vcroot->xflt[i];
+			vec[1] = afrt->vertex_data[j * 2 + 1] * vcroot->xflt[i];
+			vec[0] = 0.0;
+			g3d_vector_transform(vec, vec + 1, vec + 2, m_dihed);
+			g3d_vector_transform(vec, vec + 1, vec + 2, m_trans);
+			memcpy(object->vertex_data + j * 3, vec, sizeof(vec));
+
+			/* wing tip */
+			vec[2] = aftp->vertex_data[j * 2 + 0] * vctip->xflt[i];
+			vec[1] = aftp->vertex_data[j * 2 + 1] * vctip->xflt[i];
+			vec[0] = 0.0;
+			g3d_vector_transform(vec, vec + 1, vec + 2, m_dihed);
+			g3d_vector_transform(vec, vec + 1, vec + 2, m_trans);
+			vec[0] += lf * vectp[0];
+			vec[1] += lf * vectp[1];
+			vec[2] += lf * vectp[2];
+			memcpy(object->vertex_data + (j + afrt->vertex_count) * 3,
+				vec, sizeof(vec));
+		}
+		for(j = 0; j < (nverts - 1); j ++) {
+			face = acf_new_triangle(material, j + 1, j, j + nverts);
+			object->faces = g_slist_prepend(object->faces, face);
+			face = acf_new_triangle(material, j + 1,
+				j + afrt->vertex_count + 1, j + afrt->vertex_count);
+			object->faces = g_slist_prepend(object->faces, face);
+		}
 	}
 	return TRUE;
 }

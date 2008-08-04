@@ -26,12 +26,14 @@
 #include <g3d/types.h>
 #include <g3d/stream.h>
 #include <g3d/object.h>
+#include <g3d/face.h>
 #include <g3d/material.h>
 #include <g3d/matrix.h>
 #include <g3d/vector.h>
 
 #include "imp_acf.h"
 #include "imp_acf_airfoil.h"
+#include "imp_acf_wing.h"
 #include "imp_acf_def.h"
 #include "imp_acf_detect.h"
 
@@ -141,22 +143,6 @@ gchar **plugin_extensions(void)
 		var = NULL; \
 	} } while(0);
 
-static G3DFace *acf_new_triangle(G3DMaterial *material,
-	guint32 i1, guint32 i2, guint32 i3)
-{
-	G3DFace *face;
-
-	face = g_new0(G3DFace, 1);
-	face->material = material;
-	face->vertex_count = 3;
-	face->vertex_indices = g_new0(guint32, 3);
-	face->vertex_indices[0] = i1;
-	face->vertex_indices[1] = i2;
-	face->vertex_indices[2] = i3;
-
-	return face;
-}
-
 static gboolean acf_load_body(AcfGlobalData *global)
 {
 	AcfValue *vpart_eq, *vbody_x, *vbody_y, *vbody_z, *vbody_r;
@@ -224,10 +210,10 @@ static gboolean acf_load_body(AcfGlobalData *global)
 			object);
 
 		for(j = 0; j < (ACF_VERTS_PER_OBJECT - ACF_BODY_SECVER - 1); j ++) {
-			face = acf_new_triangle(material, j + 1, j, j + ACF_BODY_SECVER);
+			face = g3d_face_new_tri(material, j + 1, j, j + ACF_BODY_SECVER);
 			object->faces = g_slist_prepend(object->faces, face);
 
-			face = acf_new_triangle(material, j + ACF_BODY_SECVER,
+			face = g3d_face_new_tri(material, j + ACF_BODY_SECVER,
 				j + ACF_BODY_SECVER + 1, j + 1);
 			object->faces = g_slist_prepend(object->faces, face);
 		}
@@ -245,11 +231,11 @@ static gboolean acf_load_wings(AcfGlobalData *global)
 	AcfAirfoil *afrt, *aftp;
 	G3DObject *object;
 	G3DMaterial *material;
-	G3DFace *face;
-	gint32 i, j;
-	guint32 cnt, nverts;
+	gint32 i;
+	guint32 cnt;
 	gfloat m_dihed[16], m_sweep[16], m_trans[16];
-	gfloat vectp[3], vec[3], lf, ls;
+	gfloat vecrt[3], vectp[3], lf, ls;
+	gchar *title;
 
 	ACF_REQUIRE_PART(vpart_eq, "PARTS_part_eq", XINT);
 	ACF_REQUIRE_PART(vrafl0,   "PARTS_Rafl0",   XCHR);
@@ -312,14 +298,6 @@ static gboolean acf_load_wings(AcfGlobalData *global)
 				aftp->filename, aftp->vertex_count);
 			continue;
 		}
-		nverts = afrt->vertex_count;
-
-		object = g_new0(G3DObject, 1);
-		global->model->objects = g_slist_append(global->model->objects,
-			object);
-		object->name = g_strdup_printf("Wing[%d]", i);
-		object->vertex_count = afrt->vertex_count * 2;
-		object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
 
 		lf = ((visleft && visleft->xint[i]) ? -1 : 1);
 		ls = (vlatsign ? vlatsign->xflt[i] : 1.0);
@@ -335,39 +313,22 @@ static gboolean acf_load_wings(AcfGlobalData *global)
 		g3d_matrix_rotate(lf * -1.0 * vsweep->xflt[i] * G_PI / 180.0,
 			0.0, 1.0, 0.0, m_sweep);
 
+		/* wing root & tip center */
+		memset(vecrt, 0, sizeof(vecrt));
 		memset(vectp, 0, sizeof(vectp));
 		vectp[0] = vslseg->xflt[i];
 		g3d_vector_transform(vectp, vectp + 1, vectp + 2, m_dihed);
 		g3d_vector_transform(vectp, vectp + 1, vectp + 2, m_sweep);
 
-		for(j = 0; j < nverts; j ++) {
-			/* wing root */
-			vec[2] = afrt->vertex_data[j * 2 + 0] * vcroot->xflt[i];
-			vec[1] = afrt->vertex_data[j * 2 + 1] * vcroot->xflt[i];
-			vec[0] = 0.0;
-			g3d_vector_transform(vec, vec + 1, vec + 2, m_dihed);
-			g3d_vector_transform(vec, vec + 1, vec + 2, m_trans);
-			memcpy(object->vertex_data + j * 3, vec, sizeof(vec));
-
-			/* wing tip */
-			vec[2] = aftp->vertex_data[j * 2 + 0] * vctip->xflt[i];
-			vec[1] = aftp->vertex_data[j * 2 + 1] * vctip->xflt[i];
-			vec[0] = 0.0;
-			g3d_vector_transform(vec, vec + 1, vec + 2, m_dihed);
-			g3d_vector_transform(vec, vec + 1, vec + 2, m_trans);
-			vec[0] += lf * vectp[0];
-			vec[1] += lf * vectp[1];
-			vec[2] += lf * vectp[2];
-			memcpy(object->vertex_data + (j + afrt->vertex_count) * 3,
-				vec, sizeof(vec));
-		}
-		for(j = 0; j < (nverts - 1); j ++) {
-			face = acf_new_triangle(material, j + 1, j, j + nverts);
-			object->faces = g_slist_prepend(object->faces, face);
-			face = acf_new_triangle(material, j + 1,
-				j + afrt->vertex_count + 1, j + afrt->vertex_count);
-			object->faces = g_slist_prepend(object->faces, face);
-		}
+		title = g_strdup_printf("Wing[%d]", i);
+		object = acf_wing(material, title,
+			m_sweep, m_dihed, m_trans,
+			vecrt, vectp,
+			afrt, aftp,
+			vcroot->xflt[i], vctip->xflt[i], lf);
+		g_free(title);
+		global->model->objects = g_slist_append(global->model->objects,
+			object);
 	}
 	return TRUE;
 }

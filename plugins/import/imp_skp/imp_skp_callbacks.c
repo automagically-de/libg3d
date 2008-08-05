@@ -3,6 +3,8 @@
 
 #include "imp_skp.h"
 #include "imp_skp_callbacks.h"
+#include "imp_skp_read.h"
+#include "imp_skp_types.h"
 
 gboolean skp_cb_arc_curve(SkpGlobalData *global, SkpLocalData *local)
 {
@@ -14,6 +16,8 @@ gboolean skp_cb_arc_curve(SkpGlobalData *global, SkpLocalData *local)
 	return TRUE;
 }
 
+/*****************************************************************************/
+
 gboolean skp_cb_attribute_container(SkpGlobalData *global, SkpLocalData *local)
 {
 	guint16 w1;
@@ -23,6 +27,8 @@ gboolean skp_cb_attribute_container(SkpGlobalData *global, SkpLocalData *local)
 
 	return TRUE;
 }
+
+/*****************************************************************************/
 
 gboolean skp_cb_attribute_named(SkpGlobalData *global, SkpLocalData *local)
 {
@@ -100,6 +106,194 @@ gboolean skp_cb_attribute_named(SkpGlobalData *global, SkpLocalData *local)
 	return TRUE;
 }
 
+/*****************************************************************************/
+
+gboolean skp_cb_component_definition(SkpGlobalData *global,
+	SkpLocalData *local)
+{
+	SkpComponent *comp;
+	guint32 x1, w1;
+	gchar *s;
+	gdouble d1, d2;
+
+	w1 = g3d_stream_read_int16_le(global->stream);
+	g_return_val_if_fail(w1 == 0x0000, FALSE);
+
+	skp_read_10b(global->stream);
+	skp_read_10b(global->stream);
+
+	x1 = g3d_stream_read_int32_le(global->stream);
+	g_debug("CComponentDefinition: %d", x1);
+
+	w1 = g3d_stream_read_int16_le(global->stream);
+	if(!(w1 & 0x8000)) {
+		g_warning("CComponentDefinition: layerid=0x%04x", w1);
+		return FALSE;
+	}
+	w1 &= 0x7FFF;
+	g3d_stream_read_int16_le(global->stream); /* 0000 */
+
+	s = skp_read_wchar(global->stream);
+	if(s == NULL) {
+		g_warning("CComponentDefinition: s[0] == NULL");
+		return FALSE;
+	}
+	g3d_stream_seek(global->stream, 3, G_SEEK_CUR);
+	s = skp_read_wchar(global->stream);
+	if(s == NULL) {
+		g_warning("CComponentDefinition: s[1] == NULL");
+		return FALSE;
+	}
+	g3d_stream_seek(global->stream, 6, G_SEEK_CUR);
+	s = skp_read_wchar(global->stream);
+	if(s == NULL) {
+		g_warning("CComponentDefinition: s[2] == NULL");
+		return FALSE;
+	}
+
+	d1 = g3d_stream_read_double_le(global->stream);
+	d2 = g3d_stream_read_double_le(global->stream);
+	g_debug("CComponentDefinition: d1=%.2f, d2=%.2f", d1, d2);
+
+	g3d_stream_seek(global->stream, 5, G_SEEK_CUR);
+
+	comp = g_new0(SkpComponent, 1);
+	comp->layerid = w1;
+
+	comp->id0 = g3d_stream_read_int16_le(global->stream);
+	g3d_stream_read_int32_le(global->stream);
+	g3d_stream_read_int8(global->stream);
+	comp->id1 = g3d_stream_read_int16_le(global->stream);
+
+	g_debug("Component: 0x%02x, 0x%02x (0x%02x)",
+		comp->id0, comp->id1, comp->layerid);
+
+	global->components = g_slist_append(global->components, comp);
+
+	return TRUE;
+}
+
+/*****************************************************************************/
+
+static gboolean skp_read_5b(G3DStream *stream)
+{
+	guint32 w1, w2, u1;
+
+	w1 = g3d_stream_read_int16_le(stream);
+	u1 = g3d_stream_read_int8(stream);
+	w2 = g3d_stream_read_int16_le(stream);
+	g_debug("\tread 5b: %04x %02x %04x", w1, u1, w2);
+	return TRUE;
+}
+
+gboolean skp_cb_edge_use(SkpGlobalData *global, SkpLocalData *local)
+{
+	guint16 w1, w2;
+	guint32 x1;
+	gdouble d1, d2, d3, d4;
+	gboolean handled;
+	GSList *item;
+	SkpComponent *comp;
+
+	w1 = g3d_stream_read_int16_le(global->stream);
+	g_return_val_if_fail(w1 == 0x0000, FALSE);
+
+	skp_read_5b(global->stream);
+
+	do {
+		w1 = g3d_stream_read_int16_le(global->stream);
+		handled = FALSE;
+
+		g_debug("opcode: 0x%04x", w1);
+		if(w1 == 0xFFFF) {
+			g3d_stream_seek(global->stream, -2, G_SEEK_CUR);
+			return TRUE;
+		}
+		if(w1 & 0x8000) {
+			g3d_stream_read_int16_le(global->stream);
+			w1 &= 0x7FFF;
+		}
+		if(w1 == 0x0000) {
+			handled = TRUE;
+		}
+
+		for(item = global->components;
+			(handled == FALSE) && (item != NULL);
+			item = item->next) {
+
+			comp = item->data;
+
+			switch(w1 - comp->id0) {
+				case 1:
+					skp_read_10b(global->stream);
+					handled = TRUE;
+					g_debug("\tread 10b");
+					break;
+				case 3:
+					skp_read_dbl3(global->stream, &d1, &d2, &d3);
+					g_debug("\tvertex: %.4f, %.4f, %.4f", d1, d2, d3);
+					handled = TRUE;
+					break;
+				case 4:
+				case 5:
+				case 7:
+					g_debug("\tempty");
+					handled = TRUE;
+					break;
+				default:
+					break;
+			}
+			if(handled)
+				break;
+			switch(w1 - comp->id1) {
+				case 0:
+					skp_read_10b(global->stream);
+					d1 = g3d_stream_read_double_le(global->stream);
+					d2 = g3d_stream_read_double_le(global->stream);
+					d3 = g3d_stream_read_double_le(global->stream);
+					d4 = g3d_stream_read_double_le(global->stream);
+					x1 = g3d_stream_read_int32_le(global->stream);
+					g_debug("\tid1+4: dbl4: %.2f, %.2f, %.2f, %.2f (%i)",
+						d1, d2, d3, d4, x1);
+					handled = TRUE;
+					break;
+				case 2:
+					w2 = g3d_stream_read_int16_le(global->stream);
+					g_debug("\ti16: 0x%04x", w2);
+					handled = TRUE;
+					break;
+				case 4:
+					skp_read_5b(global->stream);
+					handled = TRUE;
+					break;
+				case 5:
+				case 9:
+				case 17:
+				case 19:
+					g_debug("\tempty");
+					handled = TRUE;
+					break;
+				default:
+					break;
+			}
+		} /* loop through known layers */
+
+		if(handled == FALSE) {
+			g_debug("vertex: unknown opcode %#04x (layer0: 0x%04x, 0x%04x)",
+				w1,
+				global->components ?
+					((SkpComponent *)(global->components->data))->id0 : -1,
+				global->components ?
+					((SkpComponent *)(global->components->data))->id1 : -1);
+		}
+	} while(TRUE);
+
+	return FALSE;
+
+}
+
+/*****************************************************************************/
+
 gboolean skp_cb_face_texture_coords(SkpGlobalData *global, SkpLocalData *local)
 {
 #if DEBUG > 1
@@ -120,6 +314,8 @@ gboolean skp_cb_face_texture_coords(SkpGlobalData *global, SkpLocalData *local)
 #endif
 	return TRUE;
 }
+
+/*****************************************************************************/
 
 gboolean skp_cb_layer(SkpGlobalData *global, SkpLocalData *local)
 {
@@ -159,8 +355,9 @@ gboolean skp_cb_layer(SkpGlobalData *global, SkpLocalData *local)
 			return FALSE;
 		}
 		w1 = g3d_stream_read_int16_le(global->stream);
-		global->layerid = w1 & 0x7FFF;
-		g_debug("CLayer ID: 0x%2x", global->layerid);
+		global->layers = g_slist_append(global->layers,
+			GINT_TO_POINTER(w1 & 0x7FFF));
+		g_debug("CLayer ID: 0x%2x", w1 & 0x7FFF);
 
 		if(s1)
 			g_free(s1);
@@ -174,6 +371,8 @@ gboolean skp_cb_layer(SkpGlobalData *global, SkpLocalData *local)
 
 	return TRUE;
 }
+
+/*****************************************************************************/
 
 gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 {
@@ -314,47 +513,27 @@ gboolean skp_cb_material(SkpGlobalData *global, SkpLocalData *local)
 	return TRUE;
 }
 
-static gboolean skp_read_dbl3(G3DStream *stream,
-	gdouble *d1, gdouble *d2, gdouble *d3)
-{
-	*d1 = g3d_stream_read_double_le(stream);
-	*d2 = g3d_stream_read_double_le(stream);
-	*d3 = g3d_stream_read_double_le(stream);
-	return TRUE;
-}
-
-static gboolean skp_read_10b(G3DStream *stream)
-{
-	guint32 x1;
-	guint8 u1;
-
-	x1 = g3d_stream_read_int32_be(stream);
-	u1 = g3d_stream_read_int8(stream);
-
-	if((x1 != 0x0001) || (u1 != 0x01)) {
-		g_warning("skp_read_10b: %#08x, %#02x", x1, u1);
-	}
-	u1 = g3d_stream_read_int8(stream);
-	x1 = g3d_stream_read_int32_le(stream);
-	return TRUE;
-}
+/*****************************************************************************/
 
 gboolean skp_cb_vertex(SkpGlobalData *global, SkpLocalData *local)
 {
 	guint16 w1;
 	gdouble d1, d2, d3;
-	guint32 x1;
-	gint32 i;
+	gboolean handled;
+	GSList *item;
+	SkpComponent *comp;
 
 	w1 = g3d_stream_read_int16_le(global->stream);
 	g_return_val_if_fail(w1 == 0x0000, FALSE);
 
 	skp_read_dbl3(global->stream, &d1, &d2, &d3);
-	g_debug("vertex: %.4f, %.4f, %.4f", d1, d2, d3);
+	g_debug("\tvertex: %.4f, %.4f, %.4f", d1, d2, d3);
 
 	do {
 		w1 = g3d_stream_read_int16_le(global->stream);
-		g_debug("opcode: %#04x", w1);
+		handled = FALSE;
+
+		g_debug("opcode: 0x%04x", w1);
 		if(w1 == 0xFFFF) {
 			g3d_stream_seek(global->stream, -2, G_SEEK_CUR);
 			return TRUE;
@@ -364,20 +543,47 @@ gboolean skp_cb_vertex(SkpGlobalData *global, SkpLocalData *local)
 			w1 &= 0x7FFF;
 		}
 		if(w1 == 0x0000) {
-			;
-		} else if(w1 == global->layerid + 4) {
-			skp_read_10b(global->stream);
-		} else if(w1 == global->layerid + 6) {
-			skp_read_dbl3(global->stream, &d1, &d2, &d3);
-			g_debug("vertex: %.4f, %.4f, %.4f", d1, d2, d3);
-		} else if((w1 == global->layerid + 7) ||
-			(w1 == global->layerid + 8) ||
-			(w1 == global->layerid + 10) ||
-			(w1 == global->layerid + 13)) {
-			;
-		} else {
-			g_debug("vertex: unknown opcode %#04x (layerid: %#04x", w1,
-				global->layerid);
+			handled = TRUE;
+		}
+
+		for(item = global->components;
+			(handled == FALSE) && (item != NULL);
+			item = item->next) {
+
+			comp = item->data;
+
+			switch(w1 - comp->id0) {
+				case 1:
+					skp_read_10b(global->stream);
+					handled = TRUE;
+					g_debug("\tread 10b");
+					break;
+				case 3:
+					skp_read_dbl3(global->stream, &d1, &d2, &d3);
+					g_debug("\tvertex: %.4f, %.4f, %.4f", d1, d2, d3);
+					handled = TRUE;
+					break;
+				case 4:
+				case 5:
+				case 7:
+				case 9:
+				case 11:
+				case 13:
+					g_debug("\tempty");
+					handled = TRUE;
+					break;
+				default:
+					break;
+			}
+		} /* loop through known layers */
+
+		if(handled == FALSE) {
+			g_debug("vertex: unknown opcode %#04x (layer0: 0x%04x, 0x%04x)",
+				w1,
+				global->components ?
+					((SkpComponent *)(global->components->data))->id0 : -1,
+				global->components ?
+					((SkpComponent *)(global->components->data))->id1 : -1);
 		}
 	} while(TRUE);
 

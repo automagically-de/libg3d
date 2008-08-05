@@ -28,6 +28,7 @@
 #include <g3d/stream.h>
 
 #include "imp_skp.h"
+#include "imp_skp_read.h"
 #include "imp_skp_chunks.h"
 
 static gboolean skp_parse_version_map(G3DStream *stream, guint32 *max_nlen,
@@ -122,71 +123,6 @@ gchar **plugin_extensions(void)
 	return g_strsplit("skp", ":", 0);
 }
 
-/*****************************************************************************/
-
-guint32 skp_read_xint16(G3DStream *stream)
-{
-	guint32 val;
-
-	val = g3d_stream_read_int16_le(stream);
-	if(val & 0x8000L) {
-		val &= 0x7FFF;
-		val |= (g3d_stream_read_int16_le(stream) << 16);
-	}
-	return val;
-}
-
-gchar *skp_read_char(G3DStream *stream)
-{
-	guint32 magic, n;
-	gchar *text;
-
-	magic = g3d_stream_read_int32_be(stream);
-	if(magic != 0xffff0000) {
-		g_warning("SKP: wrong text magic: 0x%08x", magic);
-		return NULL;
-	}
-	n = g3d_stream_read_int16_le(stream);
-
-	text = g_new0(gchar, n + 1);
-	g3d_stream_read(stream, text, 1, n);
-
-	return text;
-}
-
-gchar *skp_read_wchar(G3DStream *stream)
-{
-	gint32 i;
-	guint32 magic, n;
-	gunichar2 *u16text;
-	gchar *text;
-	GError *error = NULL;
-
-	magic = g3d_stream_read_int32_be(stream);
-	if((magic & 0xFFFFFF00) != 0xfffeff00) {
-#if DEBUG > 1
-		g_debug("SKP: wrong UTF-16 magic: 0x%08x", magic);
-#endif
-		g3d_stream_seek(stream, -4, G_SEEK_CUR);
-		return NULL;
-	}
-	n = magic & 0x000000FF;
-
-	u16text = g_new0(gunichar2, n + 1);
-	for(i = 0; i < n; i ++) {
-		u16text[i] = g3d_stream_read_int16_le(stream);
-	}
-
-	text = g_utf16_to_utf8(u16text, n, NULL, NULL, &error);
-	if(error != NULL) {
-		g_warning("UTF-16 to UTF-8 conversion failed: %s",
-			error->message);
-		g_error_free(error);
-	}
-	g_free(u16text);
-
-	return text;
-}
 
 /*****************************************************************************/
 

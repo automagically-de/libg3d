@@ -1,3 +1,4 @@
+#ifndef _IMP_SKP_READ_H
 /* $Id:$ */
 
 /*
@@ -19,7 +20,16 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef _IMP_SKB_H
-#define _IMP_SKB_H
+#define _IMP_SKP_READ_H
 
-#endif /* _IMP_SKB_H */
+#include <g3d/stream.h>
+
+guint32 skp_read_xint16(G3DStream *stream);
+gchar *skp_read_char(G3DStream *stream);
+gchar *skp_read_wchar(G3DStream *stream);
+
+gboolean skp_read_dbl3(G3DStream *stream,
+	gdouble *d1, gdouble *d2, gdouble *d3);
+gboolean skp_read_10b(G3DStream *stream);
+
+#endif /* _IMP_SKP_READ_H */

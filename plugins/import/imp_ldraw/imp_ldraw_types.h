@@ -18,6 +18,8 @@ typedef struct {
 	gchar *libdir;
 	GHashTable *partdb;
 	GSList *partlist;
+	GHashTable *colordb;
+	GSList *colorlist;
 } LDrawLibrary;
 
 #endif /* _IMP_LDRAW_TYPES_H */

@@ -4,6 +4,7 @@
 
 #include "imp_ldraw_types.h"
 #include "imp_ldraw_part.h"
+#include "imp_ldraw_color.h"
 
 static gboolean ldraw_library_add_dir(LDrawLibrary *lib, const gchar *subdir)
 {
@@ -59,6 +60,9 @@ LDrawLibrary *ldraw_library_init(void)
 
 	lib = g_new0(LDrawLibrary, 1);
 	lib->partdb = g_hash_table_new(g_str_hash, g_str_equal);
+
+	ldraw_color_init(lib);
+
 	lddir = g_getenv("LDRAWDIR");
 	if(lddir == NULL) /* warning is issued when trying to load a model */
 		return lib;
@@ -87,12 +91,27 @@ void ldraw_library_cleanup(LDrawLibrary *lib)
 	g_free(lib);
 }
 
+void ldraw_library_insert(LDrawLibrary *lib, gchar *name, gpointer data)
+{
+	g_hash_table_insert(lib->partdb, name, data);
+}
+
 G3DObject *ldraw_library_lookup(LDrawLibrary *lib, const gchar *name)
 {
 	LDrawPart *part;
 	gchar *filename;
 
 	part = g_hash_table_lookup(lib->partdb, name);
+	if(part == NULL) {
+		filename = g_ascii_strdown(name, -1);
+		part = g_hash_table_lookup(lib->partdb, filename);
+		g_free(filename);
+	}
+	if(part == NULL) {
+		filename = g_ascii_strup(name, -1);
+		part = g_hash_table_lookup(lib->partdb, filename);
+		g_free(filename);
+	}
 	if(part == NULL) {
 		g_warning("LDraw: failed to find '%s' in library", name);
 		return NULL;

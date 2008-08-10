@@ -8,7 +8,9 @@
 #include <g3d/object.h>
 
 #include "imp_ldraw_types.h"
+#include "imp_ldraw_part.h"
 #include "imp_ldraw_library.h"
+#include "imp_ldraw_color.h"
 
 static gboolean ldraw_part_parse_meta(G3DObject *object, gchar *buffer)
 {
@@ -22,10 +24,29 @@ static gboolean ldraw_part_parse_meta(G3DObject *object, gchar *buffer)
 	return TRUE;
 }
 
+static void ldraw_part_replace_material(G3DObject *object,
+	G3DMaterial *material)
+{
+	GSList *item;
+	G3DObject *sub;
+	G3DFace *face;
+
+	for(item = object->faces; item != NULL; item = item->next) {
+		face = item->data;
+		if(face->material == NULL)
+			face->material = material;
+	}
+	for(item = object->objects; item != NULL; item = item->next) {
+		sub = item->data;
+		ldraw_part_replace_material(sub, material);
+	}
+}
+
 static gboolean ldraw_part_parse_ref(G3DObject *object, gchar *buffer,
 	LDrawLibrary *lib)
 {
 	G3DObject *subobj;
+	G3DMaterial *material;
 	gfloat m[16], x, y, z;
 	guint32 colid;
 	gchar fname[256];
@@ -45,12 +66,18 @@ static gboolean ldraw_part_parse_ref(G3DObject *object, gchar *buffer,
 			fname[1] = G_DIR_SEPARATOR;
 		}
 
-		subobj = ldraw_library_lookup(lib, fname);
+		subobj = ldraw_part_from_file(lib, fname);
+		if(!subobj)
+			subobj = ldraw_library_lookup(lib, fname);
 		if(subobj != NULL) {
 			g3d_object_transform(subobj, m);
 			g3d_matrix_identity(m);
 			g3d_matrix_translate(x, y, z, m);
 			g3d_object_transform(subobj, m);
+			if(colid != 16) {
+				material = ldraw_color_lookup(lib, colid);
+				ldraw_part_replace_material(subobj, material);
+			}
 			object->objects = g_slist_append(object->objects, subobj);
 			return TRUE;
 		}
@@ -61,7 +88,8 @@ static gboolean ldraw_part_parse_ref(G3DObject *object, gchar *buffer,
 	return FALSE;
 }
 
-static gboolean ldraw_part_parse_tri(G3DObject *object, gchar *buffer)
+static gboolean ldraw_part_parse_tri(G3DObject *object, gchar *buffer,
+	LDrawLibrary *lib)
 {
 	guint32 off, colid;
 	G3DFace *face;
@@ -82,7 +110,7 @@ static gboolean ldraw_part_parse_tri(G3DObject *object, gchar *buffer)
 		object->vertex_data + (off + 2) * 3 + 2) == 10) {
 
 		face = g_new0(G3DFace, 1);
-		face->material = g_slist_nth_data(object->materials, 0);
+		face->material = ldraw_color_lookup(lib, colid);
 		face->vertex_count = 3;
 		face->vertex_indices = g_new0(guint32, 3);
 		face->vertex_indices[0] = off + 0;
@@ -94,7 +122,8 @@ static gboolean ldraw_part_parse_tri(G3DObject *object, gchar *buffer)
 	return FALSE;
 }
 
-static gboolean ldraw_part_parse_quad(G3DObject *object, gchar *buffer)
+static gboolean ldraw_part_parse_quad(G3DObject *object, gchar *buffer,
+	LDrawLibrary *lib)
 {
 	guint32 off, colid;
 	G3DFace *face;
@@ -118,7 +147,7 @@ static gboolean ldraw_part_parse_quad(G3DObject *object, gchar *buffer)
 		object->vertex_data + (off + 3) * 3 + 2) == 13) {
 
 		face = g_new0(G3DFace, 1);
-		face->material = g_slist_nth_data(object->materials, 0);
+		face->material = ldraw_color_lookup(lib, colid);
 		face->vertex_count = 4;
 		face->vertex_indices = g_new0(guint32, 4);
 		face->vertex_indices[0] = off + 0;
@@ -129,6 +158,44 @@ static gboolean ldraw_part_parse_quad(G3DObject *object, gchar *buffer)
 		return TRUE;
 	}
 	return FALSE;
+}
+
+static inline G3DObject *ldraw_part_open_file(LDrawLibrary *lib,
+	const gchar *filename)
+{
+	LDrawPart *part;
+
+	part = g_new0(LDrawPart, 1);
+	part->name = g_strdup(filename);
+	part->stream = g3d_stream_open_file(filename, "r");
+	if(part->stream == NULL) {
+		g_free(part);
+		return NULL;
+	}
+	part->object = ldraw_part_get_object(part, lib);
+	g3d_stream_close(part->stream);
+	part->stream = NULL;
+
+	ldraw_library_insert(lib, part->name, part);
+
+	return part->object;
+}
+
+G3DObject *ldraw_part_from_file(LDrawLibrary *lib, const gchar *filename)
+{
+	G3DObject *object;
+	gchar *path;
+
+	if(g_file_test(filename, G_FILE_TEST_EXISTS))
+		return ldraw_part_open_file(lib, filename);
+	path = g_ascii_strdown(filename, -1);
+	if(g_file_test(path, G_FILE_TEST_EXISTS)) {
+		object = ldraw_part_open_file(lib, path);
+		g_free(path);
+		return object;
+	}
+	g_free(path);
+	return NULL;
 }
 
 G3DObject *ldraw_part_get_object(LDrawPart *part, LDrawLibrary *lib)
@@ -158,10 +225,10 @@ G3DObject *ldraw_part_get_object(LDrawPart *part, LDrawLibrary *lib)
 			case 2: /* line */
 				break;
 			case 3: /* triangle */
-				ldraw_part_parse_tri(object, buffer + 2);
+				ldraw_part_parse_tri(object, buffer + 2, lib);
 				break;
 			case 4: /* quadrilateral */
-				ldraw_part_parse_quad(object, buffer + 2);
+				ldraw_part_parse_quad(object, buffer + 2, lib);
 				break;
 			case 5: /* optional line */
 				break;
@@ -176,6 +243,8 @@ G3DObject *ldraw_part_get_object(LDrawPart *part, LDrawLibrary *lib)
 
 void ldraw_part_free(LDrawPart *part)
 {
+	if(part->stream)
+		g3d_stream_close(part->stream);
 	if(part->subdir)
 		g_free(part->subdir);
 	g_free(part->name);

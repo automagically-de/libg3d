@@ -8,7 +8,7 @@
 
 typedef struct {
 	gchar *name;
-	gchar *subdir;
+	gchar *filename;
 	G3DObject *object;
 	G3DStream *stream;
 	gboolean failed;

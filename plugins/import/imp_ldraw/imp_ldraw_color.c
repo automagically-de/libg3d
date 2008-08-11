@@ -34,6 +34,7 @@ static LDrawColorDef ldraw_colors[] = {
 	{  28, "Dark Tan",              0.77, 0.59, 0.31, 1.0 },
 	{  33, "Trans Blue",            0.00, 0.13, 0.63, 0.9 },
 	{  36, "Trans Red",             0.77, 0.00, 0.15, 0.9 },
+	{  39, "Trans Gray",            0.76, 0.76, 0.76, 0.9 },
 	{  41, "Trans Light Cyan",      0.68, 0.94, 0.93, 0.95 },
 	{  46, "Trans Yellow",          0.79, 0.69, 0.00, 0.9 },
 	{  47, "Clear (trans white)",   1.00, 1.00, 1.00, 0.9 },

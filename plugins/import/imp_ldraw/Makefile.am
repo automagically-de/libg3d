@@ -21,7 +21,7 @@ LIBADD = \
 
 LIBTOOL += --quiet
 
-imp_ldraw_la_SOURCES = imp_ldraw.c imp_ldraw_types.h \
+imp_ldraw_la_SOURCES = imp_ldraw.c imp_ldraw_misc.h imp_ldraw_types.h \
 	imp_ldraw_part.c imp_ldraw_part.h \
 	imp_ldraw_library.c imp_ldraw_library.h \
 	imp_ldraw_color.c imp_ldraw_color.h

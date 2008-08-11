@@ -11,6 +11,7 @@
 #include "imp_ldraw_part.h"
 #include "imp_ldraw_library.h"
 #include "imp_ldraw_color.h"
+#include "imp_ldraw_misc.h"
 
 static gboolean ldraw_part_parse_meta(G3DObject *object, gchar *buffer)
 {
@@ -49,7 +50,7 @@ static gboolean ldraw_part_parse_ref(G3DObject *object, gchar *buffer,
 	G3DMaterial *material;
 	gfloat m[16], x, y, z;
 	guint32 colid;
-	gchar fname[256];
+	gchar fname[256], *strp;
 
 	g3d_matrix_identity(m);
 	memset(fname, 0, 256);
@@ -61,10 +62,9 @@ static gboolean ldraw_part_parse_ref(G3DObject *object, gchar *buffer,
 		m + 0 * 4 + 2, m + 1 * 4 + 2, m + 2 * 4 + 2,
 		fname) == 14) {
 
-		if(strncmp(fname, "s\\", 2) == 0) {
-			fname[0] = 'S';
-			fname[1] = G_DIR_SEPARATOR;
-		}
+		strp = path_sep(fname);
+		if(strp != NULL)
+			strp[0] = G_DIR_SEPARATOR;
 
 		subobj = ldraw_part_from_file(lib, fname);
 		if(!subobj)
@@ -245,8 +245,8 @@ void ldraw_part_free(LDrawPart *part)
 {
 	if(part->stream)
 		g3d_stream_close(part->stream);
-	if(part->subdir)
-		g_free(part->subdir);
+	if(part->filename)
+		g_free(part->filename);
 	g_free(part->name);
 	g_free(part);
 }

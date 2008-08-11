@@ -25,6 +25,8 @@
 
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/matrix.h>
+#include <g3d/object.h>
 
 #include "imp_ldraw_types.h"
 #include "imp_ldraw_part.h"
@@ -47,7 +49,7 @@ static inline void ldraw_create_subpart(LDrawLibrary *lib, gchar *name,
 		return;
 	}
 	part = g_new0(LDrawPart, 1);
-	part->name = g_strdup(name);
+	part->name = g_ascii_strup(name, -1);
 	part->stream = substream;
 
 	ldraw_library_insert(lib, part->name, part);
@@ -63,6 +65,7 @@ static gboolean ldraw_load_mpd(G3DStream *stream, G3DModel *model,
 	gchar buffer[1024], name[256], *streambuf = NULL;
 	gsize size;
 	goffset off;
+	gfloat m[16];
 
 	while(!g3d_stream_eof(stream)) {
 		memset(buffer, 0, 1024);
@@ -96,11 +99,15 @@ static gboolean ldraw_load_mpd(G3DStream *stream, G3DModel *model,
 	if(parts) {
 		part = parts->data;
 		object = ldraw_part_get_object(part, lib);
-		if(object != NULL)
+		if(object != NULL) {
+			g3d_matrix_identity(m);
+			g3d_matrix_rotate_xyz(0.0, 0.0, G_PI, m);
+			g3d_object_transform(object, m);
 			model->objects = g_slist_append(model->objects, object);
+		}
 	}
 
-#if 0
+#if 1
 	/* close open streams */
 	for(item = parts; item != NULL; item ++) {
 		part = item->data;
@@ -116,6 +123,7 @@ static gboolean ldraw_load_simple(G3DStream *stream, G3DModel *model,
 {
 	LDrawPart *part;
 	G3DObject *object;
+	gfloat m[16];
 
 	part = g_new0(LDrawPart, 1);
 	part->name = g_path_get_basename(stream->uri);
@@ -125,6 +133,9 @@ static gboolean ldraw_load_simple(G3DStream *stream, G3DModel *model,
 	if(object == NULL)
 		return FALSE;
 
+	g3d_matrix_identity(m);
+	g3d_matrix_rotate_xyz(0.0, 0.0, G_PI, m);
+	g3d_object_transform(object, m);
 	model->objects = g_slist_append(model->objects, object);
 	return TRUE;
 }

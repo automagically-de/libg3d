@@ -352,6 +352,7 @@ static int cob_read_mat1_bin(FILE *f, guint32 len, gboolean is_be,
 static int cob_read_unit_bin(FILE *f, guint32 len, gboolean is_be)
 {
 	guint16 uidx;
+#if DEBUG > 0
 	static gchar *units[] = {
 		"millimeters",
 		"centimeters",
@@ -362,6 +363,7 @@ static int cob_read_unit_bin(FILE *f, guint32 len, gboolean is_be)
 		"yards",
 		"miles",
 		"points" };
+#endif
 
 	uidx = cob_read_e(f, int16, is_be);
 #if DEBUG > 0

@@ -745,6 +745,9 @@ You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#define __USE_POSIX 1
+#define _XOPEN_SOURCE 500
+#define _POSIX_C_SOURCE 200112L
 #include <stdio.h>
 #include <string.h>
 #include <locale.h>
@@ -771,7 +774,7 @@ level * 3, "               ", section)
 #define VRML_OTYPE_IDXFACESET_MATIDX               0x0302
 #define VRML_OTYPE_MTRANS                          0x0400
 #define VRML_OTYPE_MTRANS_MATRIX                   0x0401
-#line 775 "imp_vrml_v1.c"
+#line 778 "imp_vrml_v1.c"
 
 #define INITIAL 0
 #define VRMLHEADER 1
@@ -1008,7 +1011,7 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 83 "imp_vrml_v1.l"
+#line 86 "imp_vrml_v1.l"
 
 	G3DObject *object = NULL;
 	G3DFace *face;
@@ -1020,7 +1023,7 @@ YY_DECL
 	gint32 tmps32, i;
 	gfloat matrix[16];
 
-#line 1024 "imp_vrml_v1.c"
+#line 1027 "imp_vrml_v1.c"
 
 	if ( !yyg->yy_init )
 		{
@@ -1135,7 +1138,7 @@ do_action:	/* This label is used only to access EOF actions. */
 	{ /* beginning of action switch */
 case 1:
 YY_RULE_SETUP
-#line 94 "imp_vrml_v1.l"
+#line 97 "imp_vrml_v1.l"
 {
 	#if DEBUG > 0
 	g_print("VRML: comment:");
@@ -1148,7 +1151,7 @@ case 2:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 5;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 101 "imp_vrml_v1.l"
+#line 104 "imp_vrml_v1.l"
 {
 	/* magic header */
 	#if DEBUG > 0
@@ -1159,7 +1162,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 109 "imp_vrml_v1.l"
+#line 112 "imp_vrml_v1.l"
 {
 	#if DEBUG > 0
 	g_print("VRML: version %s\n", yytext + 1);
@@ -1168,20 +1171,20 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 115 "imp_vrml_v1.l"
+#line 118 "imp_vrml_v1.l"
 /* */
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 117 "imp_vrml_v1.l"
+#line 120 "imp_vrml_v1.l"
 {
 	BEGIN INITIAL;
 }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 121 "imp_vrml_v1.l"
+#line 124 "imp_vrml_v1.l"
 {
 	#if DEBUG > 0
 	g_print("%s", yytext);
@@ -1191,7 +1194,7 @@ YY_RULE_SETUP
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 127 "imp_vrml_v1.l"
+#line 130 "imp_vrml_v1.l"
 {
 	#if DEBUG > 0
 	g_print("\n");
@@ -1204,7 +1207,7 @@ case 8:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 9;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 134 "imp_vrml_v1.l"
+#line 137 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "Separator");
 	if((object == NULL) || (object->vertex_count == 0))
@@ -1223,7 +1226,7 @@ case 9:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 5;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 146 "imp_vrml_v1.l"
+#line 149 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "Group");
 }
@@ -1233,7 +1236,7 @@ case 10:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 8;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 150 "imp_vrml_v1.l"
+#line 153 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "Material");
 	if(object)
@@ -1251,7 +1254,7 @@ case 11:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 15;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 161 "imp_vrml_v1.l"
+#line 164 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "MatrixTransform");
 	otype = VRML_OTYPE_MTRANS;
@@ -1262,7 +1265,7 @@ case 12:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 11;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 166 "imp_vrml_v1.l"
+#line 169 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "Coordinate3");
 	if(!object)
@@ -1281,7 +1284,7 @@ case 13:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 14;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 179 "imp_vrml_v1.l"
+#line 182 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "IndexedFaceSet");
 	otype = VRML_OTYPE_IDXFACESET;
@@ -1292,7 +1295,7 @@ case 14:
 yyg->yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 184 "imp_vrml_v1.l"
+#line 187 "imp_vrml_v1.l"
 {
 	#if DEBUG > 3
 	g_print("# (0x%04x) %s\n", otype, yytext);
@@ -1440,7 +1443,7 @@ YY_RULE_SETUP
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 328 "imp_vrml_v1.l"
+#line 331 "imp_vrml_v1.l"
 {
 	if(otype == VRML_OTYPE_MTRANS_MATRIX)
 	{
@@ -1476,7 +1479,7 @@ case 16:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 12;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 357 "imp_vrml_v1.l"
+#line 360 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_AMBIENTCOLOR;
 }
@@ -1487,7 +1490,7 @@ case 17:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 12;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 361 "imp_vrml_v1.l"
+#line 364 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_DIFFUSECOLOR;
 }
@@ -1498,7 +1501,7 @@ case 18:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 13;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 365 "imp_vrml_v1.l"
+#line 368 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_SPECULARCOLOR;
 }
@@ -1509,7 +1512,7 @@ case 19:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 13;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 369 "imp_vrml_v1.l"
+#line 372 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_EMISSIVECOLOR;
 }
@@ -1520,7 +1523,7 @@ case 20:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 9;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 373 "imp_vrml_v1.l"
+#line 376 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_SHININESS;
 }
@@ -1531,7 +1534,7 @@ case 21:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 12;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 377 "imp_vrml_v1.l"
+#line 380 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_TRANSPARENCY;
 }
@@ -1542,7 +1545,7 @@ case 22:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 5;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 381 "imp_vrml_v1.l"
+#line 384 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_COORD3_POINT;
 }
@@ -1553,7 +1556,7 @@ case 23:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 10;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 385 "imp_vrml_v1.l"
+#line 388 "imp_vrml_v1.l"
 {
 	if(otype == VRML_OTYPE_IDXFACESET)
 		otype = VRML_OTYPE_IDXFACESET_COORDIDX;
@@ -1565,7 +1568,7 @@ case 24:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 13;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 390 "imp_vrml_v1.l"
+#line 393 "imp_vrml_v1.l"
 {
 	#if DEBUG > 0
 	g_print("VRML1: materialIndex\n");
@@ -1576,7 +1579,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 398 "imp_vrml_v1.l"
+#line 401 "imp_vrml_v1.l"
 {
 	if(otype == VRML_OTYPE_MTRANS)
 	{
@@ -1587,7 +1590,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 406 "imp_vrml_v1.l"
+#line 409 "imp_vrml_v1.l"
 {
 	/* set to parent object */
 	otype &= 0xFF00;
@@ -1597,21 +1600,21 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 413 "imp_vrml_v1.l"
+#line 416 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, yytext);
 }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 417 "imp_vrml_v1.l"
+#line 420 "imp_vrml_v1.l"
 {
 	level ++;
 }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 421 "imp_vrml_v1.l"
+#line 424 "imp_vrml_v1.l"
 {
 	#if DEBUG > 3
 	g_print("}\n");
@@ -1632,29 +1635,29 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 439 "imp_vrml_v1.l"
+#line 442 "imp_vrml_v1.l"
 /* */
 	YY_BREAK
 case 31:
 /* rule 31 can match eol */
 YY_RULE_SETUP
-#line 440 "imp_vrml_v1.l"
+#line 443 "imp_vrml_v1.l"
 /* */
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(VRMLHEADER):
 case YY_STATE_EOF(COMMENT):
-#line 442 "imp_vrml_v1.l"
+#line 445 "imp_vrml_v1.l"
 {
 	yyterminate();
 }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 446 "imp_vrml_v1.l"
+#line 449 "imp_vrml_v1.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1658 "imp_vrml_v1.c"
+#line 1661 "imp_vrml_v1.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2784,7 +2787,7 @@ void vrml_v1_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 446 "imp_vrml_v1.l"
+#line 449 "imp_vrml_v1.l"
 
 
 

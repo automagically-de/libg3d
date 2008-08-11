@@ -226,8 +226,9 @@ gboolean skp_cb_edge_use(SkpGlobalData *global, SkpLocalData *local)
 			switch(w1 - comp->id0) {
 				case 1:
 					skp_read_10b(global->stream);
+					w2 = g3d_stream_read_int16_le(global->stream);
 					handled = TRUE;
-					g_debug("\tread 10b");
+					g_debug("\tw2=0x%04x", w2);
 					break;
 				case 3:
 					skp_read_dbl3(global->stream, &d1, &d2, &d3);
@@ -523,6 +524,8 @@ gboolean skp_cb_vertex(SkpGlobalData *global, SkpLocalData *local)
 	GSList *item;
 	SkpComponent *comp;
 
+	return FALSE;
+
 	w1 = g3d_stream_read_int16_le(global->stream);
 	g_return_val_if_fail(w1 == 0x0000, FALSE);
 
@@ -556,7 +559,6 @@ gboolean skp_cb_vertex(SkpGlobalData *global, SkpLocalData *local)
 				case 1:
 					skp_read_10b(global->stream);
 					handled = TRUE;
-					g_debug("\tread 10b");
 					break;
 				case 3:
 					skp_read_dbl3(global->stream, &d1, &d2, &d3);

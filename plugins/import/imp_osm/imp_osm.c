@@ -148,6 +148,7 @@ char **plugin_extensions(void)
 /* helper functions
  *****************************************************************************/
 
+#if 0
 #define G(i) (gdouble)(i)
 
 static gdouble misc_angle(gdouble x1, gdouble y1, gdouble x2, gdouble y2)
@@ -175,6 +176,7 @@ static gdouble misc_delta(gdouble x1, gdouble y1, gdouble x2, gdouble y2)
 	b = ABS(G(y2) - G(y1));
 	return sqrt(a * a + b * b);
 }
+#endif
 
 /*****************************************************************************/
 /* OSM specific functions

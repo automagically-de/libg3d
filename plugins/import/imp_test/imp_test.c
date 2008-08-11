@@ -38,7 +38,19 @@ static gboolean test_texture_uv(G3DContext *context, G3DModel *model);
 gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model, gpointer user_data)
 {
-	return test_texture_uv(context, model);
+	guint32 test = 1;
+
+	switch(test) {
+		case 0:
+			return test_primitive_transfrom(model);
+			break;
+		case 1:
+			return test_texture_uv(context, model);
+			break;
+		default:
+			break;
+	}
+	return FALSE;
 }
 
 gchar *plugin_description(G3DContext *context)
@@ -61,7 +73,7 @@ static gboolean test_primitive_transfrom(G3DModel *model)
 	G3DMaterial *material;
 	G3DTransformation *tf;
 	gfloat matrix[16];
-	gint32 i, j;
+	/* gint32 i, j; */
 
 	cntr = g_new0(G3DObject, 1);
 	cntr->name = g_strdup("container");

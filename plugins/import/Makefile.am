@@ -14,6 +14,7 @@ SUBDIRS = \
 	imp_iob \
 	imp_joe \
 	imp_kmz \
+	imp_ldraw \
 	imp_leocad \
 	imp_lwo \
 	imp_max \
@@ -30,5 +31,6 @@ SUBDIRS = \
 	imp_stl \
 	imp_ta \
 	imp_test \
-	imp_vrml
+	imp_vrml \
+	imp_vrml2
 

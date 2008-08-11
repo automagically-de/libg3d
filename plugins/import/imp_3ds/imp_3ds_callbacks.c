@@ -565,8 +565,7 @@ gboolean x3ds_cb_0x4150(x3ds_global_data *global, x3ds_parent_data *parent)
 /* mesh matrix */
 gboolean x3ds_cb_0x4160(x3ds_global_data *global, x3ds_parent_data *parent)
 {
-	G3DObject *object;
-	gfloat matrix[16], scale[16];
+	gfloat matrix[16];
 	gint32 i;
 	gfloat det;
 
@@ -583,6 +582,7 @@ gboolean x3ds_cb_0x4160(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	if(det < 0.0) {
 #if 0
+		gfloat scale[16];
 		g3d_matrix_identity(scale);
 		g3d_matrix_scale(-1.0, 1.0, 1.0, scale);
 		g3d_matrix_multiply(scale, matrix, matrix);

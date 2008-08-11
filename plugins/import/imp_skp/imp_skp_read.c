@@ -76,8 +76,8 @@ gboolean skp_read_dbl3(G3DStream *stream,
 
 gboolean skp_read_10b(G3DStream *stream)
 {
-	guint32 x1;
-	guint8 u1;
+	guint32 x1, x2;
+	guint8 u1, u2;
 
 	x1 = g3d_stream_read_int32_be(stream);
 	u1 = g3d_stream_read_int8(stream);
@@ -85,8 +85,9 @@ gboolean skp_read_10b(G3DStream *stream)
 	if(((x1 & 0x00FFFFFF) != 0x0001) || (u1 != 0x01)) {
 		g_warning("skp_read_10b: %#08x, %#02x", x1, u1);
 	}
-	u1 = g3d_stream_read_int8(stream);
-	x1 = g3d_stream_read_int32_le(stream);
+	u2 = g3d_stream_read_int8(stream);
+	x2 = g3d_stream_read_int32_le(stream);
+	g_debug("\tread 10b: %08x %02x %02x %08x", x1, u1, u2, x2);
 	return TRUE;
 }
 

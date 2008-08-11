@@ -53,11 +53,10 @@ gboolean rbh_cb_RBHH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 /* body */
 gboolean rbh_cb_BODY(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {
-	guint32 nverts, nfaces, vertoff = 0;
+	guint32 nverts, nfaces;
 	guint32 maxx = 0, x;
 	G3DObject *object;
 	G3DMaterial *material;
-	G3DFace *face;
 
 	if(local->nb < 4) return TRUE; /* zero size BODY tags? */
 

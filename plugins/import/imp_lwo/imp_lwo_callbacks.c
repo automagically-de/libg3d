@@ -182,7 +182,9 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	G3DFace *face;
 	guint32 type;
 	gint32 n = 0, i, nmat, det_cnt, cnt;
+#if 0
 	gint16 i16;
+#endif
 	gchar *tmp;
 
 	obj = (LwoObject *)global->user_data;

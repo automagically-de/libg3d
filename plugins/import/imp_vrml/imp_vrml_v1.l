@@ -47,6 +47,9 @@
 	    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 	*/
 
+	#define __USE_POSIX 1
+	#define _XOPEN_SOURCE 500
+	#define _POSIX_C_SOURCE 200112L
 	#include <stdio.h>
 	#include <string.h>
 	#include <locale.h>

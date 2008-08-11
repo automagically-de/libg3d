@@ -108,12 +108,12 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 char *plugin_description(void)
 {
-	return g_strdup("import plugin for VRML 2.0+ files\n");
+	return g_strdup("import plugin for VRML 1.x & SGI inventor files\n");
 }
 
 char **plugin_extensions(void)
 {
-	return g_strsplit("wrl:vrml:iv", ":", 0);
+	return g_strsplit("vrml:iv", ":", 0);
 }
 
 /* evil hack [tm] */

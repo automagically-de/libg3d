@@ -27,6 +27,7 @@
 
 #include "imp_r4_chunks.h"
 
+#if DEBUG > 0
 static void hexdump(FILE *f, guint32 len, gchar *prefix)
 {
 	guint32 i;
@@ -45,6 +46,7 @@ static void hexdump(FILE *f, guint32 len, gchar *prefix)
 	}
 	printf("\n");
 }
+#endif
 
 static void dump_remaining(g3d_iff_gdata *global, g3d_iff_ldata *local)
 {

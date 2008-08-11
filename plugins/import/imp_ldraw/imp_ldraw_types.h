@@ -12,9 +12,11 @@ typedef struct {
 	G3DObject *object;
 	G3DStream *stream;
 	gboolean failed;
+	gboolean master;
 } LDrawPart;
 
 typedef struct {
+	G3DContext *context;
 	gchar *libdir;
 	GHashTable *partdb;
 	GSList *partlist;

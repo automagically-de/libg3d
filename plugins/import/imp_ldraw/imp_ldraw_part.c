@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include <g3d/types.h>
+#include <g3d/context.h>
 #include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/matrix.h>
@@ -235,6 +236,12 @@ G3DObject *ldraw_part_get_object(LDrawPart *part, LDrawLibrary *lib)
 			default:
 				g_warning("LDraw: unknown type of line: %s", buffer);
 				break;
+		}
+		if(part->master) {
+			g3d_context_update_progress_bar(lib->context,
+				(gfloat)g3d_stream_tell(part->stream) /
+				(gfloat)g3d_stream_size(part->stream), TRUE);
+			g3d_context_update_interface(lib->context);
 		}
 	}
 

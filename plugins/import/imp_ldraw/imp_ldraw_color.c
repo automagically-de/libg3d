@@ -30,11 +30,14 @@ static LDrawColorDef ldraw_colors[] = {
 	{  15, "White",                 1.00, 1.00, 1.00, 1.0 },
 
 	{  17, "Light Green",           0.73, 1.00, 0.81, 1.0 },
+	{  18, "Light Yellow",          0.99, 0.91, 0.59, 1.0 },
 	{  20, "Light Violet",          0.84, 0.77, 0.90, 1.0 },
 	{  28, "Dark Tan",              0.77, 0.59, 0.31, 1.0 },
+	{  32, "Trans Gray",            0.39, 0.37, 0.32, 0.9 },
 	{  33, "Trans Blue",            0.00, 0.13, 0.63, 0.9 },
 	{  36, "Trans Red",             0.77, 0.00, 0.15, 0.9 },
-	{  39, "Trans Gray",            0.76, 0.76, 0.76, 0.9 },
+	{  39, "Trans Light Gray",      0.76, 0.76, 0.76, 0.9 }, /* FIXME */
+	{  40, "Trans Gray",            0.39, 0.37, 0.32, 0.9 },
 	{  41, "Trans Light Cyan",      0.68, 0.94, 0.93, 0.95 },
 	{  46, "Trans Yellow",          0.79, 0.69, 0.00, 0.9 },
 	{  47, "Clear (trans white)",   1.00, 1.00, 1.00, 0.9 },
@@ -44,10 +47,12 @@ static LDrawColorDef ldraw_colors[] = {
 	{ 320, "Dark Red",              0.47, 0.00, 0.11, 1.0 },
 	{ 334, "Chrome Gold",           0.88, 0.43, 0.07, 1.0 },
 	{ 336, "Earth Orange",          0.82, 0.51, 0.02, 1.0 },
+	{ 383, "Chrome Silver",         0.88, 0.88, 0.88, 1.0 },
 	{ 431, "Light Green",           0.73, 1.00, 0.81, 1.0 },
 	{ 463, "Light Red",             1.00, 0.52, 0.48, 1.0 },
 	{ 484, "Dark Orange",           0.70, 0.24, 0.00, 1.0 },
 	{ 494, "Electric Contact",      0.82, 0.82, 0.82, 1.0 },
+	{ 495, "Light Yellow",          0.99, 0.91, 0.59, 1.0 },
 	{ 503, "Light Gray",            0.90, 0.89, 0.85, 1.0 },
 
 	{  -1, NULL, 0,0,0,0 }

@@ -25,15 +25,15 @@
 #include <glib.h>
 
 #include <g3d/context.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
 #include <g3d/iff.h>
-#include <g3d/read.h>
 #include <g3d/debug.h>
 
 #include "imp_lwo.h"
 
-gboolean lwo_cb_CLIP(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_CLIP(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	guint32 index;
@@ -43,7 +43,7 @@ gboolean lwo_cb_CLIP(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(!local->finalize)
 	{
-		index = g3d_read_int32_be(global->f);
+		index = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 
 		obj->nclips ++;
@@ -59,7 +59,7 @@ gboolean lwo_cb_CLIP(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-gboolean lwo_cb_COLR(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_COLR(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DMaterial *material;
 
@@ -68,19 +68,19 @@ gboolean lwo_cb_COLR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(global->flags & LWO_FLAG_LWO2)
 	{
-		material->r = g3d_read_float_be(global->f);
-		material->g = g3d_read_float_be(global->f);
-		material->b = g3d_read_float_be(global->f);
+		material->r = g3d_stream_read_float_be(global->stream);
+		material->g = g3d_stream_read_float_be(global->stream);
+		material->b = g3d_stream_read_float_be(global->stream);
 		local->nb -= 12;
-		g3d_read_int16_be(global->f);
+		g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
 	}
 	else
 	{
-		material->r = g3d_read_int8(global->f) / 255.0;
-		material->g = g3d_read_int8(global->f) / 255.0;
-		material->b = g3d_read_int8(global->f) / 255.0;
-		g3d_read_int8(global->f);
+		material->r = g3d_stream_read_int8(global->stream) / 255.0;
+		material->g = g3d_stream_read_int8(global->stream) / 255.0;
+		material->b = g3d_stream_read_int8(global->stream) / 255.0;
+		g3d_stream_read_int8(global->stream);
 		local->nb -= 4;
 	}
 
@@ -88,7 +88,7 @@ gboolean lwo_cb_COLR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* image index */
-gboolean lwo_cb_IMAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_IMAG(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	G3DMaterial *material;
@@ -101,7 +101,7 @@ gboolean lwo_cb_IMAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	material = (G3DMaterial *)local->object;
 	g_return_val_if_fail(material != NULL, FALSE);
 
-	local->nb -= lwo_read_vx(global->f, &index);
+	local->nb -= lwo_read_vx(global->stream, &index);
 
 	for(i = 0; i < obj->nclips; i ++)
 	{
@@ -125,18 +125,19 @@ gboolean lwo_cb_IMAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* points */
-gboolean lwo_cb_PNTS(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_PNTS(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	G3DObject *object;
-	gint32 i, off;
+	gint32 i, j, off;
 
 	obj = (LwoObject *)global->user_data;
 	g_return_val_if_fail(obj != NULL, FALSE);
 
 	if(global->flags & LWO_FLAG_LWO2)
 	{
-		object = lwo_create_object(global->f, global->model, global->flags);
+		object = lwo_create_object(global->stream, global->model,
+			global->flags);
 		obj->object = object;
 
 		if(obj->tex_vertices)
@@ -150,7 +151,7 @@ gboolean lwo_cb_PNTS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		object = (G3DObject *)obj->object;
 		if(object == NULL)
 		{
-			object = lwo_create_object(global->f, global->model,
+			object = lwo_create_object(global->stream, global->model,
 				global->flags);
 			obj->object = object;
 		}
@@ -163,11 +164,10 @@ gboolean lwo_cb_PNTS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	object->vertex_data = g_realloc(object->vertex_data,
 		sizeof(gfloat) * object->vertex_count * 3);
 
-	for(i = off; i < object->vertex_count; i ++)
-	{
-		object->vertex_data[i * 3 + 0] = g3d_read_float_be(global->f);
-		object->vertex_data[i * 3 + 1] = g3d_read_float_be(global->f);
-		object->vertex_data[i * 3 + 2] = g3d_read_float_be(global->f);
+	for(i = off; i < object->vertex_count; i ++) {
+		for(j = 0; j < 3; j ++)
+			object->vertex_data[i * 3 + j] =
+				g3d_stream_read_float_be(global->stream);
 		local->nb -= 12;
 	}
 
@@ -175,7 +175,7 @@ gboolean lwo_cb_PNTS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* polygons */
-gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_POLS(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	G3DObject *object;
@@ -195,7 +195,7 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(global->flags & LWO_FLAG_LWO2)
 	{
-		type = g3d_read_int32_be(global->f);
+		type = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 
 		if((type != G3D_IFF_MKID('F', 'A', 'C', 'E')) &&
@@ -212,7 +212,7 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	{
 		n ++;
 		face = g_new0(G3DFace, 1);
-		face->vertex_count = g3d_read_int16_be(global->f);
+		face->vertex_count = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
 
 		if(global->flags & LWO_FLAG_LWO2)
@@ -231,15 +231,16 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		{
 			if(global->flags & LWO_FLAG_LWO2)
 			{
-				local->nb -= lwo_read_vx(global->f,
+				local->nb -= lwo_read_vx(global->stream,
 					&(face->vertex_indices[i]));
 			}
 			else
 			{
-				face->vertex_indices[i] = g3d_read_int16_be(global->f);
+				face->vertex_indices[i] =
+					g3d_stream_read_int16_be(global->stream);
 				local->nb -= 2;
 #if 0
-				i16 = g3d_read_int16_be(global->f);
+				i16 = g3d_stream_read_int16_be(global->stream);
 				local->nb -= 2;
 
 				if(i16 < 0)
@@ -263,21 +264,19 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 		if(!(global->flags & LWO_FLAG_LWO2))
 		{
-			nmat = g3d_read_int16_be(global->f);
+			nmat = g3d_stream_read_int16_be(global->stream);
 			local->nb -= 2;
 
 			if(nmat < 0)
 			{
 				/* detail polygons, skipped */
-				det_cnt = g3d_read_int16_be(global->f);
+				det_cnt = g3d_stream_read_int16_be(global->stream);
 				local->nb -= 2;
 				nmat *= -1;
-				while(det_cnt-- > 0)
-				{
-					cnt = g3d_read_int16_be(global->f);
+				while(det_cnt-- > 0) {
+					cnt = g3d_stream_read_int16_be(global->stream);
 					local->nb -= 2;
-
-					fseek(global->f, cnt * 2 + 2, SEEK_CUR);
+					g3d_stream_seek(global->stream, cnt * 2 + 2, G_SEEK_CUR);
 					local->nb -= cnt * 2 + 2;
 				}
 			}
@@ -319,7 +318,7 @@ gboolean lwo_cb_POLS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* poly tag mapping */
-gboolean lwo_cb_PTAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_PTAG(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	G3DObject *object;
@@ -335,7 +334,7 @@ gboolean lwo_cb_PTAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	object = (G3DObject *)obj->object;
 	g_return_val_if_fail(object != NULL, FALSE);
 
-	id = g3d_read_int32_be(global->f);
+	id = g3d_stream_read_int32_be(global->stream);
 	local->nb -= 4;
 
 	if(id != G3D_IFF_MKID('S','U','R','F'))
@@ -345,8 +344,8 @@ gboolean lwo_cb_PTAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	while(local->nb > 0)
 	{
-		local->nb -= lwo_read_vx(global->f, &poly);
-		tag = g3d_read_int16_be(global->f);
+		local->nb -= lwo_read_vx(global->stream, &poly);
+		tag = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
 
 		face = (G3DFace *)g_slist_nth_data(object->faces, fmax - poly);
@@ -381,7 +380,7 @@ gboolean lwo_cb_PTAG(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* specularity */
-gboolean lwo_cb_SPEC(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_SPEC(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DMaterial *material;
 	gfloat tmpf;
@@ -391,12 +390,12 @@ gboolean lwo_cb_SPEC(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(global->flags & LWO_FLAG_LWO2)
 	{
-		tmpf = 1.0 - g3d_read_float_be(global->f);
+		tmpf = 1.0 - g3d_stream_read_float_be(global->stream);
 		local->nb -= 4;
 	}
 	else
 	{
-		tmpf = 1.0 - (gfloat)g3d_read_int16_be(global->f) / 256.0;
+		tmpf = 1.0 - (gfloat)g3d_stream_read_int16_be(global->stream) / 256.0;
 		local->nb -= 2;
 	}
 
@@ -408,7 +407,7 @@ gboolean lwo_cb_SPEC(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* surfaces */
-gboolean lwo_cb_SRFS(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_SRFS(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	G3DMaterial *material;
@@ -420,7 +419,7 @@ gboolean lwo_cb_SRFS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	while(local->nb > 0)
 	{
 		material = g3d_material_new();
-		local->nb -= lwo_read_string(global->f, buffer);
+		local->nb -= lwo_read_string(global->stream, buffer);
 		material->name = g_strdup(buffer);
 		global->model->materials = g_slist_append(global->model->materials,
 			material);
@@ -431,7 +430,7 @@ gboolean lwo_cb_SRFS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* still image */
-gboolean lwo_cb_STIL(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_STIL(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 
@@ -440,7 +439,7 @@ gboolean lwo_cb_STIL(g3d_iff_gdata *global, g3d_iff_ldata *local)
     obj = (LwoObject *)global->user_data;
 	g_return_val_if_fail(obj != NULL, FALSE);
 
-	local->nb -= lwo_read_string(global->f, buffer);
+	local->nb -= lwo_read_string(global->stream, buffer);
 
 	g_free(obj->clipfiles[obj->nclips - 1]);
 	obj->clipfiles[obj->nclips - 1] = g_strdup(buffer);
@@ -450,7 +449,7 @@ gboolean lwo_cb_STIL(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* surface */
-gboolean lwo_cb_SURF(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_SURF(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	G3DObject *object;
@@ -466,11 +465,11 @@ gboolean lwo_cb_SURF(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(!local->finalize)
 	{
-		local->nb -= lwo_read_string(global->f, name);
+		local->nb -= lwo_read_string(global->stream, name);
 
 		if(global->flags & LWO_FLAG_LWO2)
 		{
-			g3d_read_int16_be(global->f);
+			g3d_stream_read_int16_be(global->stream);
 			local->nb -= 2;
 		}
 
@@ -501,7 +500,7 @@ gboolean lwo_cb_SURF(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* tags */
-gboolean lwo_cb_TAGS(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_TAGS(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	G3DMaterial *material;
@@ -519,7 +518,7 @@ gboolean lwo_cb_TAGS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	/* read tags */
 	while(local->nb > 0)
 	{
-		local->nb -= lwo_read_string(global->f, buffer);
+		local->nb -= lwo_read_string(global->stream, buffer);
 		obj->ntags ++;
 		obj->tags = g_realloc(obj->tags, (1 + obj->ntags) * sizeof(gchar *));
 		obj->tags[obj->ntags - 1] = g_strdup(buffer);
@@ -535,24 +534,21 @@ gboolean lwo_cb_TAGS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* transparency */
-gboolean lwo_cb_TRAN(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_TRAN(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DMaterial *material;
 
 	material = (G3DMaterial *)local->object;
 	g_return_val_if_fail(material != NULL, FALSE);
 
-	if(global->flags & LWO_FLAG_LWO2)
-	{
-		material->a = 1.0 - g3d_read_float_be(global->f);
+	if(global->flags & LWO_FLAG_LWO2) {
+		material->a = 1.0 - g3d_stream_read_float_be(global->stream);
 		local->nb -= 4;
-	}
-	else
-	{
-		material->a = 1.0 - (gfloat)g3d_read_int16_be(global->f) / 256.0;
+	} else {
+		material->a = 1.0 -
+			(gfloat)g3d_stream_read_int16_be(global->stream) / 256.0;
 		local->nb -= 2;
 	}
-
 	if(material->a < 0.1)
 		material->a = 0.1;
 
@@ -560,7 +556,7 @@ gboolean lwo_cb_TRAN(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* vertex mapping */
-gboolean lwo_cb_VMAP(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean lwo_cb_VMAP(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	guint32 index, type, dim;
@@ -575,13 +571,13 @@ gboolean lwo_cb_VMAP(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(local->parent_id == G3D_IFF_MKID('L','W','O','2'))
 	{
-		type = g3d_read_int32_be(global->f);
+		type = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 
-		dim = g3d_read_int16_be(global->f);
+		dim = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
 
-		local->nb -= lwo_read_string(global->f, buffer);
+		local->nb -= lwo_read_string(global->stream, buffer);
 
 		if(type == G3D_IFF_MKID('T','X','U','V'))
 		{
@@ -594,13 +590,13 @@ gboolean lwo_cb_VMAP(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 			while(local->nb > 0)
 			{
-				local->nb -= lwo_read_vx(global->f, &index);
+				local->nb -= lwo_read_vx(global->stream, &index);
 				g_return_val_if_fail(index < obj->object->vertex_count, FALSE);
 
 				obj->tex_vertices[index * 2 + 0] =
-					g3d_read_float_be(global->f);
+					g3d_stream_read_float_be(global->stream);
 				obj->tex_vertices[index * 2 + 1] =
-					g3d_read_float_be(global->f);
+					g3d_stream_read_float_be(global->stream);
 #if DEBUG > 0
 				if((obj->tex_vertices[index * 2 + 0] > 1.0) ||
 					(obj->tex_vertices[index * 2 + 1] > 1.0))

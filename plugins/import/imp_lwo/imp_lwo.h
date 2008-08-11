@@ -27,8 +27,7 @@
 
 #define LWO_FLAG_LWO2          (1 << 0)
 
-typedef struct
-{
+typedef struct {
 	gint32 ntags;
 	gchar **tags;
 
@@ -39,11 +38,11 @@ typedef struct
 	gfloat *tex_vertices;
 
 	G3DObject *object;
-}
-LwoObject;
+} LwoObject;
 
-G3DObject *lwo_create_object(FILE *f, G3DModel *model, guint32 flags);
-gint lwo_read_string(FILE *f, char *s);
-guint32 lwo_read_vx(FILE *f, guint *index);
+G3DObject *lwo_create_object(G3DStream *stream, G3DModel *model,
+	guint32 flags);
+gint lwo_read_string(G3DStream *stream, gchar *s);
+guint32 lwo_read_vx(G3DStream *stream, guint *index);
 
 #endif /* _IMP_LWO_H */

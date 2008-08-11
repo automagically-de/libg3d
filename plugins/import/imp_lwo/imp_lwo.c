@@ -33,8 +33,8 @@
 
 #include <g3d/types.h>
 #include <g3d/context.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
-#include <g3d/read.h>
 #include <g3d/iff.h>
 
 #define LW_MAX_POINTS   200
@@ -50,35 +50,28 @@
 
 static void lwo_fix_texfaces(G3DModel *model);
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	LwoObject *obj;
 	G3DMaterial *material;
-	FILE *f;
 	guint32 id, len;
 	g3d_iff_gdata *global;
 	g3d_iff_ldata *local;
 
-	f = g3d_iff_open(filename, &id, &len);
-	if(f == NULL)
-	{
-		g_warning("can't open file '%s'", filename);
+	if(!g3d_iff_check(stream, &id, &len))
 		return FALSE;
-	}
 
 	if((id != G3D_IFF_MKID('L','W','O','B')) &&
-		(id != G3D_IFF_MKID('L','W','O','2')))
-	{
-		g_warning("file '%s' is not a LightWave object", filename);
-		fclose(f);
+		(id != G3D_IFF_MKID('L','W','O','2'))) {
+		g_warning("'%s' is not a LightWave object", stream->uri);
 		return FALSE;
 	}
 
 	obj = g_new0(LwoObject, 1);
 
 	global = g_new0(g3d_iff_gdata, 1);
-	global->f = f;
+	global->stream = stream;
 	global->context = context;
 	global->model = model;
 	if(id == G3D_IFF_MKID('L','W','O','2'))
@@ -116,8 +109,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	g_free(local);
 	g_free(global);
 
-	fclose(f);
-
 	g3d_context_update_progress_bar(context, 0.0, FALSE);
 
 	return TRUE;
@@ -139,11 +130,11 @@ gchar **plugin_extensions(G3DContext *context)
 /* private                                                                   */
 /*****************************************************************************/
 
-G3DObject *lwo_create_object(FILE *f, G3DModel *model, guint32 flags)
+G3DObject *lwo_create_object(G3DStream *stream, G3DModel *model, guint32 flags)
 {
 	G3DObject *object = g_new0(G3DObject, 1);
-	object->name = g_strdup_printf("LWO%c object @ 0x%08lx",
-		(flags & LW_F_LWO2) ? '2' : 'B', ftell(f) - 8);
+	object->name = g_strdup_printf("LWO%c object @ 0x%08x",
+		(flags & LW_F_LWO2) ? '2' : 'B', (guint32)g3d_stream_tell(stream) - 8);
 	model->objects = g_slist_append(model->objects, object);
 
 #if 0
@@ -158,12 +149,12 @@ G3DObject *lwo_create_object(FILE *f, G3DModel *model, guint32 flags)
 /* LWO specific                                                              */
 /*****************************************************************************/
 
-gint lwo_read_string(FILE *f, char *s)
+gint lwo_read_string(G3DStream *stream, char *s)
 {
 	gint c;
 	gint cnt = 0;
 	do {
-		c = g3d_read_int8(f);
+		c = g3d_stream_read_int8(stream);
 		if (cnt < LW_MAX_NAME_LEN)
 		  s[cnt] = c;
 		else
@@ -172,24 +163,21 @@ gint lwo_read_string(FILE *f, char *s)
 	} while (c != 0);
 	/* if length of string (including \0) is odd skip another byte */
 	if (cnt%2) {
-		g3d_read_int8(f);
+		g3d_stream_read_int8(stream);
 		cnt++;
 	}
 	return cnt;
 }
 
-guint32 lwo_read_vx(FILE *f, guint *index)
+guint32 lwo_read_vx(G3DStream *stream, guint *index)
 {
-	*index = g3d_read_int16_be(f);
-	if((*index & 0xFF00) == 0xFF00)
-	{
+	*index = g3d_stream_read_int16_be(stream);
+	if((*index & 0xFF00) == 0xFF00) {
 		*index <<= 16;
-		*index += g3d_read_int16_be(f);
+		*index += g3d_stream_read_int16_be(stream);
 		*index &= 0x00FFFFFF;
 		return 4;
-	}
-	else
-	{
+	} else {
 		return 2;
 	}
 }

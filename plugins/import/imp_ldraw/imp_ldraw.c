@@ -109,10 +109,12 @@ static gboolean ldraw_load_mpd(G3DStream *stream, G3DModel *model,
 
 #if 1
 	/* close open streams */
-	for(item = parts; item != NULL; item ++) {
+	for(item = parts; item != NULL; item = item->next) {
 		part = item->data;
-		g3d_stream_close(part->stream);
-		part->stream = NULL;
+		if(part->stream) {
+			g3d_stream_close(part->stream);
+			part->stream = NULL;
+		}
 	}
 #endif
 	return (object != NULL);

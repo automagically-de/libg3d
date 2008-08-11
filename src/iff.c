@@ -223,7 +223,7 @@ gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
 
 		if(sublocal->nb > 0) {
 			if(global->stream) {
-				g3d_stream_seek(global->stream, sublocal->nb, G_SEEK_CUR);
+				g3d_stream_skip(global->stream, sublocal->nb);
 			} else {
 #ifndef G_DISABLE_DEPRECATED
 				fseek(global->f, sublocal->nb, SEEK_CUR);
@@ -363,7 +363,7 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 
 			if(sublocal->nb > 0) {
 				if(global->stream) {
-					g3d_stream_seek(global->stream, sublocal->nb, G_SEEK_CUR);
+					g3d_stream_skip(global->stream, sublocal->nb);
 				} else {
 #ifndef G3D_DISABLE_DEPRECATED
 					fseek(global->f, sublocal->nb, SEEK_CUR);
@@ -381,7 +381,7 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 				tid, chunk_len, (guint32)g3d_iff_pos(global) - 8);
 			g_free(tid);
 			if(global->stream)
-				g3d_stream_seek(global->stream, chunk_len, G_SEEK_CUR);
+				g3d_stream_skip(global->stream, chunk_len);
 			else
 #ifndef G3D_DISABLE_DEPRECATED
 				fseek(global->f, chunk_len, SEEK_CUR);
@@ -394,8 +394,8 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 
 		if(chunk_len % chunk_mod) {
 			if(global->stream)
-				g3d_stream_seek(global->stream,
-					chunk_mod - (chunk_len % chunk_mod), G_SEEK_CUR);
+				g3d_stream_skip(global->stream,
+					chunk_mod - (chunk_len % chunk_mod));
 			else
 #ifndef G3D_DISABLE_DEPRECATED
 				fseek(global->f,
@@ -425,7 +425,7 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 		g_warning("[IFF] skipping %d bytes at the end of chunk",
 			local->nb);
 		if(global->stream) {
-			g3d_stream_seek(global->stream, local->nb, G_SEEK_CUR);
+			g3d_stream_skip(global->stream, local->nb);
 		} else {
 #ifndef G3D_DISABLE_DEPRECATED
 			fseek(global->f, local->nb, SEEK_CUR);

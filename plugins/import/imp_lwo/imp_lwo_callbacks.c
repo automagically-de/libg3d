@@ -276,7 +276,7 @@ gboolean lwo_cb_POLS(G3DIffGlobal *global, G3DIffLocal *local)
 				while(det_cnt-- > 0) {
 					cnt = g3d_stream_read_int16_be(global->stream);
 					local->nb -= 2;
-					g3d_stream_seek(global->stream, cnt * 2 + 2, G_SEEK_CUR);
+					g3d_stream_skip(global->stream, cnt * 2 + 2);
 					local->nb -= cnt * 2 + 2;
 				}
 			}

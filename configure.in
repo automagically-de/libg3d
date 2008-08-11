@@ -127,6 +127,7 @@ AC_OUTPUT(
 	plugins/import/imp_iob/Makefile
 	plugins/import/imp_joe/Makefile
 	plugins/import/imp_kmz/Makefile
+	plugins/import/imp_ldraw/Makefile
 	plugins/import/imp_leocad/Makefile
 	plugins/import/imp_lwo/Makefile
 	plugins/import/imp_max/Makefile
@@ -144,6 +145,7 @@ AC_OUTPUT(
 	plugins/import/imp_ta/Makefile
 	plugins/import/imp_test/Makefile
 	plugins/import/imp_vrml/Makefile
+	plugins/import/imp_vrml2/Makefile
 	src/Makefile
 	programs/Makefile
 	tests/Makefile

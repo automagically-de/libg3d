@@ -26,11 +26,29 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <g3d/stream.h>
 #include <g3d/read.h>
 #include <g3d/iff.h>
 #include <g3d/context.h>
 #include <g3d/debug.h>
 
+gboolean g3d_iff_check(G3DStream *stream, guint32 *id, gsize *len)
+{
+	guint32 magic, form_bytes;
+
+	magic = g3d_stream_read_int32_be(stream);
+	if((magic != G3D_IFF_MKID('F','O','R','M')) &&
+		(magic != G3D_IFF_MKID('F','O','R','4'))) {
+		g_warning("IFF: %s is not a valid IFF stream", stream->uri);
+		return FALSE;
+	}
+	form_bytes = g3d_stream_read_int32_be(stream);
+	*id = g3d_stream_read_int32_be(stream);
+	*len = form_bytes - 4;
+	return TRUE;
+}
+
+#ifndef G3D_DISABLE_DEPRECATED
 FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len)
 {
 	FILE *f;
@@ -59,7 +77,26 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len)
 
 	return f;
 }
+#endif /* !G3D_DISABLE_DEPRECATED */
 
+gsize g3d_iff_read_chunk(G3DStream *stream, guint32 *id, gsize *len,
+	guint32 flags)
+{
+	*id = g3d_stream_read_int32_be(stream);
+	if(flags & G3D_IFF_LEN16) {
+		*len = (flags & G3D_IFF_LE) ?
+			g3d_stream_read_int16_le(stream) :
+			g3d_stream_read_int16_be(stream);
+		return 6 + *len + (*len % 2);
+	} else {
+		*len = (flags & G3D_IFF_LE) ?
+			g3d_stream_read_int32_le(stream) :
+			g3d_stream_read_int32_be(stream);
+		return 8 + *len + (*len % 2);
+	}
+}
+
+#ifndef G3D_DISABLE_DEPRECATED
 int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len, guint32 flags)
 {
 	*id = g3d_read_int32_be(f);
@@ -76,6 +113,7 @@ int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len, guint32 flags)
 		return 8 + *len + (*len % 2);
 	}
 }
+#endif /* G3D_DISABLE_DEPRECATED */
 
 gchar *g3d_iff_id_to_text(guint32 id)
 {
@@ -99,7 +137,7 @@ gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid)
 	return (id & 0xFF) == tid[3];
 }
 
-g3d_iff_chunk_info *g3d_iff_get_chunk_info(g3d_iff_chunk_info *chunks,
+G3DIffChunkInfo *g3d_iff_get_chunk_info(G3DIffChunkInfo *chunks,
 	guint32 chunk_id)
 {
 	guint32 i = 0;
@@ -113,7 +151,7 @@ g3d_iff_chunk_info *g3d_iff_get_chunk_info(g3d_iff_chunk_info *chunks,
 	return NULL;
 }
 
-void g3d_iff_debug_chunk(g3d_iff_chunk_info *info, guint32 chunk_id,
+void g3d_iff_debug_chunk(G3DIffChunkInfo *info, guint32 chunk_id,
 	guint32 chunk_len, gchar chunk_type, guint32 pos, guint32 level)
 {
 	gchar *tid;
@@ -133,19 +171,27 @@ void g3d_iff_debug_chunk(g3d_iff_chunk_info *info, guint32 chunk_id,
 	g_free(tid);
 }
 
-gpointer g3d_iff_handle_chunk(g3d_iff_gdata *global, g3d_iff_ldata *plocal,
-	g3d_iff_chunk_info *chunks, guint32 flags)
+gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
+	G3DIffChunkInfo *chunks, guint32 flags)
 {
 	gpointer object = NULL;
 	guint32 chunk_id, chunk_len;
-	g3d_iff_ldata *sublocal;
-	g3d_iff_chunk_info *info;
+	G3DIffLocal *sublocal;
+	G3DIffChunkInfo *info;
 
 	/* read info for one chunk */
-	g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, 0);
+	if(global->stream)
+		g3d_iff_read_chunk(global->stream, &chunk_id, &chunk_len, 0);
+	else
+#ifndef G_DISABLE_DEPRECATED
+		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, 0);
+#else
+		return NULL;
+#endif
+
 	plocal->nb -= 8;
 
-	sublocal = g_new0(g3d_iff_ldata, 1);
+	sublocal = g_new0(G3DIffLocal, 1);
 	sublocal->parent_id = plocal->id;
 	sublocal->id = chunk_id;
 	sublocal->object = plocal->object;
@@ -163,8 +209,17 @@ gpointer g3d_iff_handle_chunk(g3d_iff_gdata *global, g3d_iff_ldata *plocal,
 		if(info->callback)
 			info->callback(global, sublocal);
 
-		if(sublocal->nb > 0)
-			fseek(global->f, sublocal->nb, SEEK_CUR);
+		if(sublocal->nb > 0) {
+			if(global->stream) {
+				g3d_stream_seek(global->stream, sublocal->nb, G_SEEK_CUR);
+			} else {
+#ifndef G_DISABLE_DEPRECATED
+				fseek(global->f, sublocal->nb, SEEK_CUR);
+#else
+				return NULL;
+#endif
+			}
+		}
 	}
 
 	object = sublocal->level_object;
@@ -173,11 +228,23 @@ gpointer g3d_iff_handle_chunk(g3d_iff_gdata *global, g3d_iff_ldata *plocal,
 	return object;
 }
 
-gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
-	g3d_iff_chunk_info *chunks, guint32 flags)
+static goffset g3d_iff_pos(G3DIffGlobal *global)
 {
-	g3d_iff_ldata *sublocal;
-	g3d_iff_chunk_info *info;
+	if(global->stream)
+		return g3d_stream_tell(global->stream);
+	else
+#ifndef G_DISABLE_DEPRECATED
+		return ftell(global->f);
+#else
+		return -1;
+#endif
+}
+
+gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
+	G3DIffChunkInfo *chunks, guint32 flags)
+{
+	G3DIffLocal *sublocal;
+	G3DIffChunkInfo *info;
 	guint32 chunk_id, chunk_len, chunk_mod, chunk_type;
 	gchar *tid;
 	gpointer level_object;
@@ -185,19 +252,26 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 	level_object = NULL;
 
+#ifndef G3D_DISABLE_DEPRECATED
 	if(global->max_fpos == 0)
 		global->max_fpos = local->nb + 12;
-
+#endif
 	while(local->nb >= ((flags & G3D_IFF_LEN16) ? 6 : 8))
 	{
 		chunk_id = 0;
 
-		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, flags);
+		if(global->stream)
+			g3d_iff_read_chunk(global->stream, &chunk_id, &chunk_len, flags);
+		else
+#ifndef G3D_DISABLE_DEPRECATED
+			g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, flags);
+#else
+			return FALSE;
+#endif
 		local->nb -= ((flags & G3D_IFF_LEN16) ? 6 : 8);
 
 		chunk_mod = flags & 0x0F;
-		if(chunk_mod == 0)
-		{
+		if(chunk_mod == 0) {
 			g_warning("[IFF] mod = 0 (flags: 0x%02X\n)", flags);
 			chunk_mod = 2;
 		}
@@ -210,7 +284,7 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 			case 0xFFFFFFFF:
 				g_warning(
 					"[IFF] got invalid ID, skipping %d bytes @ 0x%08x",
-					local->nb, (unsigned int)ftell(global->f));
+					local->nb, (guint32)g3d_iff_pos(global));
 
 				/* skip rest of parent chunk */
 				if(local->nb > 0)
@@ -222,7 +296,14 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 				break;
 
 			case G3D_IFF_MKID('F','O','R','4'):
-				chunk_id = g3d_read_int32_be(global->f);
+				if(global->stream)
+					chunk_id = g3d_stream_read_int32_be(global->stream);
+				else
+#ifndef G3D_DISABLE_DEPRECATED
+					chunk_id = g3d_read_int32_be(global->f);
+#else
+					return FALSE;
+#endif
 				chunk_len -= 4;
 				chunk_mod = 4;
 				chunk_type = 'F';
@@ -230,7 +311,14 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 				break;
 
 			case G3D_IFF_MKID('L','I','S','4'):
-				chunk_id = g3d_read_int32_be(global->f);
+				if(global->stream)
+					chunk_id = g3d_stream_read_int32_be(global->stream);
+				else
+#ifndef G3D_DISABLE_DEPRECATED
+					chunk_id = g3d_read_int32_be(global->f);
+#else
+					return FALSE;
+#endif
 				chunk_len -= 4;
 				chunk_mod = 4;
 				chunk_type = 'L';
@@ -243,13 +331,12 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 
 		info = g3d_iff_get_chunk_info(chunks, chunk_id);
 
-		if(info)
-		{
+		if(info) {
 			g3d_iff_debug_chunk(info, chunk_id, chunk_len, chunk_type,
 				(guint32)(ftell(global->f) - ((chunk_type == ' ') ? 8 : 12)),
 				local->level);
 
-			sublocal = g_new0(g3d_iff_ldata, 1);
+			sublocal = g_new0(G3DIffLocal, 1);
 			sublocal->parent_id = local->id;
 			sublocal->id = chunk_id;
 			sublocal->object = local->object;
@@ -258,67 +345,94 @@ gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
 			sublocal->nb = chunk_len;
 
 			if(info->callback)
-			{
 				info->callback(global, sublocal);
-			}
 
-			if(info->container)
-			{
+			if(info->container) {
 				/* LWO has 16 bit length in subchunks */
 				if(flags & G3D_IFF_SUBCHUNK_LEN16)
-				{
 					g3d_iff_read_ctnr(global, sublocal, chunks,
 						flags | G3D_IFF_LEN16);
-				}
 				else
-				{
 					g3d_iff_read_ctnr(global, sublocal, chunks, flags);
-				}
 			}
 
-			if(info->container && info->callback)
-			{
+			if(info->container && info->callback) {
 				sublocal->finalize = TRUE;
 				info->callback(global, sublocal);
 			}
 
-			if(sublocal->nb > 0)
-			{
-				fseek(global->f, sublocal->nb, SEEK_CUR);
+			if(sublocal->nb > 0) {
+				if(global->stream) {
+					g3d_stream_seek(global->stream, sublocal->nb, G_SEEK_CUR);
+				} else {
+#ifndef G3D_DISABLE_DEPRECATED
+					fseek(global->f, sublocal->nb, SEEK_CUR);
+#else
+					return FALSE;
+#endif
+				}
 			}
-
 			level_object = sublocal->level_object;
 
 			g_free(sublocal);
-		}
-		else
-		{
+		} else {
 			tid = g3d_iff_id_to_text(chunk_id);
 			g_warning("[IFF] unknown chunk type \"%s\" (%d) @ 0x%08x",
-				tid, chunk_len, (unsigned int)ftell(global->f) - 8);
+				tid, chunk_len, (guint32)g3d_iff_pos(global) - 8);
 			g_free(tid);
-			fseek(global->f, chunk_len, SEEK_CUR);
+			if(global->stream)
+				g3d_stream_seek(global->stream, chunk_len, G_SEEK_CUR);
+			else
+#ifndef G3D_DISABLE_DEPRECATED
+				fseek(global->f, chunk_len, SEEK_CUR);
+#else
+				return FALSE;
+#endif
 		}
 
 		local->nb -= chunk_len;
 
-		if(chunk_len % chunk_mod)
-		{
-			fseek(global->f, chunk_mod - (chunk_len % chunk_mod), SEEK_CUR);
+		if(chunk_len % chunk_mod) {
+			if(global->stream)
+				g3d_stream_seek(global->stream,
+					chunk_mod - (chunk_len % chunk_mod), G_SEEK_CUR);
+			else
+#ifndef G3D_DISABLE_DEPRECATED
+				fseek(global->f,
+					chunk_mod - (chunk_len % chunk_mod), SEEK_CUR);
+#else
+				return FALSE;
+#endif
 			local->nb -= (chunk_mod - (chunk_len % chunk_mod));
 		}
 
-		fpos = ftell(global->f);
-		g3d_context_update_progress_bar(global->context,
-			((gfloat)fpos / (gfloat)global->max_fpos), TRUE);
+		if(global->stream) {
+			g3d_context_update_progress_bar(global->context,
+				(gfloat)g3d_stream_tell(global->stream) /
+				(gfloat)g3d_stream_size(global->stream), TRUE);
+		}
+#ifndef G3D_DISABLE_DEPRECATED
+		else {
+			fpos = ftell(global->f);
+			g3d_context_update_progress_bar(global->context,
+				((gfloat)fpos / (gfloat)global->max_fpos), TRUE);
+		}
+#endif
 	} /* nb >= 8/6 */
 
 	if(local->nb > 0)
 	{
 		g_warning("[IFF] skipping %d bytes at the end of chunk",
 			local->nb);
-
-		fseek(global->f, local->nb, SEEK_CUR);
+		if(global->stream) {
+			g3d_stream_seek(global->stream, local->nb, G_SEEK_CUR);
+		} else {
+#ifndef G3D_DISABLE_DEPRECATED
+			fseek(global->f, local->nb, SEEK_CUR);
+#else
+			return FALSE;
+#endif
+		}
 		local->nb = 0;
 	}
 

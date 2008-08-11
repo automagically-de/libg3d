@@ -23,7 +23,9 @@
 #ifndef __G3D_IFF_H__
 #define __G3D_IFF_H__
 
+#ifndef G3D_DISABLE_DEPRECATED
 #include <stdio.h>
+#endif
 #include <glib.h>
 
 #include <g3d/types.h>
@@ -45,15 +47,25 @@
 
 G_BEGIN_DECLS
 
+#ifndef G3D_DISABLE_DEPRECATED
+#define g3d_iff_gdata G3DIffGlobal
+#define g3d_iff_ldata G3DIffLocal
+#define g3d_iff_chunk_callback G3DIffChunkCallback
+#define g3d_iff_chunk_info G3DIffChunkInfo
+#endif
+
 /* global data */
 typedef struct {
 	G3DContext *context;
 	G3DModel *model;
-	FILE *f;
+	G3DStream *stream;
 	guint32 flags;
 	gpointer user_data;
+#ifndef G3D_DISABLE_DEPRECATED
+	FILE *f;
 	long int max_fpos;
-} g3d_iff_gdata;
+#endif
+} G3DIffGlobal;
 
 /* local data */
 typedef struct {
@@ -64,18 +76,45 @@ typedef struct {
 	gpointer level_object;
 	gint32 nb;
 	gboolean finalize;
-} g3d_iff_ldata;
+} G3DIffLocal;
 
-typedef gboolean (*g3d_iff_chunk_callback)(
-	g3d_iff_gdata *global, g3d_iff_ldata *local);
+typedef gboolean (* G3DIffChunkCallback)(
+	G3DIffGlobal *global, G3DIffLocal *local);
 
 typedef struct {
 	gchar *id;
 	gchar *description;
 	gboolean container;
-	g3d_iff_chunk_callback callback;
-} g3d_iff_chunk_info;
+	G3DIffChunkCallback callback;
+} G3DIffChunkInfo;
 
+/**
+ * g3d_iff_check:
+ * @stream: stream containing IFF file to check
+ * @id: top level ID (out)
+ * @len: length of top level container (out)
+ *
+ * Checks a stream for a valid IFF signature and reads the top level container.
+ *
+ * Returns: TRUE on success (valid IFF), FALSE else
+ */
+gboolean g3d_iff_check(G3DStream *stream, guint32 *id, gsize *len);
+
+/**
+ * g3d_iff_read_chunk:
+ * @stream: stream to read from
+ * @id: ID of chunk (out)
+ * @len: length of chunk (excluding header) (out)
+ * @flags: flags
+ *
+ * Reads one chunk header from an IFF file.
+ *
+ * Returns: real length of chunk including header and possible padding byte
+ */
+gsize g3d_iff_read_chunk(G3DStream *stream, guint32 *id, gsize *len,
+	guint32 flags);
+
+#ifndef G3D_DISABLE_DEPRECATED
 /**
  * g3d_iff_open:
  * @filename: file name of IFF file
@@ -100,17 +139,17 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len);
  * Returns: real length of chunk including header and possible padding byte
  */
 int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len, guint32 flags);
+#endif /* G3D_DISABLE_DEPRECATED */
 
 gchar *g3d_iff_id_to_text(guint32 id);
 
 gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid);
 
-gpointer g3d_iff_handle_chunk(g3d_iff_gdata *global, g3d_iff_ldata *plocal,
-	g3d_iff_chunk_info *chunks, guint32 flags);
+gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
+	G3DIffChunkInfo *chunks, guint32 flags);
 
-gboolean g3d_iff_read_ctnr(g3d_iff_gdata *global, g3d_iff_ldata *local,
-	g3d_iff_chunk_info *chunks, guint32 flags);
-
+gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
+	G3DIffChunkInfo *chunks, guint32 flags);
 
 G_END_DECLS
 

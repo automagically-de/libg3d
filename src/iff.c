@@ -171,6 +171,18 @@ void g3d_iff_debug_chunk(G3DIffChunkInfo *info, guint32 chunk_id,
 	g_free(tid);
 }
 
+static goffset g3d_iff_pos(G3DIffGlobal *global)
+{
+	if(global->stream)
+		return g3d_stream_tell(global->stream);
+	else
+#ifndef G_DISABLE_DEPRECATED
+		return ftell(global->f);
+#else
+		return -1;
+#endif
+}
+
 gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
 	G3DIffChunkInfo *chunks, guint32 flags)
 {
@@ -204,7 +216,7 @@ gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
 	if(info)
 	{
 		g3d_iff_debug_chunk(info, chunk_id, chunk_len, 'X',
-			(guint32)(ftell(global->f) - 8), plocal->level);
+			(guint32)g3d_iff_pos(global) - 8, plocal->level);
 
 		if(info->callback)
 			info->callback(global, sublocal);
@@ -226,18 +238,6 @@ gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
 	g_free(sublocal);
 
 	return object;
-}
-
-static goffset g3d_iff_pos(G3DIffGlobal *global)
-{
-	if(global->stream)
-		return g3d_stream_tell(global->stream);
-	else
-#ifndef G_DISABLE_DEPRECATED
-		return ftell(global->f);
-#else
-		return -1;
-#endif
 }
 
 gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
@@ -333,7 +333,7 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 
 		if(info) {
 			g3d_iff_debug_chunk(info, chunk_id, chunk_len, chunk_type,
-				(guint32)(ftell(global->f) - ((chunk_type == ' ') ? 8 : 12)),
+				(guint32)g3d_iff_pos(global) - ((chunk_type == ' ') ? 8 : 12),
 				local->level);
 
 			sublocal = g_new0(G3DIffLocal, 1);

@@ -28,6 +28,7 @@
 #include <g3d/matrix.h>
 #include <g3d/face.h>
 #include <g3d/texture.h>
+#include <g3d/object.h>
 
 void g3d_object_free(G3DObject *object)
 {
@@ -174,7 +175,7 @@ gboolean g3d_object_transform(G3DObject *object, gfloat *matrix)
 
 G3DObject *g3d_object_duplicate(G3DObject *object)
 {
-	G3DObject *new;
+	G3DObject *new, *sub, *newsub;
 	G3DFace *face, *oface;
 	GSList *litem;
 
@@ -194,10 +195,8 @@ G3DObject *g3d_object_duplicate(G3DObject *object)
 	/* TODO: implement? */
 
 	/* faces */
-	litem = object->faces;
-	while(litem)
-	{
-		oface = (G3DFace *)litem->data;
+	for(litem = object->faces; litem != NULL; litem = litem->next) {
+		oface = litem->data;
 
 		face = g_new0(G3DFace, 1);
 		face->material = oface->material;
@@ -222,8 +221,13 @@ G3DObject *g3d_object_duplicate(G3DObject *object)
 		}
 
 		new->faces = g_slist_prepend(new->faces, face);
+	}
 
-		litem = litem->next;
+	/* sub-objects */
+	for(litem = object->objects; litem != NULL; litem = litem->next) {
+		sub = litem->data;
+		newsub = g3d_object_duplicate(sub);
+		new->objects = g_slist_append(new->objects, newsub);
 	}
 
 	return new;

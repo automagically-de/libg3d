@@ -129,34 +129,28 @@ gboolean lwo_cb_PNTS(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	LwoObject *obj;
 	G3DObject *object;
-	gint32 i, j, off;
+	gint32 i, off;
 
 	obj = (LwoObject *)global->user_data;
 	g_return_val_if_fail(obj != NULL, FALSE);
 
-	if(global->flags & LWO_FLAG_LWO2)
-	{
+	if(global->flags & LWO_FLAG_LWO2) {
 		object = lwo_create_object(global->stream, global->model,
 			global->flags);
 		obj->object = object;
 
-		if(obj->tex_vertices)
-		{
+		if(obj->tex_vertices) {
 			g_free(obj->tex_vertices);
 			obj->tex_vertices = NULL;
 		}
-	}
-	else
-	{
+	} else {
 		object = (G3DObject *)obj->object;
-		if(object == NULL)
-		{
+		if(object == NULL) {
 			object = lwo_create_object(global->stream, global->model,
 				global->flags);
 			obj->object = object;
 		}
 	}
-
 	off = object->vertex_count;
 	object->vertex_count += (local->nb / 12);
 	g_return_val_if_fail(object->vertex_count >= 3, FALSE);
@@ -165,12 +159,14 @@ gboolean lwo_cb_PNTS(G3DIffGlobal *global, G3DIffLocal *local)
 		sizeof(gfloat) * object->vertex_count * 3);
 
 	for(i = off; i < object->vertex_count; i ++) {
-		for(j = 0; j < 3; j ++)
-			object->vertex_data[i * 3 + j] =
-				g3d_stream_read_float_be(global->stream);
+		object->vertex_data[i * 3 + 0] =
+			g3d_stream_read_float_be(global->stream);
+		object->vertex_data[i * 3 + 1] =
+			g3d_stream_read_float_be(global->stream);
+		object->vertex_data[i * 3 + 2] =
+			-g3d_stream_read_float_be(global->stream);
 		local->nb -= 12;
 	}
-
 	return TRUE;
 }
 
@@ -595,7 +591,7 @@ gboolean lwo_cb_VMAP(G3DIffGlobal *global, G3DIffLocal *local)
 
 				obj->tex_vertices[index * 2 + 0] =
 					g3d_stream_read_float_be(global->stream);
-				obj->tex_vertices[index * 2 + 1] =
+				obj->tex_vertices[index * 2 + 1] = 1.0 -
 					g3d_stream_read_float_be(global->stream);
 #if DEBUG > 0
 				if((obj->tex_vertices[index * 2 + 0] > 1.0) ||

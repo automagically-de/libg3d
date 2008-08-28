@@ -44,7 +44,8 @@ fi
 AM_CONDITIONAL([HAVE_LIBXML2], test "x$have_libxml2" = "xtrue")
 
 # libgsf
-PKG_CHECK_MODULES(LIBGSF, libgsf-1 >= 1.0.0, have_libgsf=true)
+PKG_CHECK_MODULES(LIBGSF, libgsf-1 >= 1.0.0,
+	[have_libgsf=true], [have_libgsf=false])
 if test "x$have_libgsf" = "xtrue" ; then
 AC_DEFINE([HAVE_LIBGSF], 1, [have GSF library])
 fi
@@ -118,6 +119,8 @@ AC_OUTPUT(
 	plugins/import/imp_acf/Makefile
 	plugins/import/imp_ar/Makefile
 	plugins/import/imp_ase/Makefile
+	plugins/import/imp_blend/Makefile
+	plugins/import/imp_c4d/Makefile
 	plugins/import/imp_cob/Makefile
 	plugins/import/imp_dae/Makefile
 	plugins/import/imp_dxf/Makefile

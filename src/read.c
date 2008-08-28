@@ -54,6 +54,20 @@ gint32 g3d_read_int32_le(FILE *f)
 		(g3d_read_int8(f) << 16) | (g3d_read_int8(f) << 24);
 }
 
+static void g3d_read_bytes(FILE *f, guint8 *buf, gsize n)
+{
+	gint32 i;
+	for(i = 0; i < n; i ++)
+		buf[i] = g3d_read_int8(f);
+}
+
+static void g3d_read_bytes_swap(FILE *f, guint8 *buf, gsize n)
+{
+	gint32 i;
+	for(i = (n - 1); i >= 0; i --)
+		buf[i] = g3d_read_int8(f);
+}
+
 gfloat g3d_read_float_be(FILE *f)
 {
 	union {
@@ -61,11 +75,11 @@ gfloat g3d_read_float_be(FILE *f)
 		guint8 u[4];
 	} u;
 
-	u.u[3] = g3d_read_int8(f);
-	u.u[2] = g3d_read_int8(f);
-	u.u[1] = g3d_read_int8(f);
-	u.u[0] = g3d_read_int8(f);
-
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	g3d_read_bytes_swap(f, u.u, 4);
+#elif G_BYTE_ORDER == G_BIG_ENDIAN
+	g3d_read_bytes(f, u.u, 4);
+#endif
 	return u.f;
 }
 
@@ -76,11 +90,11 @@ gfloat g3d_read_float_le(FILE *f)
 		guint8 u[4];
 	} u;
 
-	u.u[0] = g3d_read_int8(f);
-	u.u[1] = g3d_read_int8(f);
-	u.u[2] = g3d_read_int8(f);
-	u.u[3] = g3d_read_int8(f);
-
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	g3d_read_bytes(f, u.u, 4);
+#elif G_BYTE_ORDER == G_BIG_ENDIAN
+	g3d_read_bytes_swap(f, u.u, 4);
+#endif
 	return u.f;
 }
 
@@ -90,11 +104,12 @@ gdouble g3d_read_double_be(FILE *f)
 		gdouble d;
 		guint8 u[8];
 	} u;
-	gint32 i;
 
-	for(i = 7; i >= 0; i --)
-		u.u[i] = g3d_read_int8(f);
-
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	g3d_read_bytes_swap(f, u.u, 8);
+#elif G_BYTE_ORDER == G_BIG_ENDIAN
+	g3d_read_bytes(f, u.u, 8);
+#endif
 	return u.d;
 }
 
@@ -104,11 +119,12 @@ gdouble g3d_read_double_le(FILE *f)
 		gdouble d;
 		guint8 u[8];
 	} u;
-	gint32 i;
 
-	for(i = 0; i < 8; i ++)
-		u.u[i] = g3d_read_int8(f);
-
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	g3d_read_bytes(f, u.u, 8);
+#elif G_BYTE_ORDER == G_BIG_ENDIAN
+	g3d_read_bytes_swap(f, u.u, 8);
+#endif
 	return u.d;
 }
 

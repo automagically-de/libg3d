@@ -5,6 +5,7 @@ SUBDIRS = \
 	imp_acf \
 	imp_ar \
 	imp_ase \
+	imp_blend \
 	imp_cob \
 	imp_dae \
 	imp_dxf \

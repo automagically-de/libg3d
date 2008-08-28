@@ -160,11 +160,11 @@ gboolean lwo_cb_PNTS(G3DIffGlobal *global, G3DIffLocal *local)
 
 	for(i = off; i < object->vertex_count; i ++) {
 		object->vertex_data[i * 3 + 0] =
-			g3d_stream_read_float_be(global->stream);
+			-g3d_stream_read_float_be(global->stream);
 		object->vertex_data[i * 3 + 1] =
 			g3d_stream_read_float_be(global->stream);
 		object->vertex_data[i * 3 + 2] =
-			-g3d_stream_read_float_be(global->stream);
+			g3d_stream_read_float_be(global->stream);
 		local->nb -= 12;
 	}
 	return TRUE;
@@ -176,11 +176,10 @@ gboolean lwo_cb_POLS(G3DIffGlobal *global, G3DIffLocal *local)
 	LwoObject *obj;
 	G3DObject *object;
 	G3DFace *face;
+	gboolean skip_face;
 	guint32 type;
 	gint32 n = 0, i, nmat, det_cnt, cnt;
-#if 0
-	gint16 i16;
-#endif
+	gint16 index;
 	gchar *tmp;
 
 	obj = (LwoObject *)global->user_data;
@@ -189,24 +188,25 @@ gboolean lwo_cb_POLS(G3DIffGlobal *global, G3DIffLocal *local)
 	object = (G3DObject *)obj->object;
 	g_return_val_if_fail(object != NULL, FALSE);
 
-	if(global->flags & LWO_FLAG_LWO2)
-	{
+	if(global->flags & LWO_FLAG_LWO2) {
 		type = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 
-		if((type != G3D_IFF_MKID('F', 'A', 'C', 'E')) &&
-			(type != G3D_IFF_MKID('P', 'T', 'C', 'H')))
-		{
-			tmp = g3d_iff_id_to_text(type);
-			g_warning("[LWO] unhandled polygon type %s", tmp);
-			g_free(tmp);
-			return FALSE;
+		switch(type) {
+			case G3D_IFF_MKID('F', 'A', 'C', 'E'):
+			case G3D_IFF_MKID('P', 'T', 'C', 'H'):
+				break;
+			default:
+				tmp = g3d_iff_id_to_text(type);
+				g_warning("[LWO] unhandled polygon type %s", tmp);
+				g_free(tmp);
+				return FALSE;
 		}
 	}
 
-	while(local->nb > 0)
-	{
+	while(local->nb > 0) {
 		n ++;
+		skip_face = FALSE;
 		face = g_new0(G3DFace, 1);
 		face->vertex_count = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
@@ -216,41 +216,26 @@ gboolean lwo_cb_POLS(G3DIffGlobal *global, G3DIffLocal *local)
 
 		face->vertex_indices = g_new0(guint32, face->vertex_count);
 
-		if(obj->tex_vertices)
-		{
+		if(obj->tex_vertices) {
 			face->flags |= G3D_FLAG_FAC_TEXMAP;
 			face->tex_vertex_count = face->vertex_count;
 			face->tex_vertex_data = g_new0(gfloat, face->tex_vertex_count * 2);
 		}
 
-		for(i = 0; i < face->vertex_count; i ++)
-		{
-			if(global->flags & LWO_FLAG_LWO2)
-			{
+		for(i = 0; i < face->vertex_count; i ++) {
+			if(global->flags & LWO_FLAG_LWO2) {
 				local->nb -= lwo_read_vx(global->stream,
 					&(face->vertex_indices[i]));
-			}
-			else
-			{
-				face->vertex_indices[i] =
-					g3d_stream_read_int16_be(global->stream);
+			} else {
+				index = g3d_stream_read_int16_be(global->stream);
 				local->nb -= 2;
-#if 0
-				i16 = g3d_stream_read_int16_be(global->stream);
-				local->nb -= 2;
-
-				if(i16 < 0)
-					face->vertex_indices[i] = - i16;
-				else
-					face->vertex_indices[i] = i16;
-#endif
-
-				if(face->vertex_indices[i] > object->vertex_count)
-					face->vertex_indices[i] = 0;
+				if(index < 0) {
+					skip_face = TRUE;
+				} else
+					face->vertex_indices[i] = index;
 			}
 
-			if(obj->tex_vertices)
-			{
+			if(obj->tex_vertices) {
 				face->tex_vertex_data[i * 2 + 0] =
 					obj->tex_vertices[face->vertex_indices[i] * 2 + 0];
 				face->tex_vertex_data[i * 2 + 1] =
@@ -258,13 +243,11 @@ gboolean lwo_cb_POLS(G3DIffGlobal *global, G3DIffLocal *local)
 			}
 		} /* i: 0..face->vertex_count */
 
-		if(!(global->flags & LWO_FLAG_LWO2))
-		{
+		if(!(global->flags & LWO_FLAG_LWO2)) {
 			nmat = g3d_stream_read_int16_be(global->stream);
 			local->nb -= 2;
 
-			if(nmat < 0)
-			{
+			if(nmat < 0) {
 				/* detail polygons, skipped */
 				det_cnt = g3d_stream_read_int16_be(global->stream);
 				local->nb -= 2;
@@ -275,35 +258,28 @@ gboolean lwo_cb_POLS(G3DIffGlobal *global, G3DIffLocal *local)
 					g3d_stream_skip(global->stream, cnt * 2 + 2);
 					local->nb -= cnt * 2 + 2;
 				}
-			}
-			else if(nmat == 0)
-			{
+			} else if(nmat == 0) {
 				nmat = 1;
 			}
 
 			face->material = g_slist_nth_data(global->model->materials, nmat);
 
-			if(face->material == NULL)
-			{
+			if(face->material == NULL) {
 #if 0
 				g_warning("[LWO] face->material is NULL (#%d)\n", nmat - 1);
 #endif
 				face->material = g_slist_nth_data(global->model->materials, 0);
 			}
-
-		} /* !LWO2 */
-		else
-		{
+		} /* !LWO2 */ else {
 			face->material = g_slist_nth_data(global->model->materials, 0);
 		} /* LWO2 */
 
-		if(face->vertex_count < 3)
-		{
+		if(skip_face || (face->vertex_count < 3)) {
+			if(face->tex_vertex_data)
+				g_free(face->tex_vertex_data);
 			g_free(face->vertex_indices);
 			g_free(face);
-		}
-		else
-		{
+		} else {
 			object->faces = g_slist_prepend(object->faces, face);
 		}
 

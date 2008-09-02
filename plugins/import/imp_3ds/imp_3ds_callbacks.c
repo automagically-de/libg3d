@@ -22,7 +22,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/texture.h>
 #include <g3d/vector.h>
 #include <g3d/matrix.h>

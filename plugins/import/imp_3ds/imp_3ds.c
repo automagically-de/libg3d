@@ -25,7 +25,7 @@
 #include <stdarg.h>
 
 #include <g3d/types.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
 
@@ -36,31 +36,21 @@
 /* plugin interface                                                          */
 /*****************************************************************************/
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer plugin_data)
 {
-	FILE *f;
 	gint32 nbytes, magic;
 	gboolean retval;
 	x3ds_global_data global;
 	x3ds_parent_data *parent;
-	long int fpos;
 
-	f = fopen(filename, "r");
-	if(f == NULL)
-	{
-		g_warning("can't open file '%s'", filename);
-		return FALSE;
-	}
-
-	magic = g3d_read_int16_le(f);
+	magic = g3d_stream_read_int16_le(stream);
 	if((magic != 0x4D4D) && (magic != 0xC23D))
 	{
-		g_warning("file %s is not a 3ds file", filename);
-		fclose(f);
+		g_warning("file %s is not a 3ds file", stream->uri);
 		return FALSE;
 	}
-	nbytes = g3d_read_int32_le(f);
+	nbytes = g3d_stream_read_int32_le(stream);
 	nbytes -= 6;
 #if DEBUG > 0
 	g_printerr("[%4.4X] 3DS file: main length: %d\n", magic, nbytes);
@@ -68,15 +58,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	global.context = context;
 	global.model = model;
-	global.f = f;
+	global.stream = stream;
 	global.scale = 1.0;
 	global.max_tex_id = 0;
-
-	/* get size of file */
-	fpos = ftell(global.f);
-	fseek(global.f, 0, SEEK_END);
-	global.max_fpos = ftell(global.f);
-	fseek(global.f, fpos, SEEK_SET);
 
 	parent = g_new0(x3ds_parent_data, 1);
 	parent->id = magic;
@@ -86,11 +70,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	g_free(parent);
 
-	fclose(f);
-
 #if DEBUG > 0
 	if(retval)
-		g_printerr("imp_3ds.c: %s successfully loaded\n", filename);
+		g_printerr("imp_3ds.c: %s successfully loaded\n", stream->uri);
 #endif
 
 	return retval;
@@ -118,10 +100,9 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	level_object = NULL;
 
-	while(parent->nb > 0)
-	{
-		chunk_id  = g3d_read_int16_le(global->f);
-		chunk_len = g3d_read_int32_le(global->f);
+	while(parent->nb > 0) {
+		chunk_id  = g3d_stream_read_int16_le(global->stream);
+		chunk_len = g3d_stream_read_int32_le(global->stream);
 		parent->nb -= 6;
 		chunk_len -= 6;
 
@@ -129,16 +110,14 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 		while((x3ds_chunks[i].id != 0) && (x3ds_chunks[i].id != chunk_id))
 			i ++;
 
-		if(x3ds_chunks[i].id == chunk_id)
-		{
+		if(x3ds_chunks[i].id == chunk_id) {
 			g_debug("\\%s(%d)[0x%04X][%c%c] %s (%d bytes)",
 				padding + (strlen(padding) - parent->level), parent->level,
 				chunk_id,
 				x3ds_chunks[i].container ? 'c' : ' ',
 				x3ds_chunks[i].callback ? 'f' : ' ',
 				x3ds_chunks[i].desc, chunk_len);
-			if (chunk_id==0)
-			{
+			if (chunk_id==0) {
 				g_printerr("error: bad chunk id\n");
 				return FALSE;
 			}
@@ -150,8 +129,7 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 			subparent->level_object = level_object;
 			subparent->nb = chunk_len;
 
-			if(x3ds_chunks[i].callback)
-			{
+			if(x3ds_chunks[i].callback) {
 				/* callback may change "nb" and "object" of
 				 * "subparent" structure for following container run */
 
@@ -160,30 +138,23 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 
 			subparent->id = chunk_id;
 
-			if(x3ds_chunks[i].container)
-			{
-				if(x3ds_read_ctnr(global, subparent) == FALSE)
-				{
+			if(x3ds_chunks[i].container) {
+				if(x3ds_read_ctnr(global, subparent) == FALSE) {
 					/* abort on error */
 					return FALSE;
 				}
 			}
 
 			if(subparent->nb)
-			{
-				fseek(global->f, subparent->nb, SEEK_CUR);
-			}
+				g3d_stream_skip(global->stream, subparent->nb);
 
 			level_object = subparent->level_object;
 
 			g_free(subparent);
-		}
-		else
-		{
+		} else {
 			g_printerr("[3DS] unknown chunk type 0x%04X\n", chunk_id);
-			fseek(global->f, chunk_len, SEEK_CUR);
+			g3d_stream_skip(global->stream, chunk_len);
 		}
-
 		parent->nb -= chunk_len;
 
 		/* update progress bar */
@@ -195,30 +166,29 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 
 void x3ds_update_progress(x3ds_global_data *global, guint32 level)
 {
-	long int fpos;
+	goffset fpos;
 
 	/* update progress bar */
 	if(level < 4) {
-		fpos = ftell(global->f);
+		fpos = g3d_stream_tell(global->stream);
 		g3d_context_update_progress_bar(global->context,
-			((gfloat)fpos / (gfloat)global->max_fpos), TRUE);
+			((gfloat)fpos / (gfloat)g3d_stream_size(global->stream)), TRUE);
 	}
 }
 
-gint32 x3ds_read_cstr(FILE *f, char *string)
+gint32 x3ds_read_cstr(G3DStream *stream, gchar *string)
 {
 	gint32 n = 0;
 	char c;
-	do
-	{
-		c = g3d_read_int8(f);
+	do {
+		c = g3d_stream_read_int8(stream);
 		string[n] = c;
 		n++;
 	} while(c != 0);
 	return n;
 }
 
-G3DObject *x3ds_newobject(G3DModel *model, const char *name)
+G3DObject *x3ds_newobject(G3DModel *model, const gchar *name)
 {
 	G3DObject *object = g_malloc0(sizeof(G3DObject));
 	G3DMaterial *material = g3d_material_new();

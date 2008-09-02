@@ -25,14 +25,14 @@
 #include <stdio.h>
 #include <glib.h>
 #include <g3d/g3d.h>
+#include <g3d/stream.h>
 
 typedef struct {
     G3DContext *context;
     G3DModel *model;
-    FILE *f;
+    G3DStream *stream;
     gfloat scale;
 	gint32 max_tex_id;
-	long int max_fpos;
 } x3ds_global_data;
 
 typedef struct {
@@ -47,11 +47,9 @@ typedef struct {
 typedef gboolean (* x3ds_callback)(x3ds_global_data *global,
     x3ds_parent_data *parent);
 
-
 gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent);
 void x3ds_update_progress(x3ds_global_data *global, guint32 level);
-gint32 x3ds_read_cstr(FILE *f, char *string);
-G3DObject *x3ds_newobject(G3DModel *model, const char *name);
-void x3ds_debug(int level, char *format, ...);
+gint32 x3ds_read_cstr(G3DStream *stream, gchar *string);
+G3DObject *x3ds_newobject(G3DModel *model, const gchar *name);
 
 #endif /* _IMP_3DS_H */

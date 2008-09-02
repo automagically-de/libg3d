@@ -39,7 +39,7 @@ gboolean x3ds_cb_0x0002(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	gint32 version;
 
-	version = g3d_read_int32_le(global->f);
+	version = g3d_stream_read_int32_le(global->stream);
 	parent->nb -= 4;
 #if DEBUG > 0
 	g_printerr("[3DS] M3D version %d\n", version);
@@ -53,9 +53,9 @@ gboolean x3ds_cb_0x0010(x3ds_global_data *global, x3ds_parent_data *parent)
 	G3DMaterial *material;
 	gfloat r, g, b;
 
-	r = g3d_read_float_le(global->f);
-	g = g3d_read_float_le(global->f);
-	b = g3d_read_float_le(global->f);
+	r = g3d_stream_read_float_le(global->stream);
+	g = g3d_stream_read_float_le(global->stream);
+	b = g3d_stream_read_float_le(global->stream);
 	parent->nb -= 12;
 
 	switch(parent->id)
@@ -103,9 +103,9 @@ gboolean x3ds_cb_0x0011(x3ds_global_data *global, x3ds_parent_data *parent)
 	material = (G3DMaterial *)parent->object;
 	g_return_val_if_fail(material, FALSE);
 
-	r = g3d_read_int8(global->f);
-	g = g3d_read_int8(global->f);
-	b = g3d_read_int8(global->f);
+	r = g3d_stream_read_int8(global->stream);
+	g = g3d_stream_read_int8(global->stream);
+	b = g3d_stream_read_int8(global->stream);
 	parent->nb -= 3;
 
 	switch(parent->id)
@@ -144,7 +144,7 @@ gboolean x3ds_cb_0x0030(x3ds_global_data *global, x3ds_parent_data *parent)
 	material = (G3DMaterial *)parent->object;
 	g_return_val_if_fail(material, FALSE);
 
-	percent = g3d_read_int16_le(global->f);
+	percent = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
 
 	switch(parent->id)
@@ -210,7 +210,7 @@ gboolean x3ds_cb_0x0031(x3ds_global_data *global, x3ds_parent_data *parent)
 	material = (G3DMaterial *)parent->object;
 	g_return_val_if_fail(material, FALSE);
 
-	percent = g3d_read_float_le(global->f);
+	percent = g3d_stream_read_float_le(global->stream);
 	parent->nb -= 4;
 
 	switch(parent->id)
@@ -237,7 +237,7 @@ gboolean x3ds_cb_0x0031(x3ds_global_data *global, x3ds_parent_data *parent)
 /* master scale */
 gboolean x3ds_cb_0x0100(x3ds_global_data *global, x3ds_parent_data *parent)
 {
-	global->scale = g3d_read_float_le(global->f);
+	global->scale = g3d_stream_read_float_le(global->stream);
 	parent->nb -= 4;
 
 	return TRUE;
@@ -248,7 +248,7 @@ gboolean x3ds_cb_0x4000(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	gchar buffer[1024];
 
-	parent->nb -= x3ds_read_cstr(global->f, buffer);
+	parent->nb -= x3ds_read_cstr(global->stream, buffer);
 	parent->object = x3ds_newobject(global->model, buffer);
 
 	return TRUE;
@@ -263,15 +263,15 @@ gboolean x3ds_cb_0x4110(x3ds_global_data *global, x3ds_parent_data *parent)
 	object = (G3DObject *)parent->object;
 	g_return_val_if_fail(object, FALSE);
 
-	object->vertex_count = g3d_read_int16_le(global->f);
+	object->vertex_count = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
 
 	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
 	for(i = 0; i < object->vertex_count; i ++)
 	{
-		object->vertex_data[i * 3 + 0] = g3d_read_float_le(global->f);
-		object->vertex_data[i * 3 + 1] = g3d_read_float_le(global->f);
-		object->vertex_data[i * 3 + 2] = g3d_read_float_le(global->f);
+		object->vertex_data[i * 3 + 0] = g3d_stream_read_float_le(global->stream);
+		object->vertex_data[i * 3 + 1] = g3d_stream_read_float_le(global->stream);
+		object->vertex_data[i * 3 + 2] = g3d_stream_read_float_le(global->stream);
 
 		parent->nb -= 12;
 
@@ -294,7 +294,7 @@ gboolean x3ds_cb_0x4120(x3ds_global_data *global, x3ds_parent_data *parent)
 	object = (G3DObject *)parent->object;
 	g_return_val_if_fail(object, FALSE);
 
-	nfaces = g3d_read_int16_le(global->f);
+	nfaces = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
 
 	for(i = 0; i < nfaces; i ++)
@@ -304,10 +304,10 @@ gboolean x3ds_cb_0x4120(x3ds_global_data *global, x3ds_parent_data *parent)
 		face->vertex_count = 3;
 		face->vertex_indices = g_malloc(3 * sizeof(guint32));
 
-		face->vertex_indices[0] = g3d_read_int16_le(global->f);
-		face->vertex_indices[1] = g3d_read_int16_le(global->f);
-		face->vertex_indices[2] = g3d_read_int16_le(global->f);
-		flags = g3d_read_int16_le(global->f);
+		face->vertex_indices[0] = g3d_stream_read_int16_le(global->stream);
+		face->vertex_indices[1] = g3d_stream_read_int16_le(global->stream);
+		face->vertex_indices[2] = g3d_stream_read_int16_le(global->stream);
+		flags = g3d_stream_read_int16_le(global->stream);
 		parent->nb -= 8;
 
 #ifdef X3DS_REORDER_FACES
@@ -347,7 +347,7 @@ gboolean x3ds_cb_0x4130(x3ds_global_data *global, x3ds_parent_data *parent)
 	g_return_val_if_fail(object, FALSE);
 
 	/* name of material */
-	parent->nb -= x3ds_read_cstr(global->f, buffer);
+	parent->nb -= x3ds_read_cstr(global->stream, buffer);
 
 	/* find material in list */
 	mlist = global->model->materials;
@@ -362,12 +362,12 @@ gboolean x3ds_cb_0x4130(x3ds_global_data *global, x3ds_parent_data *parent)
 		mlist = mlist->next;
 	}
 
-	nfaces = g3d_read_int16_le(global->f);
+	nfaces = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
 
 	for(i = 0; i < nfaces; i ++)
 	{
-		facenum = g3d_read_int16_le(global->f);
+		facenum = g3d_stream_read_int16_le(global->stream);
 		parent->nb -= 2;
 
 		if(material != NULL)
@@ -408,15 +408,15 @@ gboolean x3ds_cb_0x4140(x3ds_global_data *global, x3ds_parent_data *parent)
 	object = (G3DObject *)parent->object;
 	g_return_val_if_fail(object, FALSE);
 
-	object->tex_vertex_count = g3d_read_int16_le(global->f);
+	object->tex_vertex_count = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
 
 	object->tex_vertex_data = g_new0(gfloat, object->tex_vertex_count * 2);
 
 	for(i = 0; i < object->tex_vertex_count; i ++)
 	{
-		object->tex_vertex_data[i * 2 + 0] = g3d_read_float_le(global->f);
-		object->tex_vertex_data[i * 2 + 1] = g3d_read_float_le(global->f);
+		object->tex_vertex_data[i * 2 + 0] = g3d_stream_read_float_le(global->stream);
+		object->tex_vertex_data[i * 2 + 1] = g3d_stream_read_float_le(global->stream);
 		parent->nb -= 8;
 
 		if((i % 1000) == 0) x3ds_update_progress(global, parent->level);
@@ -453,7 +453,7 @@ gboolean x3ds_cb_0x4150(x3ds_global_data *global, x3ds_parent_data *parent)
 	smooth_list = g_new(guint32, polynum);
 
 	for(i = 0 ; i < polynum ; i ++)
-		smooth_list[i] = g3d_read_int32_le(global->f);
+		smooth_list[i] = g3d_stream_read_int32_le(global->stream);
 
 	parent->nb -= polynum * 4;
 	/* first, we calculate the normal by the polygon vertices (just vector
@@ -571,7 +571,7 @@ gboolean x3ds_cb_0x4160(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	g3d_matrix_identity(matrix);
 	for(i = 0; i < 12; i ++)
-		matrix[(i / 3) * 4 + (i % 3)] = g3d_read_float_le(global->f);
+		matrix[(i / 3) * 4 + (i % 3)] = g3d_stream_read_float_le(global->stream);
 	parent->nb -= 48;
 
 	det = g3d_matrix_determinant(matrix);
@@ -614,7 +614,7 @@ gboolean x3ds_cb_0xA000(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	g_return_val_if_fail(parent->object, FALSE);
 
-	parent->nb -= x3ds_read_cstr(global->f, buffer);
+	parent->nb -= x3ds_read_cstr(global->stream, buffer);
 	material = (G3DMaterial *)(parent->object);
 
 	material->name = g_strdup(buffer);
@@ -645,7 +645,7 @@ gboolean x3ds_cb_0xA300(x3ds_global_data *global, x3ds_parent_data *parent)
 	material = (G3DMaterial *)parent->object;
 	g_return_val_if_fail(material, FALSE);
 
-	parent->nb -= x3ds_read_cstr(global->f, buffer);
+	parent->nb -= x3ds_read_cstr(global->stream, buffer);
 
 	switch(parent->id)
 	{
@@ -702,7 +702,7 @@ gboolean x3ds_cb_0xA354(x3ds_global_data *global, x3ds_parent_data *parent)
 	image = material->tex_image;
 	g_return_val_if_fail(image, FALSE);
 
-	scale = g3d_read_float_le(global->f);
+	scale = g3d_stream_read_float_le(global->stream);
 	parent->nb -= 4;
 
 	image->tex_scale_u = scale;
@@ -726,7 +726,7 @@ gboolean x3ds_cb_0xA356(x3ds_global_data *global, x3ds_parent_data *parent)
 	image = material->tex_image;
 	g_return_val_if_fail(image, FALSE);
 
-	scale = g3d_read_float_le(global->f);
+	scale = g3d_stream_read_float_le(global->stream);
 	parent->nb -= 4;
 
 	image->tex_scale_v = scale;
@@ -767,10 +767,10 @@ gboolean x3ds_cb_0xB00A(x3ds_global_data *global, x3ds_parent_data *parent)
 	gint32 rev, len;
 	gchar buffer[512];
 
-	rev = g3d_read_int16_le(global->f);
+	rev = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
-	parent->nb -= x3ds_read_cstr(global->f, buffer);
-	len = g3d_read_int16_le(global->f);
+	parent->nb -= x3ds_read_cstr(global->stream, buffer);
+	len = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
 
 #if DEBUG > 0
@@ -787,7 +787,7 @@ gboolean x3ds_cb_0xB010(x3ds_global_data *global, x3ds_parent_data *parent)
 	G3DObject *object;
 	gchar buffer[512];
 
-	parent->nb -= x3ds_read_cstr(global->f, buffer);
+	parent->nb -= x3ds_read_cstr(global->stream, buffer);
 #if DEBUG > 3
 	g_printerr("[3DS] NODE_HDR: %s\n", buffer);
 #endif
@@ -805,9 +805,9 @@ gboolean x3ds_cb_0xB010(x3ds_global_data *global, x3ds_parent_data *parent)
 		olist = olist->next;
 	}
 
-	g3d_read_int16_le(global->f); /* flags 1 */
-	g3d_read_int16_le(global->f); /* flags 2 */
-	g3d_read_int16_le(global->f); /* ? */
+	g3d_stream_read_int16_le(global->stream); /* flags 1 */
+	g3d_stream_read_int16_le(global->stream); /* flags 2 */
+	g3d_stream_read_int16_le(global->stream); /* ? */
 	parent->nb -= 6;
 
 	return TRUE;
@@ -825,9 +825,9 @@ gboolean x3ds_cb_0xB013(x3ds_global_data *global, x3ds_parent_data *parent)
 	object = parent->level_object;
 	if(object == NULL) return FALSE;
 
-	x = g3d_read_float_le(global->f);
-	y = g3d_read_float_le(global->f);
-	z = g3d_read_float_le(global->f);
+	x = g3d_stream_read_float_le(global->stream);
+	y = g3d_stream_read_float_le(global->stream);
+	z = g3d_stream_read_float_le(global->stream);
 	parent->nb -= 12;
 
 #if DEBUG > 3
@@ -852,47 +852,47 @@ gboolean x3ds_cb_0xB020(x3ds_global_data *global, x3ds_parent_data *parent)
 	object = parent->level_object;
 	if(object == NULL) return FALSE;
 
-	flags = g3d_read_int16_le(global->f);
-	fseek(global->f, 8, SEEK_CUR);
-	nkeys = g3d_read_int32_le(global->f);
+	flags = g3d_stream_read_int16_le(global->stream);
+	g3d_stream_skip(global->stream, 8);
+	nkeys = g3d_stream_read_int32_le(global->stream);
 
 	parent->nb -= 14;
 
 	for(i = 0; i < nkeys; i ++)
 	{
-		fnum = g3d_read_int32_le(global->f);
-		fflags = g3d_read_int16_le(global->f);
+		fnum = g3d_stream_read_int32_le(global->stream);
+		fflags = g3d_stream_read_int16_le(global->stream);
 		parent->nb -= 6;
 
 		if(fflags & X3DS_FLAG_TENSION)
 		{
-			g3d_read_float_le(global->f);
+			g3d_stream_read_float_le(global->stream);
 			parent->nb -= 4;
 		}
 		if(fflags & X3DS_FLAG_CONTINUITY)
 		{
-			g3d_read_float_le(global->f);
+			g3d_stream_read_float_le(global->stream);
 			parent->nb -= 4;
 		}
 		if(fflags & X3DS_FLAG_BIAS)
 		{
-			g3d_read_float_le(global->f);
+			g3d_stream_read_float_le(global->stream);
 			parent->nb -= 4;
 		}
 		if(fflags & X3DS_FLAG_EASE_TO)
 		{
-			g3d_read_float_le(global->f);
+			g3d_stream_read_float_le(global->stream);
 			parent->nb -= 4;
 		}
 		if(fflags & X3DS_FLAG_EASE_FROM)
 		{
-			g3d_read_float_le(global->f);
+			g3d_stream_read_float_le(global->stream);
 			parent->nb -= 4;
 		}
 
-		x = g3d_read_float_le(global->f);
-		y = g3d_read_float_le(global->f);
-		z = g3d_read_float_le(global->f);
+		x = g3d_stream_read_float_le(global->stream);
+		y = g3d_stream_read_float_le(global->stream);
+		z = g3d_stream_read_float_le(global->stream);
 		parent->nb -= 12;
 #if DEBUG > 3
 		g_printerr("[3DS]: POS_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f) (0x%X) "
@@ -929,22 +929,22 @@ gboolean x3ds_cb_0xB021(x3ds_global_data *global, x3ds_parent_data *parent)
 	object = parent->level_object;
 	if(object == NULL) return FALSE;
 
-	flags = g3d_read_int16_le(global->f);
-	fseek(global->f, 8, SEEK_CUR);
-	nkeys = g3d_read_int16_le(global->f);
-	g3d_read_int16_le(global->f);
+	flags = g3d_stream_read_int16_le(global->stream);
+	g3d_stream_skip(global->stream, 8);
+	nkeys = g3d_stream_read_int16_le(global->stream);
+	g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 14;
 
 	for(i = 0; i < nkeys; i ++)
 	{
-		fnum = g3d_read_int16_le(global->f);
-		g3d_read_int32_le(global->f);
+		fnum = g3d_stream_read_int16_le(global->stream);
+		g3d_stream_read_int32_le(global->stream);
 		parent->nb -= 6;
 
-		rot = g3d_read_float_le(global->f);
-		x = g3d_read_float_le(global->f);
-		y = g3d_read_float_le(global->f);
-		z = g3d_read_float_le(global->f);
+		rot = g3d_stream_read_float_le(global->stream);
+		x = g3d_stream_read_float_le(global->stream);
+		y = g3d_stream_read_float_le(global->stream);
+		z = g3d_stream_read_float_le(global->stream);
 		parent->nb -= 16;
 #if DEBUG > 3
 		g_printerr(
@@ -978,7 +978,7 @@ gboolean x3ds_cb_0xB030(x3ds_global_data *global, x3ds_parent_data *parent)
 {
 	gint32 id;
 
-	id = g3d_read_int16_le(global->f);
+	id = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
 #if DEBUG > 3
 	g_printerr("[3DS] NODE_ID: %d\n", id);

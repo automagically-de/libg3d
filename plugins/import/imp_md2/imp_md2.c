@@ -26,17 +26,16 @@
 #include <g3d/types.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/iff.h>
 
 #include "imp_md2_normals.h"
 
 #define MD2_SKINNAMELEN 64
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	FILE *f;
 	guint32 idid, idver, skinwidth, skinheight, framesize;
 	guint32 numskins, numverts, numtexs, numfaces, numglcmds, numframes;
 	guint32 offskins, offtexs, offfaces, offframes, offglcmds, offend;
@@ -48,28 +47,17 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	G3DImage *image = NULL;
 	static guint32 tex_id = 1;
 
-	f = fopen(filename, "r");
-	if(f == NULL)
-	{
-		g_printerr("couldn't open '%s'\n", filename);
+	idid = g3d_stream_read_int32_be(stream);
+	if(idid != G3D_IFF_MKID('I','D','P','2')) {
+		g_printerr("file '%s' is not a .md2 file\n", stream->uri);
 		return FALSE;
 	}
 
-	idid = g3d_read_int32_be(f);
-	if(idid != G3D_IFF_MKID('I','D','P','2'))
-	{
-		g_printerr("file '%s' is not a .md2 file\n", filename);
-		fclose(f);
-		return FALSE;
-	}
-
-	idver = g3d_read_int32_le(f);
-	if(idver != 8)
-	{
-		g_printerr("file '%s' has wrong version (%d)\n", filename, idver);
+	idver = g3d_stream_read_int32_le(stream);
+	if(idver != 8) {
+		g_printerr("file '%s' has wrong version (%d)\n", stream->uri, idver);
 #define CLOSE_ON_WRONG_VERSION
 #ifdef CLOSE_ON_WRONG_VERSION
-		fclose(f);
 		return FALSE;
 #endif
 	}
@@ -80,34 +68,32 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	object->materials = g_slist_append(object->materials, material);
 	model->objects = g_slist_append(model->objects, object);
 
-	skinwidth  = g3d_read_int32_le(f);
-	skinheight = g3d_read_int32_le(f);
-	framesize  = g3d_read_int32_le(f);
-	numskins   = g3d_read_int32_le(f);
-	numverts   = g3d_read_int32_le(f);
-	numtexs    = g3d_read_int32_le(f);
-	numfaces   = g3d_read_int32_le(f);
-	numglcmds  = g3d_read_int32_le(f);
-	numframes  = g3d_read_int32_le(f);
+	skinwidth  = g3d_stream_read_int32_le(stream);
+	skinheight = g3d_stream_read_int32_le(stream);
+	framesize  = g3d_stream_read_int32_le(stream);
+	numskins   = g3d_stream_read_int32_le(stream);
+	numverts   = g3d_stream_read_int32_le(stream);
+	numtexs    = g3d_stream_read_int32_le(stream);
+	numfaces   = g3d_stream_read_int32_le(stream);
+	numglcmds  = g3d_stream_read_int32_le(stream);
+	numframes  = g3d_stream_read_int32_le(stream);
 
 	object->vertex_count = numverts;
 	object->vertex_data = g_new0(gfloat, numverts * 3);
 	normals = g_new0(gfloat, numverts * 3);
 
-	offskins   = g3d_read_int32_le(f);
-	offtexs    = g3d_read_int32_le(f);
-	offfaces   = g3d_read_int32_le(f);
-	offframes  = g3d_read_int32_le(f);
-	offglcmds  = g3d_read_int32_le(f);
-	offend     = g3d_read_int32_le(f);
+	offskins   = g3d_stream_read_int32_le(stream);
+	offtexs    = g3d_stream_read_int32_le(stream);
+	offfaces   = g3d_stream_read_int32_le(stream);
+	offframes  = g3d_stream_read_int32_le(stream);
+	offglcmds  = g3d_stream_read_int32_le(stream);
+	offend     = g3d_stream_read_int32_le(stream);
 
-	if(numskins > 0)
-	{
+	if(numskins > 0) {
 		skinnames = g_new0(gchar *, numskins);
-		for(i = 0; i < numskins; i ++)
-		{
+		for(i = 0; i < numskins; i ++) {
 			skinnames[i] = g_new0(gchar, MD2_SKINNAMELEN);
-			fread(skinnames[i], 1, MD2_SKINNAMELEN, f);
+			g3d_stream_read(stream, skinnames[i], 1, MD2_SKINNAMELEN);
 #if DEBUG > 0
 			g_printerr("skin #%d: %s\n", i + 1, skinnames[i]);
 #endif
@@ -115,52 +101,47 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 		image = g3d_texture_load_cached(context, model, skinnames[0]);
 		if(image == NULL)
-		{
 			image = g3d_texture_load_cached(context, model, "tris0.bmp");
-		}
-		if(image)
-		{
+		if(image) {
 			image->tex_id = tex_id;
+			image->tex_env = G3D_TEXENV_DECAL;
 			tex_id ++;
 		}
 	}
 
-	fseek(f, offframes, SEEK_SET);
+	g3d_stream_seek(stream, offframes, G_SEEK_SET);
 	/* vertices per frame */
 #if DEBUG > 0
 	g_printerr("numframes: %d\n", numframes);
 #endif
-	for(i=0; i<numframes; i++)
-	{
+	for(i = 0; i < numframes; i ++) {
 		gfloat s0,s1,s2, t0,t1,t2;
 		gchar fname[16];
 		guint32 j;
 
-		s0 = g3d_read_float_le(f); /* scale */
-		s1 = g3d_read_float_le(f);
-		s2 = g3d_read_float_le(f);
-		t0 = g3d_read_float_le(f); /* translate */
-		t1 = g3d_read_float_le(f);
-		t2 = g3d_read_float_le(f);
-		fread(fname, 1, 16, f); /* frame name*/
+		s0 = g3d_stream_read_float_le(stream); /* scale */
+		s1 = g3d_stream_read_float_le(stream);
+		s2 = g3d_stream_read_float_le(stream);
+		t0 = g3d_stream_read_float_le(stream); /* translate */
+		t1 = g3d_stream_read_float_le(stream);
+		t2 = g3d_stream_read_float_le(stream);
+		g3d_stream_read(stream, fname, 1, 16); /* frame name*/
 
-		for(j=0; j<numverts; j++)
-		{
+		for(j = 0; j < numverts; j ++) {
 			gfloat x,y,z;
 			guint32 v,n;
 
-			v = g3d_read_int8(f);
+			v = g3d_stream_read_int8(stream);
 			x = (gfloat)v * s0 + t0;
-			v = g3d_read_int8(f);
+			v = g3d_stream_read_int8(stream);
 			y = (gfloat)v * s1 + t1;
-			v = g3d_read_int8(f);
+			v = g3d_stream_read_int8(stream);
 			z = (gfloat)v * s2 + t2;
-			n = g3d_read_int8(f);
-			if(i == 0)
-			{
-				object->vertex_data[j*3+0] = x;
-				object->vertex_data[j*3+1] = y;
-				object->vertex_data[j*3+2] = z;
+			n = g3d_stream_read_int8(stream);
+			if(i == 0) {
+				object->vertex_data[j * 3 + 0] = x;
+				object->vertex_data[j * 3 + 1] = y;
+				object->vertex_data[j * 3 + 2] = z;
 
 				normals[j * 3 + 0] = md2_normals[n * 3 + 0];
 				normals[j * 3 + 1] = md2_normals[n * 3 + 1];
@@ -169,21 +150,20 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 	}
 
-	fseek(f, offtexs, SEEK_SET);
+	g3d_stream_seek(stream, offtexs, G_SEEK_SET);
 	/* texture coordinates */
-	if(numtexs > 0)
-	{
+	if(numtexs > 0) {
 		texco = g_new0(gfloat, numtexs * 2);
-		for(i = 0; i < numtexs; i ++)
-		{
-			texco[i * 2 + 0] = g3d_read_int16_le(f) / (gfloat)skinwidth;
-			texco[i * 2 + 1] = g3d_read_int16_le(f) / (gfloat)skinheight;
+		for(i = 0; i < numtexs; i ++) {
+			texco[i * 2 + 0] = g3d_stream_read_int16_le(stream) /
+				(gfloat)skinwidth;
+			texco[i * 2 + 1] = g3d_stream_read_int16_le(stream) /
+				(gfloat)skinheight;
 		}
 	}
 
 	/* faces */
-	for(i = 0; i < numfaces; i ++)
-	{
+	for(i = 0; i < numfaces; i ++) {
 		G3DFace *face;
 		guint32 i;
 		guint16 index;
@@ -205,7 +185,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 		for(i = 0; i < 3; i ++)
 		{
-			face->vertex_indices[i] = g3d_read_int16_le(f);
+			face->vertex_indices[i] = g3d_stream_read_int16_le(stream);
 			face->normals[i * 3 + 0] =
 				- normals[face->vertex_indices[i] * 3 + 0];
 			face->normals[i * 3 + 1] =
@@ -216,7 +196,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 		for(i = 0; i < 3; i ++)
 		{
-			index = g3d_read_int16_le(f);
+			index = g3d_stream_read_int16_le(stream);
 			face->tex_vertex_data[i * 2 + 0] = texco[index * 2 + 0];
 			face->tex_vertex_data[i * 2 + 1] = texco[index * 2 + 1];
 		}
@@ -236,7 +216,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	if(normals)
 		g_free(normals);
 
-	fclose(f);
 	return TRUE;
 }
 

@@ -26,7 +26,7 @@
 
 #include "imp_r4_callbacks.h"
 
-static g3d_iff_chunk_info r4_chunks[] = {
+static G3DIffChunkInfo r4_chunks[] = {
 	{ "AFX1", "unknown",                           0, NULL }, /* mon */
 	{ "DRE2", "triangles",                         0, r4_cb_DRE2 },
 	{ "DSP2", "unknown",                           0, NULL }, /* R4.3 */

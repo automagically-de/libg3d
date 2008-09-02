@@ -20,7 +20,7 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <g3d/iff.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/matrix.h>
 #include <g3d/vector.h>
@@ -28,27 +28,27 @@
 #include "imp_r4_chunks.h"
 
 #if DEBUG > 0
-static void hexdump(FILE *f, guint32 len, gchar *prefix)
+static void hexdump(G3DStream *stream, guint32 len, gchar *prefix)
 {
 	guint32 i;
 	guint8 byte;
 
 	for(i = 0; i < len; i ++)
 	{
-		byte = g3d_read_int8(f);
+		byte = g3d_stream_read_int8(stream);
 		if(((i % 16) == 0) && (i != 0))
-			printf("\n");
+			g_print("\n");
 		if(((i % 16) == 0) && (i != (len - 1)))
-			printf("%s: %06x: ", (prefix ? prefix : ""), i);
-		printf("%02x", byte);
+			g_print("%s: %06x: ", (prefix ? prefix : ""), i);
+		g_print("%02x", byte);
 		if((i % 4) == 3)
-			printf(" ");
+			g_print(" ");
 	}
-	printf("\n");
+	g_print("\n");
 }
 #endif
 
-static void dump_remaining(g3d_iff_gdata *global, g3d_iff_ldata *local)
+static void dump_remaining(G3DIffGlobal *global, G3DIffLocal *local)
 {
 #if DEBUG > 0
 	gchar *id, *prefix;
@@ -59,8 +59,8 @@ static void dump_remaining(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	if(local->nb > 0)
 	{
 		printf("R4: %s: %d bytes remaining @ 0x%08x\n", id, local->nb,
-			(guint32)ftell(global->f));
-		hexdump(global->f, local->nb, prefix);
+			(guint32)g3d_stream_tell(global->stream));
+		hexdump(global->stream, local->nb, prefix);
 		local->nb = 0;
 	}
 
@@ -80,14 +80,14 @@ static void flagstat_register(guint8 flags, guint32 *flagstats)
 }
 #endif
 
-static gchar *r4_read_string(FILE *f, guint32 *r)
+static gchar *r4_read_string(G3DStream *stream, guint32 *r)
 {
 	gint32 len;
 	gchar *str;
 
-	len = g3d_read_int16_be(f);
+	len = g3d_stream_read_int16_be(stream);
 	str = g_malloc0(len + 1);
-	fread(str, 1, len, f);
+	g3d_stream_read(stream, str, 1, len);
 
 	if(r)
 		*r = len + 2;
@@ -95,7 +95,7 @@ static gchar *r4_read_string(FILE *f, guint32 *r)
 }
 
 /* triangles */
-gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_DRE2(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	G3DFace *face;
@@ -117,11 +117,11 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 #if DEBUG > 2
 	printf("R4: DRE2 offset after RGE1 chunk: 0x%08x\n",
-		(guint32)ftell(global->f));
+		(guint32)g3d_stream_tell(global->stream));
 #endif
 
 	/* read triangles */
-	ntris = g3d_read_int32_be(global->f);
+	ntris = g3d_stream_read_int32_be(global->stream);
 #if DEBUG > 0
 	printf("R4: DRE2: %d triangles\n", ntris);
 #endif
@@ -132,9 +132,9 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		face->material = g_slist_nth_data(global->model->materials, 0);
 		face->vertex_count = 3;
 		face->vertex_indices = g_new0(guint32, 3);
-		face->vertex_indices[0] = g3d_read_int32_be(global->f);
-		face->vertex_indices[1] = g3d_read_int32_be(global->f);
-		face->vertex_indices[2] = g3d_read_int32_be(global->f);
+		face->vertex_indices[0] = g3d_stream_read_int32_be(global->stream);
+		face->vertex_indices[1] = g3d_stream_read_int32_be(global->stream);
+		face->vertex_indices[2] = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 12;
 		object->faces = g_slist_append(object->faces, face);
 	}
@@ -147,7 +147,7 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	for(i = 0; i < ntris; i ++)
 	{
-		u = g3d_read_int8(global->f);
+		u = g3d_stream_read_int8(global->stream);
 		local->nb --;
 		if(u > max_u)
 			max_u = u;
@@ -167,14 +167,16 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 #if 1
 	/* some strings */
-	n_str = g3d_read_int32_be(global->f); /* may be 0xFFFFFFFF = -1 */
+	n_str = g3d_stream_read_int32_be(global->stream);
+	/* may be 0xFFFFFFFF = -1 */
 	local->nb -= 4;
-	printf("R4: DRE2: %d string(s) @ 0x%08lx:\n", n_str, ftell(global->f));
+	g_debug("R4: DRE2: %d string(s) @ 0x%08x:", n_str,
+		(guint32)g3d_stream_tell(global->stream));
 	for(i = 0; i < MIN(n_str, 1); i ++) {
-		name = r4_read_string(global->f, &r);
+		name = r4_read_string(global->stream, &r);
 		local->nb -= r;
 #if DEBUG > 0
-		printf("R4: DRE2:   '%s' (%d)\n", name, r - 2);
+		g_debug("R4: DRE2:   '%s' (%d)", name, r - 2);
 #endif
 		g_free(name);
 	}
@@ -193,7 +195,7 @@ gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* material: GMAT, GMA0 */
-gboolean r4_cb_GMAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_GMAx(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DMaterial *material;
 	gpointer object;
@@ -218,9 +220,9 @@ gboolean r4_cb_GMAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 		if(local->id == G3D_IFF_MKID('G','M','A','T'))
 		{
-			material->r = g3d_read_float_be(global->f);
-			material->g = g3d_read_float_be(global->f);
-			material->b = g3d_read_float_be(global->f);
+			material->r = g3d_stream_read_float_be(global->stream);
+			material->g = g3d_stream_read_float_be(global->stream);
+			material->b = g3d_stream_read_float_be(global->stream);
 			local->nb -= 12;
 		}
 	}
@@ -231,16 +233,16 @@ gboolean r4_cb_GMAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* coordinate system */
-gboolean r4_cb_KSYS(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_KSYS(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gfloat x, y, z, f;
 	G3DObject *object;
 	G3DTransformation *transform;
 	gint32 i, j;
 
-	x = g3d_read_float_be(global->f);
-	y = g3d_read_float_be(global->f);
-	z = g3d_read_float_be(global->f);
+	x = g3d_stream_read_float_be(global->stream);
+	y = g3d_stream_read_float_be(global->stream);
+	z = g3d_stream_read_float_be(global->stream);
 	local->nb -= 12;
 
 #if DEBUG > 2
@@ -259,11 +261,11 @@ gboolean r4_cb_KSYS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		/* matrix parts */
 		for(j = 0; j < 3; j ++)
 			for(i = 0; i < 3; i ++)
-				transform->matrix[j * 4 + i] = g3d_read_float_be(global->f);
+				transform->matrix[j * 4 + i] = g3d_stream_read_float_be(global->stream);
 		local->nb -= 36;
 
 		/* scale part */
-		f = g3d_read_float_be(global->f);
+		f = g3d_stream_read_float_be(global->stream);
 		local->nb -= 4;
 		g3d_matrix_scale(f, f, f, transform->matrix);
 	}
@@ -272,7 +274,7 @@ gboolean r4_cb_KSYS(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* sphere */
-gboolean r4_cb_KUG1(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_KUG1(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	/* RGE1 */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
@@ -283,7 +285,7 @@ gboolean r4_cb_KUG1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* light */
-gboolean r4_cb_LGH3(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_LGH3(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	/* RGE1 */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
@@ -292,27 +294,25 @@ gboolean r4_cb_LGH3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* points */
-gboolean r4_cb_PKTM(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_PKTM(G3DIffGlobal *global, G3DIffLocal *local)
 {
-	gint32 i;
+	gint32 i, j;
 	G3DObject *object;
 
 	object = (G3DObject *)local->object;
 	if(object)
 	{
-		object->vertex_count = g3d_read_int32_be(global->f);
+		object->vertex_count = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 		object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
-		for(i = 0; i < object->vertex_count; i ++)
-		{
-			object->vertex_data[i * 3 + 0] = g3d_read_float_be(global->f);
-			object->vertex_data[i * 3 + 1] = g3d_read_float_be(global->f);
-			object->vertex_data[i * 3 + 2] = g3d_read_float_be(global->f);
+		for(i = 0; i < object->vertex_count; i ++) {
+			for(j = 0; j < 3; j ++)
+				object->vertex_data[i * 3 + j] =
+					g3d_stream_read_float_be(global->stream);
 			local->nb -= 12;
 
 			/* transform vertices */
-			if(object->transformation)
-			{
+			if(object->transformation) {
 				g3d_vector_transform(
 					object->vertex_data + i * 3 + 0,
 					object->vertex_data + i * 3 + 1,
@@ -326,7 +326,7 @@ gboolean r4_cb_PKTM(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* geometry or something */
-gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_RGE1(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gchar *name;
 
@@ -334,8 +334,7 @@ gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	name =
 		(gchar *)g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
 
-	if(name && local->object)
-	{
+	if(name && local->object) {
 		g_free(((G3DObject *)local->object)->name);
 		((G3DObject *)local->object)->name = g_convert(name, -1,
 			"UTF-8", "ISO-8859-1", NULL, NULL, NULL);
@@ -348,9 +347,8 @@ gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
 
 	/* skip remaining bytes */
-	if(local->nb)
-	{
-		fseek(global->f, local->nb, SEEK_CUR);
+	if(local->nb) {
+		g3d_stream_skip(global->stream, local->nb);
 		local->nb = 0;
 	}
 
@@ -360,7 +358,7 @@ gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* camera related: RKA2, RKA3 */
-gboolean r4_cb_RKAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_RKAx(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	/* handle RGE1 chunk */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
@@ -372,11 +370,11 @@ gboolean r4_cb_RKAx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* object name */
-gboolean r4_cb_ROBJ(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_ROBJ(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	guint32 len;
 
-	local->level_object = r4_read_string(global->f, &len);
+	local->level_object = r4_read_string(global->stream, &len);
 	local->nb -= (len + 2);
 
 #if DEBUG > 2
@@ -387,7 +385,7 @@ gboolean r4_cb_ROBJ(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* surface: SURF, SUR1 */
-gboolean r4_cb_SURx(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_SURx(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	/* GMAT or GMA1 */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
@@ -398,7 +396,7 @@ gboolean r4_cb_SURx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* texture material */
-gboolean r4_cb_TXM1(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_TXM1(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	/* SURF */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);
@@ -409,7 +407,7 @@ gboolean r4_cb_TXM1(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* texture object? */
-gboolean r4_cb_TXO1(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean r4_cb_TXO1(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	/* RGE1 */
 	g3d_iff_handle_chunk(global, local, r4_chunks, G3D_IFF_PAD1);

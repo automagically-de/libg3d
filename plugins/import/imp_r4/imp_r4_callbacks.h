@@ -24,17 +24,17 @@
 
 #include <g3d/iff.h>
 
-gboolean r4_cb_DRE2(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_GMAx(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_KSYS(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_KUG1(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_LGH3(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_PKTM(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_RGE1(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_RKAx(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_ROBJ(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_SURx(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_TXM1(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean r4_cb_TXO1(g3d_iff_gdata *global, g3d_iff_ldata *local);
+gboolean r4_cb_DRE2(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_GMAx(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_KSYS(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_KUG1(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_LGH3(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_PKTM(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_RGE1(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_RKAx(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_ROBJ(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_SURx(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_TXM1(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean r4_cb_TXO1(G3DIffGlobal *global, G3DIffLocal *local);
 
 #endif /* _G3D_R4_CALLBACKS_H */

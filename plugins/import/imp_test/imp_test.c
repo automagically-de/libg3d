@@ -35,7 +35,8 @@ static gboolean test_texture_uv(G3DContext *context, G3DModel *model);
 /* plugin interface                                                          */
 /*****************************************************************************/
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	guint32 test = 1;

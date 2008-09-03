@@ -25,50 +25,42 @@
 #include <errno.h>
 
 #include <g3d/types.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 
-gboolean plugin_load_image(G3DContext *context, const gchar *filename,
+gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	G3DImage *image, gpointer user_data)
 {
-	FILE *f;
 	guint32 filesize, offset, headsize, compression;
 	gint32 x, y, i;
 	guint32 ncolplanes, c;
 
-	f = fopen(filename, "r");
-	if(f == NULL) {
-		g_printerr("couldn't open image file '%s': %s\n", filename,
-			strerror(errno));
-		return FALSE;
-	}
-
 	/* bitmap file always starts with 'BM' */
-	if(g3d_read_int16_le(f) != ('B' | ('M' << 8))) {
+	if(g3d_stream_read_int16_le(stream) != ('B' | ('M' << 8))) {
 		g_printerr("bitmap magic not found: image seems to be corrupt\n");
 		return FALSE;
 	}
 
-	image->name = g_strdup(filename);
+	image->name = g_strdup(stream->uri);
 
-	filesize = g3d_read_int32_le(f);      /* file size */
-	g3d_read_int32_le(f);                 /* 2 x UINT16 reserved */
-	offset   = g3d_read_int32_le(f);      /* offset of data */
-	headsize = g3d_read_int32_le(f);      /* size of header */
-	image->width  = g3d_read_int32_le(f); /* width */
-	image->height = g3d_read_int32_le(f); /* height */
-	ncolplanes = g3d_read_int16_le(f);    /* num of color planes */
-	image->depth  = g3d_read_int16_le(f); /* bits per pixel */
-	compression   = g3d_read_int32_le(f); /* compression */
-	g3d_read_int32_le(f);                 /* image size */
-	g3d_read_int32_le(f);                 /* v/res (dpi) */
-	g3d_read_int32_le(f);                 /* h/res (dpi) */
+	filesize = g3d_stream_read_int32_le(stream);      /* file size */
+	g3d_stream_read_int32_le(stream);                 /* 2 x UINT16 reserved */
+	offset   = g3d_stream_read_int32_le(stream);      /* offset of data */
+	headsize = g3d_stream_read_int32_le(stream);      /* size of header */
+	image->width  = g3d_stream_read_int32_le(stream); /* width */
+	image->height = g3d_stream_read_int32_le(stream); /* height */
+	ncolplanes = g3d_stream_read_int16_le(stream);    /* num of color planes */
+	image->depth  = g3d_stream_read_int16_le(stream); /* bits per pixel */
+	compression   = g3d_stream_read_int32_le(stream); /* compression */
+	g3d_stream_read_int32_le(stream);                 /* image size */
+	g3d_stream_read_int32_le(stream);                 /* v/res (dpi) */
+	g3d_stream_read_int32_le(stream);                 /* h/res (dpi) */
 
 #if DEBUG > 0
 	g_debug("BMP: %dx%dx%d (%d, 0x%x)", image->width, image->height,
 		image->depth, ncolplanes, compression);
 #endif
 
-	fseek(f, offset, SEEK_SET);
+	g3d_stream_seek(stream, offset, SEEK_SET);
 
 #define ALL32BIT
 #ifndef ALL32BIT /* always 32bit for now.. */
@@ -83,9 +75,10 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 			switch(image->depth) {
 				case 8:
 #ifndef ALL32BIT
-					image->pixeldata[y*image->width+x] = g3d_read_int8(f);
+					image->pixeldata[y * image->width + x] =
+						g3d_stream_read_int8(stream);
 #else
-					c = g3d_read_int8(f);
+					c = g3d_stream_read_int8(stream);
 					for(i = 0; i < 3; i ++)
 						image->pixeldata[(y * image->width + x) * 4 + i] = c;
 					image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
@@ -95,7 +88,7 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 					/* read BGR */
 					for(i = 2; i >= 0; i --)
 						image->pixeldata[(y * image->width + x) * 4 + i] =
-							g3d_read_int8(f);
+							g3d_stream_read_int8(stream);
 					image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
 					break;
 				default:
@@ -107,7 +100,7 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 #endif
 		/* padding */
 		for(i = x; i < ((image->width + 3) & ~(3)); i ++)
-			g3d_read_int8(f);
+			g3d_stream_read_int8(stream);
 	} /* y */
 	image->depth = 32;
 #if DEBUG > 2

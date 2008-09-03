@@ -25,69 +25,54 @@
 #include <errno.h>
 
 #include <g3d/types.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 
 #define SGI_STORAGE_VERBATIM  0
 #define SGI_STORAGE_RLE       1
 
-gboolean plugin_load_image(G3DContext *context, const gchar *filename,
+gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	G3DImage *image, gpointer user_data)
 {
-	FILE *f;
 	guint32 cmap, planes, x, y, p;
 	guint16 dims;
 	guint8 storage, bpc;
 	gchar name[80];
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("failed to open file '%s'", filename);
+	if(g3d_stream_read_int16_be(stream) != 474) {
+		g_warning("file '%s' is not a SGI RGB file", stream->uri);
 		return FALSE;
 	}
 
-	if(g3d_read_int16_be(f) != 474)
-	{
-		g_warning("file '%s' is not a SGI RGB file", filename);
-		fclose(f);
+	storage = g3d_stream_read_int8(stream);
+	bpc = g3d_stream_read_int8(stream);
+	dims = g3d_stream_read_int16_be(stream);
+
+	if(bpc != 1) {
+		g_warning("SGI: %s: bpc != 1 -- unsupported", stream->uri);
 		return FALSE;
 	}
 
-	storage = g3d_read_int8(f);
-	bpc = g3d_read_int8(f);
-	dims = g3d_read_int16_be(f);
+	image->width = g3d_stream_read_int16_be(stream);
+	image->height = g3d_stream_read_int16_be(stream);
 
-	if(bpc != 1)
-	{
-		g_warning("SGI: %s: bpc != 1 -- unsupported", filename);
-		fclose(f);
-		return FALSE;
-	}
-
-	image->width = g3d_read_int16_be(f);
-	image->height = g3d_read_int16_be(f);
-
-	planes = g3d_read_int16_be(f); /* ZSIZE */
+	planes = g3d_stream_read_int16_be(stream); /* ZSIZE */
 	image->depth = 32;
-	g3d_read_int32_be(f); /* PIXMIN */
-	g3d_read_int32_be(f); /* PIXMAX */
-	g3d_read_int32_be(f); /* DUMMY */
-	fread(name, 1, 80, f);
+	g3d_stream_read_int32_be(stream); /* PIXMIN */
+	g3d_stream_read_int32_be(stream); /* PIXMAX */
+	g3d_stream_read_int32_be(stream); /* DUMMY */
+	g3d_stream_read(stream, name, 1, 80);
 
-	if(strlen(name) > 0)
-	{
+	if(strlen(name) > 0) {
 #if DEBUG > 0
 		g_print("SGI: image name: %s\n", name);
 #endif
 		image->name = g_strdup(name);
-	}
-	else
-	{
-		image->name = g_strdup(filename);
+	} else {
+		image->name = g_strdup(stream->uri);
 	}
 
-	cmap = g3d_read_int32_be(f); /* COLORMAP */
-	fseek(f, 404, SEEK_CUR);
+	cmap = g3d_stream_read_int32_be(stream); /* COLORMAP */
+	g3d_stream_skip(stream, 404);
 
 #if DEBUG > 0
 	g_print("SGI: %dx%dx%d, %d bpc, colormap: 0x%02x\n",
@@ -97,19 +82,14 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 
 	image->pixeldata = g_new0(guint8, image->width * image->height * 4);
 
-	if(storage == SGI_STORAGE_VERBATIM)
-	{
-		for(p = 0; p < planes; p ++)
-		{
-			for(y = 0; y < image->height; y ++)
-			{
-				for(x = 0; x < image->width; x ++)
-				{
+	if(storage == SGI_STORAGE_VERBATIM) {
+		for(p = 0; p < planes; p ++) {
+			for(y = 0; y < image->height; y ++) {
+				for(x = 0; x < image->width; x ++) {
 					image->pixeldata[(y * image->width + x) * 4 + p] =
-						g3d_read_int8(f);
+						g3d_stream_read_int8(stream);
 
-					if(planes == 1)
-					{
+					if(planes == 1) {
 						/* greyscale: g = r; b = r; */
 						image->pixeldata[(y * image->width + x) * 4 + 1] =
 							image->pixeldata[(y * image->width + x) * 4];
@@ -120,8 +100,7 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 			} /* y */
 		} /* p */
 	} /* verbatim */
-	else /* RLE */
-	{
+	else /* RLE */ {
 		guint32 *starttab, *lengthtab, rleoff, rlelen;
 		guint8 cnt, pixel;
 
@@ -131,11 +110,11 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 		/* read starttab */
 		for(p = 0; p < planes; p ++)
 			for(y = 0; y < image->height; y ++)
-				starttab[y * planes + p] = g3d_read_int32_be(f);
+				starttab[y * planes + p] = g3d_stream_read_int32_be(stream);
 		/* read lengthtab */
 		for(p = 0; p < planes; p ++)
 			for(y = 0; y < image->height; y ++)
-				lengthtab[y * planes + p] = g3d_read_int32_be(f);
+				lengthtab[y * planes + p] = g3d_stream_read_int32_be(stream);
 
 		/* read image data */
 		for(p = 0; p < planes; p ++)
@@ -144,34 +123,28 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 				rleoff = starttab[y * planes + p];
 				rlelen = lengthtab[y * planes + p];
 
-				fseek(f, rleoff, SEEK_SET);
+				g3d_stream_seek(stream, rleoff, G_SEEK_SET);
 
 				x = 0;
 
-				while(1)
-				{
-					pixel = g3d_read_int8(f);
+				while(1) {
+					pixel = g3d_stream_read_int8(stream);
 					cnt = pixel & 0x7F;
 
 					if(cnt == 0)
 						break;
 
-					if(pixel & 0x80)
-					{
+					if(pixel & 0x80) {
 						/* copy n bytes */
-						while(cnt --)
-						{
+						while(cnt --) {
 							image->pixeldata[(y * image->width + x) * 4 + p] =
-		                        g3d_read_int8(f);
+		                        g3d_stream_read_int8(stream);
 							x ++;
 						}
-					}
-					else
-					{
+					} else {
 						/* repeat next byte n times */
-						pixel = g3d_read_int8(f);
-						while(cnt --)
-						{
+						pixel = g3d_stream_read_int8(stream);
+						while(cnt --) {
 							image->pixeldata[(y * image->width + x) * 4 + p] =
 								pixel;
 							x ++;
@@ -189,8 +162,6 @@ gboolean plugin_load_image(G3DContext *context, const gchar *filename,
 		for(y = 0; y < image->height; y ++)
 			for(x = 0; x < image->width; x ++)
 				image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
-
-	fclose(f);
 
 	return TRUE;
 }

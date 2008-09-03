@@ -26,50 +26,40 @@
 #include <glib.h>
 
 #include <g3d/iff.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 
 #include "imp_rbh_chunks.h"
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
     G3DModel *model, gpointer user_data)
 {
-	g3d_iff_gdata *global;
-	g3d_iff_ldata *local;
+	G3DIffGlobal *global;
+	G3DIffLocal *local;
 	guint32 id, len;
-	FILE *f;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("failed to read '%s'", filename);
-		return FALSE;
-	}
-
-	id = g3d_read_int32_be(f);
-	len = g3d_read_int32_le(f);
+	id = g3d_stream_read_int32_be(stream);
+	len = g3d_stream_read_int32_le(stream);
 
 	if(id != G3D_IFF_MKID('P', 'I', 'F', 'F'))
 	{
-		g_warning("%s is not a PIFF file", filename);
-		fclose(f);
+		g_warning("%s is not a PIFF file", stream->uri);
 		return FALSE;
 	}
 
-	id = g3d_read_int32_be(f);
+	id = g3d_stream_read_int32_be(stream);
 	len -= 4;
 	if(id != G3D_IFF_MKID('R', 'B', 'H', 'F'))
 	{
-		g_warning("%s is not a RBHF file", filename);
-		fclose(f);
+		g_warning("%s is not a RBHF file", stream->uri);
 		return FALSE;
 	}
 
-	local = g_new0(g3d_iff_ldata, 1);
-	global = g_new0(g3d_iff_gdata, 1);
+	local = g_new0(G3DIffLocal, 1);
+	global = g_new0(G3DIffGlobal, 1);
 
 	global->context = context;
     global->model = model;
-    global->f = f;
+    global->stream = stream;
 
     local->parent_id = id;
     local->nb = len;

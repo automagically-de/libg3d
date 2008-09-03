@@ -27,7 +27,7 @@
 
 #include "imp_rbh_callbacks.h"
 
-static g3d_iff_chunk_info rbh_chunks[] = {
+static G3DIffChunkInfo rbh_chunks[] = {
 	{ "RBHH", "RBH header",                        0, rbh_cb_RBHH },
 	{ "BODY", "body",                              0, rbh_cb_BODY },
 	{ "RELC", "unknown",                           0, rbh_cb_RELC },

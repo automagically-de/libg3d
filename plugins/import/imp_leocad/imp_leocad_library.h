@@ -26,6 +26,7 @@
 #include <stdio.h>
 
 #include <g3d/types.h>
+#include <g3d/stream.h>
 
 typedef struct
 {
@@ -45,7 +46,7 @@ LeoCadPiece;
 
 typedef struct
 {
-	FILE *pieces_bin;
+	G3DStream *pieces_bin;
 	GHashTable *pieces;
 	GSList *materials;
 }

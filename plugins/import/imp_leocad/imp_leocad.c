@@ -20,16 +20,11 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h>
 
 #include <math.h>
-
-#ifndef M_PI
-#	define M_PI 3.14159265358979323846
-#endif
 
 #include <g3d/types.h>
 #include <g3d/context.h>
@@ -39,7 +34,7 @@
 
 #include "imp_leocad_library.h"
 
-static int leocad_load_lcd(const gchar *filename, G3DModel *model,
+static int leocad_load_lcd(G3DStream *stream, G3DModel *model,
 	LeoCadLibrary *library, G3DContext *context);
 
 gpointer plugin_init(G3DContext *context)
@@ -78,7 +73,7 @@ void plugin_cleanup(gpointer user_data)
 		leocad_library_free(library);
 }
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	LeoCadLibrary *library;
@@ -93,7 +88,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	setlocale(LC_NUMERIC, "C");
 
-	return leocad_load_lcd(filename, model, library, context);
+	return leocad_load_lcd(stream, model, library, context);
 }
 
 gchar *plugin_description(G3DContext *context)
@@ -127,7 +122,7 @@ static gboolean leocad_change_key(guint16 ktime, gfloat *param, guint8 ktype,
 				break;
 
 			case 0x01: /* rotation */
-				g3d_matrix_rotate((gfloat)param[3] * M_PI / 180.0,
+				g3d_matrix_rotate((gfloat)param[3] * G_PI / 180.0,
 					param[0], param[1], param[2], matrix);
 				g3d_matrix_multiply(mloc, matrix, matrix);
 				*valid_matrix = TRUE;
@@ -144,7 +139,7 @@ static gboolean leocad_change_key(guint16 ktime, gfloat *param, guint8 ktype,
 	return TRUE;
 }
 
-static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
+static gboolean leocad_load_lcd_piece(G3DStream *stream, G3DModel *model,
 	LeoCadLibrary *library, gfloat lcdversion)
 {
 	guint32 i, j, k, nkeys, nobjs;
@@ -167,24 +162,24 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 
 	if(lcdversion > 0.4)
 	{
-		pver = g3d_read_int8(f);
+		pver = g3d_stream_read_int8(stream);
 
 		if(pver >= 9)
 		{
 			/* object stuff */
-			over = g3d_read_int8(f);
-			nobjs = g3d_read_int32_le(f);
+			over = g3d_stream_read_int8(stream);
+			nobjs = g3d_stream_read_int32_le(stream);
 			for(i = 0; i < nobjs; i ++)
 			{
 				/* time */
-				ktime = g3d_read_int16_le(f);
+				ktime = g3d_stream_read_int16_le(stream);
 				/* param */
-				param[0] = g3d_read_float_le(f);
-				param[1] = g3d_read_float_le(f);
-				param[2] = g3d_read_float_le(f);
-				param[3] = g3d_read_float_le(f);
+				param[0] = g3d_stream_read_float_le(stream);
+				param[1] = g3d_stream_read_float_le(stream);
+				param[2] = g3d_stream_read_float_le(stream);
+				param[3] = g3d_stream_read_float_le(stream);
 				/* type */
-				ktype = g3d_read_int8(f);
+				ktype = g3d_stream_read_int8(stream);
 
 				leocad_change_key(ktime, param, ktype, matrix, mloc,
 					&valid_matrix);
@@ -192,15 +187,15 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 
 			if(over == 1)
 			{
-				nobjs = g3d_read_int32_le(f);
+				nobjs = g3d_stream_read_int32_le(stream);
 				for(i = 0; i < nobjs; i ++)
 				{
-					ktime = g3d_read_int16_le(f);
-					param[0] = g3d_read_float_le(f);
-					param[1] = g3d_read_float_le(f);
-					param[2] = g3d_read_float_le(f);
-					param[3] = g3d_read_float_le(f);
-					ktype = g3d_read_int8(f);
+					ktime = g3d_stream_read_int16_le(stream);
+					param[0] = g3d_stream_read_float_le(stream);
+					param[1] = g3d_stream_read_float_le(stream);
+					param[2] = g3d_stream_read_float_le(stream);
+					param[3] = g3d_stream_read_float_le(stream);
+					ktype = g3d_stream_read_int8(stream);
 				}
 			}
 		}
@@ -208,47 +203,47 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 		{
 			if(pver > 5)
 			{
-				nkeys = g3d_read_int32_le(f);
+				nkeys = g3d_stream_read_int32_le(stream);
 				for(i = 0; i < nkeys; i ++)
 				{
 					/* param */
-					param[0] = g3d_read_float_le(f);
-					param[1] = g3d_read_float_le(f);
-					param[2] = g3d_read_float_le(f);
-					param[3] = g3d_read_float_le(f);
+					param[0] = g3d_stream_read_float_le(stream);
+					param[1] = g3d_stream_read_float_le(stream);
+					param[2] = g3d_stream_read_float_le(stream);
+					param[3] = g3d_stream_read_float_le(stream);
 
 					/* time */
-					ktime = g3d_read_int16_le(f);
+					ktime = g3d_stream_read_int16_le(stream);
 
 					/* type */
-					ktype = g3d_read_int8(f);
+					ktype = g3d_stream_read_int8(stream);
 
 					leocad_change_key(ktime, param, ktype, matrix, mloc,
 						&valid_matrix);
 
 				} /* keys */
 
-				nkeys = g3d_read_int32_le(f);
+				nkeys = g3d_stream_read_int32_le(stream);
 				for(i = 0; i < nkeys; i ++)
 				{
 					/* param */
-					param[0] = g3d_read_float_le(f);
-					param[1] = g3d_read_float_le(f);
-					param[2] = g3d_read_float_le(f);
-					param[3] = g3d_read_float_le(f);
+					param[0] = g3d_stream_read_float_le(stream);
+					param[1] = g3d_stream_read_float_le(stream);
+					param[2] = g3d_stream_read_float_le(stream);
+					param[3] = g3d_stream_read_float_le(stream);
 
 					/* time */
-					ktime = g3d_read_int16_le(f);
+					ktime = g3d_stream_read_int16_le(stream);
 
 					/* type */
-					ktype = g3d_read_int8(f);
+					ktype = g3d_stream_read_int8(stream);
 				}
 			} /* pver > 5 */
 			else /* pver <= 5 */
 			{
 				if(pver > 2)
 				{
-					nkeys = g3d_read_int8(f);
+					nkeys = g3d_stream_read_int8(stream);
 					for(i = 0; i < nkeys; i ++)
 					{
 						if(pver > 3)
@@ -259,41 +254,41 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 							/* matrix */
 							for(j = 0; j < 4; j ++)
 								for(k = 0; k < 4; k ++)
-									matrix[j * 4 + k] = g3d_read_float_le(f);
+									matrix[j * 4 + k] = g3d_stream_read_float_le(stream);
 
 							valid_matrix = TRUE;
 						}
 						else
 						{
 							/* move: 3 x float */
-							offx = g3d_read_float_le(f);
-							offy = g3d_read_float_le(f);
-							offz = g3d_read_float_le(f);
+							offx = g3d_stream_read_float_le(stream);
+							offy = g3d_stream_read_float_le(stream);
+							offz = g3d_stream_read_float_le(stream);
 
 							/* rotate: 3 x float */
-							rotx = g3d_read_float_le(f);
-							roty = g3d_read_float_le(f);
-							rotz = g3d_read_float_le(f);
+							rotx = g3d_stream_read_float_le(stream);
+							roty = g3d_stream_read_float_le(stream);
+							rotz = g3d_stream_read_float_le(stream);
 						}
 
 						/* time */
-						ktime = g3d_read_int8(f);
+						ktime = g3d_stream_read_int8(stream);
 
 						/* bl? */
-						g3d_read_int32_le(f);
+						g3d_stream_read_int32_le(stream);
 					} /* .. nkeys */
 				} /* pver > 2 */
 				else /* pver <= 2 */
 				{
 					/* move: 3 x float */
-					offx = g3d_read_float_le(f);
-					offy = g3d_read_float_le(f);
-					offz = g3d_read_float_le(f);
+					offx = g3d_stream_read_float_le(stream);
+					offy = g3d_stream_read_float_le(stream);
+					offz = g3d_stream_read_float_le(stream);
 
 					/* rotate: 3 x float */
-					rotx = g3d_read_float_le(f);
-					roty = g3d_read_float_le(f);
-					rotz = g3d_read_float_le(f);
+					rotx = g3d_stream_read_float_le(stream);
+					roty = g3d_stream_read_float_le(stream);
+					rotz = g3d_stream_read_float_le(stream);
 				}
 			} /* pver <= 5 */
 		} /* pver < 9 */
@@ -301,10 +296,10 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 		/* common stuff */
 
 		/* name of piece */
-		fread(name, 1, 9, f);
+		g3d_stream_read(stream, name, 1, 9);
 
 		/* color */
-		color = g3d_read_int8(f);
+		color = g3d_stream_read_int8(stream);
 
 		if(pver < 5)
 			color = leocad_library_convert_color(color);
@@ -314,48 +309,43 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 #endif
 
 		/* step show */
-		g3d_read_int8(f);
+		g3d_stream_read_int8(stream);
 
 		/* step hide */
 		if(pver > 1)
-			g3d_read_int8(f);
+			g3d_stream_read_int8(stream);
 
 		if(pver > 5)
 		{
 			/* frame show */
-			g3d_read_int16_le(f);
+			g3d_stream_read_int16_le(stream);
 			/* frame hide */
-			g3d_read_int16_le(f);
+			g3d_stream_read_int16_le(stream);
 
-			if(pver > 7)
-			{
+			if(pver > 7) {
 				/* state */
-				g3d_read_int8(f);
+				g3d_stream_read_int8(stream);
 
-				len8 = g3d_read_int8(f);
-				fseek(f, len8, SEEK_CUR);
-			}
-			else /* pver <= 7 */
-			{
+				len8 = g3d_stream_read_int8(stream);
+				g3d_stream_skip(stream, len8);
+			} else { /* pver <= 7 */
 				/* hide */
-				g3d_read_int32_le(f);
-
-				fseek(f, 81, SEEK_CUR);
+				g3d_stream_read_int32_le(stream);
+				g3d_stream_skip(stream, 81);
 			} /* pver <= 7 */
 
-			if(pver > 6)
-			{
+			if(pver > 6) {
 				/* group pointer ?! */
-				g3d_read_int32_le(f);
+				g3d_stream_read_int32_le(stream);
 			}
 		} /* pver > 5 */
 		else /* pver <= 5 */
 		{
 			/* group pointer ?! */
-			g3d_read_int8(f);
+			g3d_stream_read_int8(stream);
 
 			/* hide */
-			g3d_read_int8(f);
+			g3d_stream_read_int8(stream);
 		}
 
 	} /* lcdversion > 0.4 */
@@ -374,9 +364,9 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 		g3d_matrix_identity(mloc);
 		g3d_matrix_translate(offx, offy, offz, mloc);
 		/* rotation */
-		rotx = (gfloat)(rotx * M_PI) / 180.0;
-		roty = (gfloat)(roty * M_PI) / 180.0;
-		rotz = (gfloat)(rotz * M_PI) / 180.0;
+		rotx = (gfloat)(rotx * G_PI) / 180.0;
+		roty = (gfloat)(roty * G_PI) / 180.0;
+		rotz = (gfloat)(rotz * G_PI) / 180.0;
 		g3d_matrix_identity(matrix);
 		g3d_matrix_rotate_xyz(rotx, roty, rotz, matrix);
 
@@ -418,93 +408,77 @@ static gboolean leocad_load_lcd_piece(FILE *f, G3DModel *model,
 	return TRUE;
 }
 
-static gboolean leocad_load_lcd(const gchar *filename, G3DModel *model,
+static gboolean leocad_load_lcd(G3DStream *stream, G3DModel *model,
 	LeoCadLibrary *library, G3DContext *context)
 {
 	gchar magic[32];
 	gfloat version;
 	guint32 i, count;
-	FILE *f;
+	gfloat r, g, b;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("LeoCAD: failed to open '%s'", filename);
-		return EXIT_FAILURE;
-	}
-
-	fread(magic, 1, 32, f);
-	if(strncmp(magic, "LeoCAD", 6) != 0)
-	{
-		g_warning("LeoCAD: '%s' is not a valid LeoCAD project file", filename);
-		fclose(f);
+	g3d_stream_read(stream, magic, 1, 32);
+	if(strncmp(magic, "LeoCAD", 6) != 0) {
+		g_warning("LeoCAD: '%s' is not a valid LeoCAD project file",
+			stream->uri);
 		return FALSE;
 	}
 
 	sscanf(&magic[7], "%f", &version);
 
-	if(version > 0.4)
-	{
+	if(version > 0.4) {
 #if DEBUG > 0
 		g_print("LeoCAD: file version %.1f, getting next float\n", version);
 #endif
-		version = g3d_read_float_le(f);
+		version = g3d_stream_read_float_le(stream);
 	}
 
 #if DEBUG > 0
 	g_print("LeoCAD: file version %.1f\n", version);
 #endif
 
+	r = g3d_stream_read_int8(stream) / 255.0;
+	g = g3d_stream_read_int8(stream) / 255.0;
+	b = g3d_stream_read_int8(stream) / 255.0;
 	/* background color */
-	g3d_context_set_bgcolor(context,
-		g3d_read_int8(f) / 255.0,
-		g3d_read_int8(f) / 255.0,
-		g3d_read_int8(f) / 255.0,
-		1.0);
-	g3d_read_int8(f);
+	g3d_context_set_bgcolor(context, r, g, b, 1.0);
+	g3d_stream_read_int8(stream);
 
 	/* view */
-	if(version < 0.6)
-	{
+	if(version < 0.6) {
 		/* eye: 3 x double */
-		fseek(f, 24, SEEK_CUR);
+		g3d_stream_skip(stream, 24);
 
 		/* target: 3 x double */
-		fseek(f, 24, SEEK_CUR);
+		g3d_stream_skip(stream, 24);
 	}
 
 	/* angle snap */
-	g3d_read_int32_le(f);
+	g3d_stream_read_int32_le(stream);
 	/* snap */
-	g3d_read_int32_le(f);
+	g3d_stream_read_int32_le(stream);
 	/* line width */
-	g3d_read_float_le(f);
+	g3d_stream_read_float_le(stream);
 	/* detail */
-	g3d_read_int32_le(f);
+	g3d_stream_read_int32_le(stream);
 	/* cur group */
-	g3d_read_int32_le(f);
+	g3d_stream_read_int32_le(stream);
 	/* cur color */
-	g3d_read_int32_le(f);
+	g3d_stream_read_int32_le(stream);
 	/* action */
-	g3d_read_int32_le(f);
+	g3d_stream_read_int32_le(stream);
 	/* cur step */
-	g3d_read_int32_le(f);
+	g3d_stream_read_int32_le(stream);
 
-	if(version > 0.8)
-	{
+	if(version > 0.8) {
 		/* scene */
-		g3d_read_int32_le(f);
+		g3d_stream_read_int32_le(stream);
 	}
 
 	/* piece count */
-	count = g3d_read_int32_le(f);
-	for(i = 0; i < count; i ++)
-	{
+	count = g3d_stream_read_int32_le(stream);
+	for(i = 0; i < count; i ++) {
 		/* load piece */
-		leocad_load_lcd_piece(f, model, library, version);
+		leocad_load_lcd_piece(stream, model, library, version);
 	}
-
-	fclose(f);
-
 	return TRUE;
 }

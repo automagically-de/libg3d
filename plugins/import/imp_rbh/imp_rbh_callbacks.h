@@ -25,8 +25,8 @@
 
 #include <g3d/iff.h>
 
-gboolean rbh_cb_RBHH(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean rbh_cb_BODY(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean rbh_cb_RELC(g3d_iff_gdata *global, g3d_iff_ldata *local);
+gboolean rbh_cb_RBHH(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean rbh_cb_BODY(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean rbh_cb_RELC(G3DIffGlobal *global, G3DIffLocal *local);
 
 #endif /* _IMP_RBH_CALLBACKS_H */

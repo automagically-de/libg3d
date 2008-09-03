@@ -22,14 +22,14 @@
 #include <string.h>
 
 #include <g3d/iff.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/debug.h>
 
 static gchar *padding = "                    ";
 
 /* header */
-gboolean rbh_cb_RBHH(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean rbh_cb_RBHH(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	guint32 x0, x1, x2;
 	guint32 i, num;
@@ -37,9 +37,9 @@ gboolean rbh_cb_RBHH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	num = local->nb / 12;
 	for(i = 0; i < num; i ++)
 	{
-		x0 = g3d_read_int32_le(global->f);
-		x1 = g3d_read_int32_le(global->f);
-		x2 = g3d_read_int32_le(global->f);
+		x0 = g3d_stream_read_int32_le(global->stream);
+		x1 = g3d_stream_read_int32_le(global->stream);
+		x2 = g3d_stream_read_int32_le(global->stream);
 		local->nb -= 12;
 
 		g_debug("\\%s[RBH][RBHH] %d: 0x%08x 0x%08x 0x%08x",
@@ -51,7 +51,7 @@ gboolean rbh_cb_RBHH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* body */
-gboolean rbh_cb_BODY(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean rbh_cb_BODY(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	guint32 nverts, nfaces;
 	guint32 maxx = 0, x;
@@ -61,9 +61,9 @@ gboolean rbh_cb_BODY(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	if(local->nb < 4) return TRUE; /* zero size BODY tags? */
 
 
-	nverts = g3d_read_int16_le(global->f);
+	nverts = g3d_stream_read_int16_le(global->stream);
 
-	nfaces = g3d_read_int16_le(global->f);
+	nfaces = g3d_stream_read_int16_le(global->stream);
 	local->nb -= 4;
 
 	g_debug(
@@ -84,7 +84,7 @@ gboolean rbh_cb_BODY(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	while(local->nb >= 4)
 	{
-		x = g3d_read_int32_le(global->f);
+		x = g3d_stream_read_int32_le(global->stream);
 		if(x > maxx) maxx = x;
 		local->nb -= 4;
 	}
@@ -97,13 +97,13 @@ gboolean rbh_cb_BODY(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* ?? */
-gboolean rbh_cb_RELC(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean rbh_cb_RELC(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	guint32 maxx = 0, x;
 
 	while(local->nb >= 4)
 	{
-		x = g3d_read_int32_le(global->f);
+		x = g3d_stream_read_int32_le(global->stream);
 		if(x > maxx) maxx = x;
 		local->nb -= 4;
 	}

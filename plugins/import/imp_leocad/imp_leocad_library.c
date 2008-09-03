@@ -24,7 +24,6 @@
 #	include <config.h>
 #endif
 
-#include <stdio.h>
 #include <string.h>
 
 #include <glib.h>
@@ -32,7 +31,7 @@
 #include <g3d/types.h>
 #include <g3d/object.h>
 #include <g3d/material.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/primitive.h>
 #include <g3d/matrix.h>
 
@@ -53,7 +52,7 @@
 #define LEOCAD_TYPE_STUD4               0x05
 
 static gboolean leocad_library_read_pieces_idx(LeoCadLibrary *library,
-	FILE *idx);
+	G3DStream *idx);
 static gboolean leocad_create_materials(LeoCadLibrary *library);
 
 struct LeoCadConnection {
@@ -66,14 +65,13 @@ LeoCadLibrary *leocad_library_load(const gchar *libdir)
 {
 	LeoCadLibrary *library;
 	gchar filename[1025];
-	FILE *idx, *bin;
+	G3DStream *idx, *bin;
 
 	library = g_new0(LeoCadLibrary, 1);
 
-	sprintf(filename, "%s/%s", libdir, "pieces.idx");
-	idx = fopen(filename, "rb");
-	if(idx == NULL)
-	{
+	g_snprintf(filename, 1024, "%s/%s", libdir, "pieces.idx");
+	idx = g3d_stream_open_file(filename, "rb");
+	if(idx == NULL) {
 #if DEBUG > 0
 		g_print("LeoCAD: failed to read '%s'\n", filename);
 #endif
@@ -81,14 +79,13 @@ LeoCadLibrary *leocad_library_load(const gchar *libdir)
 		return NULL;
 	}
 
-	sprintf(filename, "%s/%s", libdir, "pieces.bin");
-	bin = fopen(filename, "rb");
-	if(bin == NULL)
-	{
+	g_snprintf(filename, 1024, "%s/%s", libdir, "pieces.bin");
+	bin = g3d_stream_open_file(filename, "rb");
+	if(bin == NULL) {
 #if DEBUG > 0
 		g_print("LeoCAD: failed to read '%s'\n", filename);
 #endif
-		fclose(idx);
+		g3d_stream_close(idx);
 		g_free(library);
 		return NULL;
 	}
@@ -97,7 +94,7 @@ LeoCadLibrary *leocad_library_load(const gchar *libdir)
 	library->pieces_bin = bin;
 
 	leocad_library_read_pieces_idx(library, idx);
-	fclose(idx);
+	g3d_stream_close(idx);
 
 	leocad_create_materials(library);
 
@@ -149,11 +146,11 @@ void leocad_library_free(LeoCadLibrary *library)
 	g_free(library);
 }
 
-static gfloat leocad_read_scaled16(FILE *f, gfloat scale)
+static gfloat leocad_read_scaled16(G3DStream *stream, gfloat scale)
 {
 	gint16 x;
 
-	x = g3d_read_int16_le(f);
+	x = g3d_stream_read_int16_le(stream);
 
 	return (gfloat)(x / scale);
 }
@@ -235,7 +232,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 	guint16 grp_type;
 	gfloat scale = 100.0;
 	gfloat matrix[16];
-	FILE *bin;
+	G3DStream *bin;
 	struct LeoCadConnection *connections;
 
 	piece = g_hash_table_lookup(library->pieces, name);
@@ -253,8 +250,8 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 		piece->object = g_new0(G3DObject, 1);
 		piece->object->name = g_strdup(piece->description);
 
-		fseek(bin, piece->offset_bin, SEEK_SET);
-		piece->object->vertex_count = g3d_read_int32_le(bin);
+		g3d_stream_seek(bin, piece->offset_bin, G_SEEK_SET);
+		piece->object->vertex_count = g3d_stream_read_int32_le(bin);
 		piece->object->vertex_data = g_new0(gfloat,
 			piece->object->vertex_count * 3);
 
@@ -283,14 +280,14 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 #endif
 
 		/* connections */
-		nconn = g3d_read_int16_le(bin);
+		nconn = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
 		g_print("LeoCAD: piece '%s': %d connections\n", name, nconn);
 #endif
 		connections = g_new0(struct LeoCadConnection, nconn);
 		for(i = 0; i < nconn; i ++)
 		{
-			connections[i].type = g3d_read_int8(bin);
+			connections[i].type = g3d_stream_read_int8(bin);
 
 			/* center */
 			connections[i].center[0] = leocad_read_scaled16(bin, scale);
@@ -298,13 +295,13 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 			connections[i].center[2] = leocad_read_scaled16(bin, scale);
 
 			/* normal */
-			connections[i].normal[0] = g3d_read_int16_le(bin) / (1 << 14);
-			connections[i].normal[1] = g3d_read_int16_le(bin) / (1 << 14);
-			connections[i].normal[2] = g3d_read_int16_le(bin) / (1 << 14);
+			connections[i].normal[0] = g3d_stream_read_int16_le(bin) / (1 << 14);
+			connections[i].normal[1] = g3d_stream_read_int16_le(bin) / (1 << 14);
+			connections[i].normal[2] = g3d_stream_read_int16_le(bin) / (1 << 14);
 		}
 
 		/* textures */
-		ntex = g3d_read_int8(bin);
+		ntex = g3d_stream_read_int8(bin);
 #if DEBUG > 0
 		if(ntex > 0)
 			g_print("LeoCAD: piece '%s': %d textures\n", name, ntex);
@@ -315,7 +312,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 		}
 
 		/* groups */
-		ngrp = g3d_read_int16_le(bin);
+		ngrp = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
 		g_print("LeoCAD: piece '%s': %d groups @ 0x%08lx\n",
 			name, ngrp, ftell(bin));
@@ -323,17 +320,17 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 		for(i = 0; i < ngrp; i ++)
 		{
 			/* group connections */
-			ngrpconn = g3d_read_int8(bin);
+			ngrpconn = g3d_stream_read_int8(bin);
 			for(j = 0; j < ngrpconn; j ++)
 			{
-				g3d_read_int16_le(bin);
+				g3d_stream_read_int16_le(bin);
 			}
 
 #if 0
 			while(1)
 			{
 #endif
-				grp_type = g3d_read_int8(bin);
+				grp_type = g3d_stream_read_int8(bin);
 				if(grp_type == 0)
 				{
 					break;
@@ -346,7 +343,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 				switch(grp_type)
 				{
 					case LEOCAD_TYPE_MESH:
-						ncol = g3d_read_int16_le(bin);
+						ncol = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
 						g_print("LeoCAD: piece '%s': grp %d: %d colors "
 							"(@ 0x%08lx)\n",
@@ -355,14 +352,14 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 						for(j = 0; j < ncol; j ++)
 						{
 							/* color code */
-							color = g3d_read_int16_le(bin);
+							color = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
 							g_print(
 								"LeoCAD: piece '%s': grp %d: color 0x%04x\n",
 								name, i, color);
 #endif
 							/* quads? */
-							nx = g3d_read_int16_le(bin);
+							nx = g3d_stream_read_int16_le(bin);
 							for(k = 0; k < nx / 4; k ++)
 							{
 								face = g_new0(G3DFace, 1);
@@ -373,13 +370,13 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 								face->vertex_indices = g_new0(guint32, 4);
 
 								face->vertex_indices[0] =
-									g3d_read_int16_le(bin);
+									g3d_stream_read_int16_le(bin);
 								face->vertex_indices[1] =
-									g3d_read_int16_le(bin);
+									g3d_stream_read_int16_le(bin);
 								face->vertex_indices[2] =
-									g3d_read_int16_le(bin);
+									g3d_stream_read_int16_le(bin);
 								face->vertex_indices[3] =
-									g3d_read_int16_le(bin);
+									g3d_stream_read_int16_le(bin);
 
 								piece->object->faces = g_slist_prepend(
 									piece->object->faces, face);
@@ -389,7 +386,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 								"quads: %d bytes\n",
 								name, i, nx * 2);
 #endif
-							nx = g3d_read_int16_le(bin);
+							nx = g3d_stream_read_int16_le(bin);
 							for(k = 0; k < nx / 3; k ++)
 							{
 								face = g_new0(G3DFace, 1);
@@ -400,11 +397,11 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 								face->vertex_indices = g_new0(guint32, 3);
 
 								face->vertex_indices[0] =
-									g3d_read_int16_le(bin);
+									g3d_stream_read_int16_le(bin);
 								face->vertex_indices[1] =
-									g3d_read_int16_le(bin);
+									g3d_stream_read_int16_le(bin);
 								face->vertex_indices[2] =
-									g3d_read_int16_le(bin);
+									g3d_stream_read_int16_le(bin);
 
 								piece->object->faces = g_slist_prepend(
 									piece->object->faces, face);
@@ -415,13 +412,13 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 								"triangles: %d bytes\n",
 								name, i, nx * 2);
 #endif
-							nx = g3d_read_int16_le(bin);
+							nx = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
 							g_print("LeoCAD: piece '%s': grp %d: "
 								"skipping %d bytes @ 0x%08lx\n",
 								name, i, nx * 2, ftell(bin));
 #endif
-							fseek(bin, nx * 2, SEEK_CUR);
+							g3d_stream_skip(bin, nx * 2);
 						}
 						break;
 
@@ -430,7 +427,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 					case LEOCAD_TYPE_STUD3:
 					case LEOCAD_TYPE_STUD4:
 						stud = NULL;
-						color = g3d_read_int8(bin);
+						color = g3d_stream_read_int8(bin);
 #if DEBUG > 0
 						g_print("LeoCAD: piece '%s': stud 0x%02x\n",
 							name, grp_type);
@@ -449,9 +446,9 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 						for(j = 0; j < 12; j ++)
 #if 1
 							matrix[(j / 3) * 4 + (j % 3)] =
-								g3d_read_float_le(bin);
+								g3d_stream_read_float_le(bin);
 #else
-							matrix[j] = g3d_read_float_le(bin);
+							matrix[j] = g3d_stream_read_float_le(bin);
 #endif
 							/* g3d_matrix_dump(matrix); */
 
@@ -476,7 +473,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 #if 0
 			} /* grp_type != 0 */
 #endif
-			g3d_read_int8(bin);
+			g3d_stream_read_int8(bin);
 		} /* ngrp */
 
 		/* generate studs */
@@ -546,7 +543,8 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 	return g3d_object_duplicate(piece->object);
 }
 
-static gboolean leocad_library_read_piece(LeoCadLibrary *library, FILE *idx)
+static gboolean leocad_library_read_piece(LeoCadLibrary *library,
+	G3DStream *idx)
 {
 	gchar buffer[128];
 	guint32 i;
@@ -554,21 +552,21 @@ static gboolean leocad_library_read_piece(LeoCadLibrary *library, FILE *idx)
 
 	piece = g_new0(LeoCadPiece, 1);
 
-	fread(buffer, 1, 8, idx);
+	g3d_stream_read(idx, buffer, 1, 8);
 	buffer[8] = '\0';
 	piece->name = g_strdup(buffer);
 
-	fread(buffer, 1, 64, idx);
+	g3d_stream_read(idx, buffer, 1, 64);
 	buffer[64] = '\0';
 	piece->description = g_strdup(buffer);
 
 	for(i = 0; i < 6; i ++)
-		piece->bounding_box[i] = g3d_read_int16_le(idx);
+		piece->bounding_box[i] = g3d_stream_read_int16_le(idx);
 
-	piece->flags = g3d_read_int8(idx);
-	piece->default_group = g3d_read_int32_le(idx);
-	piece->offset_bin = g3d_read_int32_le(idx);
-	piece->info_size = g3d_read_int32_le(idx);
+	piece->flags = g3d_stream_read_int8(idx);
+	piece->default_group = g3d_stream_read_int32_le(idx);
+	piece->offset_bin = g3d_stream_read_int32_le(idx);
+	piece->info_size = g3d_stream_read_int32_le(idx);
 
 #if DEBUG > 1
 	g_print("LeoCAD: %-8s: @ 0x%08x, %s\n",
@@ -581,29 +579,29 @@ static gboolean leocad_library_read_piece(LeoCadLibrary *library, FILE *idx)
 }
 
 static gboolean leocad_library_read_pieces_idx(LeoCadLibrary *library,
-	FILE *idx)
+	G3DStream *idx)
 {
 	gchar magic[32], nameold[9], namenew[9];
 	guint8 version, lastupdate;
 	guint32 nmoved, nbinsize, npieces, i;
 	LeoCadPiece *piece, *newpiece;
 
-	fread(magic, 1, 32, idx);
+	g3d_stream_read(idx, magic, 1, 32);
 	if(strncmp(magic, "LeoCAD piece library index file", 31) != 0)
 	{
 		g_print("LeoCAD: pieces.idx: wrong magic\n");
 		return FALSE;
 	}
 
-	version = g3d_read_int8(idx);
-	lastupdate = g3d_read_int8(idx);
+	version = g3d_stream_read_int8(idx);
+	lastupdate = g3d_stream_read_int8(idx);
 
-	fseek(idx, -8, SEEK_END);
-	nmoved = g3d_read_int16_le(idx);
-	nbinsize = g3d_read_int32_le(idx);
-	npieces = g3d_read_int16_le(idx);
+	g3d_stream_seek(idx, -8, G_SEEK_END);
+	nmoved = g3d_stream_read_int16_le(idx);
+	nbinsize = g3d_stream_read_int32_le(idx);
+	npieces = g3d_stream_read_int16_le(idx);
 
-	fseek(idx, 34, SEEK_SET);
+	g3d_stream_seek(idx, 34, G_SEEK_SET);
 
 #if DEBUG > 0
 	g_print("LeoCAD: pieces.idx: version %d, last update %d\n",
@@ -613,21 +611,17 @@ static gboolean leocad_library_read_pieces_idx(LeoCadLibrary *library,
 #endif
 
 	for(i = 0; i < npieces; i ++)
-	{
 		leocad_library_read_piece(library, idx);
-	}
 
-	for(i = 0; i < nmoved; i ++)
-	{
+	for(i = 0; i < nmoved; i ++) {
 		memset(nameold, 0, 9);
 		memset(namenew, 0, 9);
 
-		fread(nameold, 1, 8, idx);
-		fread(namenew, 1, 8, idx);
+		g3d_stream_read(idx, nameold, 1, 8);
+		g3d_stream_read(idx, namenew, 1, 8);
 
 		piece = g_hash_table_lookup(library->pieces, namenew);
-		if(piece)
-		{
+		if(piece) {
 			newpiece = g_new0(LeoCadPiece, 1);
 			memcpy(newpiece, piece, sizeof(LeoCadPiece));
 			newpiece->name = g_strdup(nameold);

@@ -25,7 +25,7 @@
 
 #include <g3d/types.h>
 
-gboolean ta_3do_load_object(G3DContext *context, const gchar *filename,
+gboolean ta_3do_load_object(G3DContext *context, G3DStream *stream,
 	G3DModel *model, G3DMaterial *materials);
 
 #endif /* _IMP_TA_3DO_H */

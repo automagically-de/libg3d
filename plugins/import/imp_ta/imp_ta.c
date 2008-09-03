@@ -53,10 +53,10 @@ void plugin_cleanup(gpointer user_data)
 	g_free(user_data);
 }
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	return ta_3do_load_object(context, filename, model,
+	return ta_3do_load_object(context, stream, model,
 		(G3DMaterial *)user_data);
 }
 

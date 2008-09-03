@@ -23,104 +23,90 @@
 #include <stdio.h>
 
 #include <g3d/types.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/matrix.h>
 
-gboolean ta_3do_read_children(G3DContext *context, FILE *f, GSList **list,
-	G3DMaterial *materials);
+gboolean ta_3do_read_children(G3DContext *context, G3DStream *stream,
+	GSList **list, G3DMaterial *materials);
 
-gboolean ta_3do_load_object(G3DContext *context, const gchar *filename,
+gboolean ta_3do_load_object(G3DContext *context, G3DStream *stream,
 	G3DModel *model, G3DMaterial *materials)
 {
-	FILE *f;
-	gboolean retval;
-
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("E: failed to read '%s'\n", filename);
-		return FALSE;
-	}
-
-	retval =  ta_3do_read_children(context, f, &(model->objects), materials);
-	fclose(f);
-
-	return retval;
+	return ta_3do_read_children(context, stream, &(model->objects), materials);
 }
 
-gboolean ta_3do_read_children(G3DContext *context, FILE *f, GSList **list,
-	G3DMaterial *materials)
+gboolean ta_3do_read_children(G3DContext *context, G3DStream *stream,
+	GSList **list, G3DMaterial *materials)
 {
 	G3DObject *object;
 	G3DFace *face;
-	guint32 off_save, off_sav2, off_sibl, off_chld, off_vert, off_prim, off_i;
+	goffset off_save, off_sav2, off_sibl, off_chld, off_vert, off_prim, off_i;
 	guint32 num_prims, colidx;
 	gchar buffer[1025];
 	gint32 i, j, x, y, z;
 
-	while(!feof(f))
-	{
+	while(!g3d_stream_eof(stream)) {
 		/* signature */
-		if(g3d_read_int32_le(f) != 1)
+		if(g3d_stream_read_int32_le(stream) != 1)
 			return FALSE;
 
 		object = g_new0(G3DObject, 1);
 		*list = g_slist_append(*list, object);
 
 		/* number of vertices */
-		object->vertex_count = g3d_read_int32_le(f);
+		object->vertex_count = g3d_stream_read_int32_le(stream);
 		object->vertex_data = g_new0(gfloat, 3 * object->vertex_count);
 
 		/* number of primitives */
-		num_prims = g3d_read_int32_le(f);
+		num_prims = g3d_stream_read_int32_le(stream);
 
 		/* offset of selection primitive */
-		g3d_read_int32_le(f);
+		g3d_stream_read_int32_le(stream);
 
 		/* translation from parent */
-		x = g3d_read_int32_le(f);
-		y = g3d_read_int32_le(f);
-		z = g3d_read_int32_le(f);
+		x = g3d_stream_read_int32_le(stream);
+		y = g3d_stream_read_int32_le(stream);
+		z = g3d_stream_read_int32_le(stream);
 		object->transformation = g_new0(G3DTransformation, 1);
 		g3d_matrix_identity(object->transformation->matrix);
 		g3d_matrix_translate(x, y, z, object->transformation->matrix);
 
 		/* offset of object name */
-		off_save = ftell(f) + 4;
-		fseek(f, g3d_read_int32_le(f), SEEK_SET);
-		g3d_read_cstr(f, buffer, 1024);
+		off_save = g3d_stream_tell(stream) + 4;
+		g3d_stream_seek(stream, g3d_stream_read_int32_le(stream), G_SEEK_SET);
+		g3d_stream_read_cstr(stream, buffer, 1024);
 		buffer[1024] = '\0';
 		object->name = g_strdup(buffer);
-		fseek(f, off_save, SEEK_SET);
+		g3d_stream_seek(stream, off_save, G_SEEK_SET);
 #if DEBUG > 1
 		g_print("TA: object '%s'\n", object->name);
 #endif
 
 		/* always 0 */
-		g3d_read_int32_le(f);
+		g3d_stream_read_int32_le(stream);
 
 		/* offset of vertex array */
-		off_vert = g3d_read_int32_le(f);
-		off_save = ftell(f);
-		fseek(f, off_vert, SEEK_SET);
+		off_vert = g3d_stream_read_int32_le(stream);
+		off_save = g3d_stream_tell(stream);
+		g3d_stream_seek(stream, off_vert, G_SEEK_SET);
 		for(i = 0; i < object->vertex_count; i ++)
 		{
-			object->vertex_data[i * 3 + 0] = g3d_read_int32_le(f);
-			object->vertex_data[i * 3 + 1] = g3d_read_int32_le(f);
-			object->vertex_data[i * 3 + 2] = g3d_read_int32_le(f);
+			object->vertex_data[i * 3 + 0] = g3d_stream_read_int32_le(stream);
+			object->vertex_data[i * 3 + 1] = g3d_stream_read_int32_le(stream);
+			object->vertex_data[i * 3 + 2] = g3d_stream_read_int32_le(stream);
 		}
-		fseek(f, off_save, SEEK_SET);
+		g3d_stream_seek(stream, off_save, G_SEEK_SET);
 
 		/* offset of primitive array */
-		off_prim = g3d_read_int32_le(f);
-		off_save = ftell(f);
-		fseek(f, off_prim, SEEK_SET);
+		off_prim = g3d_stream_read_int32_le(stream);
+		off_save = g3d_stream_tell(stream);
+		g3d_stream_seek(stream, off_prim, G_SEEK_SET);
 		for(i = 0; i < num_prims; i ++)
 		{
 			face = g_new0(G3DFace, 1);
 
 			/* color index */
-			colidx = g3d_read_int32_le(f);
+			colidx = g3d_stream_read_int32_le(stream);
 #if DEBUG > 2
 			g_print("TA: color index: %d\n", colidx);
 #endif
@@ -128,51 +114,51 @@ gboolean ta_3do_read_children(G3DContext *context, FILE *f, GSList **list,
 			{
 				g_warning("TA: color index > 255 (%d)\n", colidx);
 				g_free(face);
-				fseek(f, 28, SEEK_CUR);
+				g3d_stream_skip(stream, 28);
 				continue;
 			}
 			face->material = &(materials[colidx]);
 
 			/* number of vertices */
-			face->vertex_count = g3d_read_int32_le(f);
+			face->vertex_count = g3d_stream_read_int32_le(stream);
 			if(face->vertex_count < 3)
 			{
 				/* skip this primitive */
 				g_free(face);
-				fseek(f, 24, SEEK_CUR);
+				g3d_stream_skip(stream, 24);
 				continue;
 			}
 			face->vertex_indices = g_new0(guint32, face->vertex_count);
 
 			/* always 0 */
-			g3d_read_int32_le(f);
+			g3d_stream_read_int32_le(stream);
 
 			/* offset of vertex index array */
-			off_i = g3d_read_int32_le(f);
-			off_sav2 = ftell(f);
+			off_i = g3d_stream_read_int32_le(stream);
+			off_sav2 = g3d_stream_tell(stream);
 #if DEBUG > 2
 			g_print("TA: vertex index offset: 0x%08x\n", off_i);
 #endif
-			fseek(f, off_i, SEEK_SET);
+			g3d_stream_seek(stream, off_i, G_SEEK_SET);
 			for(j = 0; j < face->vertex_count; j ++)
-				face->vertex_indices[j] = g3d_read_int16_le(f);
-			fseek(f, off_sav2, SEEK_SET);
+				face->vertex_indices[j] = g3d_stream_read_int16_le(stream);
+			g3d_stream_seek(stream, off_sav2, G_SEEK_SET);
 
 			/* offset of texture name */
-			g3d_read_int32_le(f);
+			g3d_stream_read_int32_le(stream);
 
 			/* unknown */
-			fseek(f, 12, SEEK_CUR);
+			g3d_stream_skip(stream, 12);
 
 			object->faces = g_slist_prepend(object->faces, face);
 		}
-		fseek(f, off_save, SEEK_SET);
+		g3d_stream_seek(stream, off_save, G_SEEK_SET);
 
 		/* offset of sibling object */
-		off_sibl = g3d_read_int32_le(f);
+		off_sibl = g3d_stream_read_int32_le(stream);
 
 		/* offset of child object */
-		off_chld = g3d_read_int32_le(f);
+		off_chld = g3d_stream_read_int32_le(stream);
 
 #if DEBUG > 3
 		g_print("TA: child @ 0x%08x, sibling @ 0x%08x\n", off_chld, off_sibl);
@@ -180,16 +166,17 @@ gboolean ta_3do_read_children(G3DContext *context, FILE *f, GSList **list,
 
 		if(off_chld != 0)
 		{
-			off_save = ftell(f);
-			fseek(f, off_chld, SEEK_SET);
-			ta_3do_read_children(context, f, &(object->objects), materials);
-			fseek(f, off_save, SEEK_SET);
+			off_save = g3d_stream_tell(stream);
+			g3d_stream_seek(stream, off_chld, G_SEEK_SET);
+			ta_3do_read_children(context, stream, &(object->objects),
+				materials);
+			g3d_stream_seek(stream, off_save, G_SEEK_SET);
 		}
 
 		if(off_sibl == 0)
 			return TRUE;
 
-		fseek(f, off_sibl, SEEK_SET);
+		g3d_stream_seek(stream, off_sibl, G_SEEK_SET);
 	}
 
 	return FALSE;

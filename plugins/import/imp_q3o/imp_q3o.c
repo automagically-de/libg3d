@@ -26,7 +26,7 @@
 #include <g3d/types.h>
 #include <g3d/context.h>
 #include <g3d/material.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 
 /*
  * format description:
@@ -34,96 +34,82 @@
  */
 
 static void q3o_update_face_textures(G3DModel *model, G3DContext *context);
-static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
-	G3DContext *context);
-static gboolean q3o_read_material(FILE *f, G3DModel *model, guint32 index,
-	guint32 n_textures);
-static gboolean q3o_read_texture(FILE *f, G3DModel *model);
-static gboolean q3o_read_scene(FILE *f, G3DContext *context);
-static gboolean q3o_read_eof(FILE *f);
+static gboolean q3o_read_mesh(G3DStream *stream, G3DModel *model,
+	guint32 n_textures, G3DContext *context);
+static gboolean q3o_read_material(G3DStream *stream, G3DModel *model,
+	guint32 index, guint32 n_textures);
+static gboolean q3o_read_texture(G3DStream *stream, G3DModel *model);
+static gboolean q3o_read_scene(G3DStream *stream, G3DContext *context);
+static gboolean q3o_read_eof(G3DStream *stream);
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	gchar signature[8], ver_min, ver_maj, id;
 	guint32 nmeshes, nmats, ntexs, i;
-	FILE *f;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("could not open '%s'", filename);
-		return FALSE;
-	}
-
-	fread(signature, 1, 8, f);
+	g3d_stream_read(stream, signature, 1, 8);
 	if(strncmp(signature, "quick3Ds", 8) && strncmp(signature, "quick3Do", 8))
 	{
-		g_warning("file '%s' is not a Quick3D file", filename);
-		fclose(f);
+		g_warning("file '%s' is not a Quick3D file", stream->uri);
 		return FALSE;
 	}
 
-	ver_maj = g3d_read_int8(f);
-	ver_min = g3d_read_int8(f);
+	ver_maj = g3d_stream_read_int8(stream);
+	ver_min = g3d_stream_read_int8(stream);
 #if DEBUG > 0
 	g_print("Q3O: version %c.%c\n", ver_maj, ver_min);
 #endif
 
-	nmeshes = g3d_read_int32_le(f);
-	nmats = g3d_read_int32_le(f);
-	ntexs = g3d_read_int32_le(f);
+	nmeshes = g3d_stream_read_int32_le(stream);
+	nmats = g3d_stream_read_int32_le(stream);
+	ntexs = g3d_stream_read_int32_le(stream);
 #if DEBUG > 0
 	g_print("Q3O: %d meshes, %d materials, %d textures\n",
 		nmeshes, nmats, ntexs);
 #endif
 
 	/* generate (emtpy) materials */
-	for(i = 0; i < nmats; i ++)
-	{
+	for(i = 0; i < nmats; i ++) {
 		G3DMaterial *material = g3d_material_new();
 		model->materials = g_slist_append(model->materials, material);
 	}
 
-	while((id = g3d_read_int8(f)) != 0)
-	{
+	while((id = g3d_stream_read_int8(stream)) != 0) {
 #if DEBUG > 0
-		g_print("Q3O: chunk type 0x%02x @ 0x%08lx\n", id, ftell(f) - 1);
+		g_print("Q3O: chunk type 0x%02x @ 0x%08x\n", id,
+			(guint32)g3d_stream_tell(stream) - 1);
 #endif
-		switch(id)
-		{
+		switch(id) {
 			case 'm': /* mesh */
 				for(i = 0; i < nmeshes; i ++)
-					q3o_read_mesh(f, model, ntexs, context);
+					q3o_read_mesh(stream, model, ntexs, context);
 				break;
 
 			case 'c': /* material */
 				for(i = 0; i < nmats; i ++)
-					q3o_read_material(f, model, i, ntexs);
+					q3o_read_material(stream, model, i, ntexs);
 				break;
 
 			case 't': /* texture */
 				for(i = 0; i < ntexs; i ++)
-					q3o_read_texture(f, model);
+					q3o_read_texture(stream, model);
 				break;
 
 			case 's': /* scene */
-				q3o_read_scene(f, context);
+				q3o_read_scene(stream, context);
 				break;
 
 			case 'q': /* EOF signature? */
-				q3o_read_eof(f);
+				q3o_read_eof(stream);
 				break;
 
 			default:
 				g_warning("Q3O: unknown chunk type 0x%02x\n", id);
-				fclose(f);
 				return TRUE;
 				break;
 		}
 	}
-
-	fclose(f);
 
 	/* update texture images */
 	q3o_update_face_textures(model, context);
@@ -190,8 +176,7 @@ static G3DImage *q3o_get_texture_nth(G3DModel *model, guint32 n)
 
 	sprintf(number, "%d", n);
 	image = g_hash_table_lookup(model->tex_images, number);
-	if(image)
-	{
+	if(image) {
 #if DEBUG > 5
 		g_print("Q3O: texture #%d from hash table\n", n);
 #endif
@@ -212,8 +197,8 @@ static G3DImage *q3o_get_texture_nth(G3DModel *model, guint32 n)
 	return image;
 }
 
-static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
-	G3DContext *context)
+static gboolean q3o_read_mesh(G3DStream *stream, G3DModel *model,
+	guint32 n_textures, G3DContext *context)
 {
 	guint32 i, j, nfaces, mat, nnormals, ntexco, index, nfaceverts = 0;
 	guint16 *faceshapes;
@@ -232,29 +217,29 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 	object->materials = g_slist_append(object->materials, material);
 
 	/* vertices */
-	object->vertex_count = g3d_read_int32_le(f);
+	object->vertex_count = g3d_stream_read_int32_le(stream);
 #if DEBUG > 3
 	g_print("Q3O: number of vertices: %d\n", object->vertex_count);
 #endif
 	object->vertex_data = g_new0(gfloat,object->vertex_count * 3);
 	for(i = 0; i < object->vertex_count; i ++)
 	{
-		object->vertex_data[i*3+0] = g3d_read_float_le(f);
-		object->vertex_data[i*3+1] = g3d_read_float_le(f);
-		object->vertex_data[i*3+2] = g3d_read_float_le(f);
+		object->vertex_data[i*3+0] = g3d_stream_read_float_le(stream);
+		object->vertex_data[i*3+1] = g3d_stream_read_float_le(stream);
+		object->vertex_data[i*3+2] = g3d_stream_read_float_le(stream);
 
 		g3d_context_update_interface(context);
 	}
 
 	/* faces */
-	nfaces = g3d_read_int32_le(f);
+	nfaces = g3d_stream_read_int32_le(stream);
 #if DEBUG > 3
     g_print("Q3O: number of faces: %d\n", nfaces);
 #endif
 	faceshapes = g_new0(guint16, nfaces);
 	for(i = 0; i < nfaces; i ++)
 	{
-		faceshapes[i] = g3d_read_int16_le(f);
+		faceshapes[i] = g3d_stream_read_int16_le(stream);
 		nfaceverts += faceshapes[i];
 
 		g3d_context_update_interface(context);
@@ -267,7 +252,7 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 		face->vertex_indices = g_new0(guint32, face->vertex_count);
 		for(j = 0; j < face->vertex_count; j ++)
 		{
-			face->vertex_indices[j] = g3d_read_int32_le(f);
+			face->vertex_indices[j] = g3d_stream_read_int32_le(stream);
 			if(face->vertex_indices[j] >= object->vertex_count)
 			{
 				g_warning("Q3O: vertex_indices >= vertex_count");
@@ -290,7 +275,7 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 	{
 		face = (G3DFace *)fitem->data;
 		g_assert(face != NULL);
-		mat = g3d_read_int32_le(f);
+		mat = g3d_stream_read_int32_le(stream);
 		face->material = (G3DMaterial*)g_slist_nth_data(model->materials, mat);
 		if(face->material == NULL)
 		{
@@ -303,26 +288,23 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 	}
 
 	/* normals */
-	nnormals = g3d_read_int32_le(f);
+	nnormals = g3d_stream_read_int32_le(stream);
 	normals = g_new0(gfloat, nnormals * 3);
 #if DEBUG > 3
 	g_print("Q3O: number of normals: %d\n", nnormals);
 #endif
-	for(i = 0; i < nnormals; i ++)
-	{
-		normals[i * 3 + 0] = g3d_read_float_le(f);
-		normals[i * 3 + 1] = g3d_read_float_le(f);
-		normals[i * 3 + 2] = g3d_read_float_le(f);
+	for(i = 0; i < nnormals; i ++) {
+		normals[i * 3 + 0] = g3d_stream_read_float_le(stream);
+		normals[i * 3 + 1] = g3d_stream_read_float_le(stream);
+		normals[i * 3 + 2] = g3d_stream_read_float_le(stream);
 
 		g3d_context_update_interface(context);
 	}
 
 	/* update faces */
-	if(object->vertex_count == nnormals)
-	{
+	if(object->vertex_count == nnormals) {
 		fitem = object->faces;
-		for(i = 0; i < nfaces; i ++)
-		{
+		for(i = 0; i < nfaces; i ++) {
 			face = (G3DFace *)fitem->data;
 			face->normals = g_new0(gfloat, faceshapes[i] * 3);
 			face->flags |= G3D_FLAG_FAC_NORMALS;
@@ -343,7 +325,7 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 	}
 
 	/* texture stuff */
-	ntexco = g3d_read_int32_le(f);
+	ntexco = g3d_stream_read_int32_le(stream);
 #if DEBUG > 3
 	g_print("Q3O: number of texture coordinates: %d\n", ntexco);
 #endif
@@ -354,8 +336,8 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 
 		for(i = 0; i < ntexco; i ++)
 		{
-			object->tex_vertex_data[i * 2 + 0] = g3d_read_float_le(f);
-			object->tex_vertex_data[i * 2 + 1] = g3d_read_float_le(f);
+			object->tex_vertex_data[i * 2 + 0] = g3d_stream_read_float_le(stream);
+			object->tex_vertex_data[i * 2 + 1] = g3d_stream_read_float_le(stream);
 		}
 
 		fitem = object->faces;
@@ -366,7 +348,7 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 			face->tex_vertex_data = g_new0(gfloat, faceshapes[i] * 2);
 			for(j = 0; j < faceshapes[i]; j ++)
 			{
-				index = g3d_read_int32_le(f);
+				index = g3d_stream_read_int32_le(stream);
 				face->tex_vertex_data[j * 2 + 0] =
 					object->tex_vertex_data[face->vertex_indices[j] * 2 + 0];
 				face->tex_vertex_data[j * 2 + 1] =
@@ -379,18 +361,18 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 	}
 
 	/* centerOfMass */
-	g3d_read_float_le(f);
-	g3d_read_float_le(f);
-	g3d_read_float_le(f);
+	g3d_stream_read_float_le(stream);
+	g3d_stream_read_float_le(stream);
+	g3d_stream_read_float_le(stream);
 
 	/* boundingBox */
-	g3d_read_float_le(f);
-	g3d_read_float_le(f);
-	g3d_read_float_le(f);
+	g3d_stream_read_float_le(stream);
+	g3d_stream_read_float_le(stream);
+	g3d_stream_read_float_le(stream);
 
-	g3d_read_float_le(f);
-	g3d_read_float_le(f);
-	g3d_read_float_le(f);
+	g3d_stream_read_float_le(stream);
+	g3d_stream_read_float_le(stream);
+	g3d_stream_read_float_le(stream);
 
 	/* clean up */
 	g_free(faceshapes);
@@ -408,8 +390,8 @@ static gboolean q3o_read_mesh(FILE *f, G3DModel *model, guint32 n_textures,
 	return TRUE;
 }
 
-static gboolean q3o_read_material(FILE *f, G3DModel *model, guint32 index,
-	guint32 n_textures)
+static gboolean q3o_read_material(G3DStream *stream, G3DModel *model,
+	guint32 index, guint32 n_textures)
 {
 	gchar buffer[2048], *bufp;
 	G3DMaterial *material;
@@ -418,34 +400,34 @@ static gboolean q3o_read_material(FILE *f, G3DModel *model, guint32 index,
 	material = g_slist_nth_data(model->materials, index);
 	memset(buffer, 0, 2048);
 	bufp = buffer;
-	while((*bufp = g3d_read_int8(f)) != '\0') bufp ++;
+	while((*bufp = g3d_stream_read_int8(stream)) != '\0') bufp ++;
 	material->name = g_strdup(buffer);
 #if DEBUG > 0
 	g_print("Q3O: material name: '%s'\n", buffer);
 #endif
 
 	/* ambientColor */
-	material->r = g3d_read_float_le(f);
-	material->g = g3d_read_float_le(f);
-	material->b = g3d_read_float_le(f);
+	material->r = g3d_stream_read_float_le(stream);
+	material->g = g3d_stream_read_float_le(stream);
+	material->b = g3d_stream_read_float_le(stream);
 
 	/* diffuseColor */
-	material->r = g3d_read_float_le(f);
-	material->g = g3d_read_float_le(f);
-	material->b = g3d_read_float_le(f);
+	material->r = g3d_stream_read_float_le(stream);
+	material->g = g3d_stream_read_float_le(stream);
+	material->b = g3d_stream_read_float_le(stream);
 
 	/* specularColor */
-	material->specular[0] = g3d_read_float_le(f);
-	material->specular[1] = g3d_read_float_le(f);
-	material->specular[2] = g3d_read_float_le(f);
+	material->specular[0] = g3d_stream_read_float_le(stream);
+	material->specular[1] = g3d_stream_read_float_le(stream);
+	material->specular[2] = g3d_stream_read_float_le(stream);
 
 	/* transparency */
-	material->a = g3d_read_float_le(f);
+	material->a = g3d_stream_read_float_le(stream);
 	if(material->a == 0.0) material->a = 1.0;
 	if(material->a < 0.1) material->a = 0.1;
 
 	/* texture */
-	num = g3d_read_int32_le(f);
+	num = g3d_stream_read_int32_le(stream);
 #if DEBUG > 4
 	g_print("Q3O: material unknown uint32: %d\n", num);
 #endif
@@ -455,7 +437,7 @@ static gboolean q3o_read_material(FILE *f, G3DModel *model, guint32 index,
 	return TRUE;
 }
 
-static int q3o_read_texture(FILE *f, G3DModel *model)
+static int q3o_read_texture(G3DStream *stream, G3DModel *model)
 {
 	G3DImage *image;
 	gchar buffer[2048], *bufp;
@@ -467,10 +449,11 @@ static int q3o_read_texture(FILE *f, G3DModel *model)
 
 	memset(buffer, 0, 2048);
 	bufp = buffer;
-	while((*bufp = g3d_read_int8(f)) != '\0') bufp ++;
+	while((*bufp = g3d_stream_read_int8(stream)) != '\0')
+		bufp ++;
 
-	width = g3d_read_int32_le(f);
-	height = g3d_read_int32_le(f);
+	width = g3d_stream_read_int32_le(stream);
+	height = g3d_stream_read_int32_le(stream);
 #if DEBUG > 0
 	g_print("Q3O: texture #%d '%s': %dx%d\n", index, buffer, width, height);
 #endif
@@ -486,11 +469,13 @@ static int q3o_read_texture(FILE *f, G3DModel *model)
 	image->tex_id = index;
 
 	for(y = 0; y < height; y ++)
-		for(x = 0; x < width; x ++)
-		{
-			image->pixeldata[(y * width + x) * 4 + 0] = g3d_read_int8(f);
-			image->pixeldata[(y * width + x) * 4 + 1] = g3d_read_int8(f);
-			image->pixeldata[(y * width + x) * 4 + 2] = g3d_read_int8(f);
+		for(x = 0; x < width; x ++) {
+			image->pixeldata[(y * width + x) * 4 + 0] =
+				g3d_stream_read_int8(stream);
+			image->pixeldata[(y * width + x) * 4 + 1] =
+				g3d_stream_read_int8(stream);
+			image->pixeldata[(y * width + x) * 4 + 2] =
+				g3d_stream_read_int8(stream);
 			image->pixeldata[(y * width + x) * 4 + 3] = 0xFF;
 		}
 
@@ -502,63 +487,64 @@ static int q3o_read_texture(FILE *f, G3DModel *model)
 	return TRUE;
 }
 
-static gboolean q3o_read_scene(FILE *f, G3DContext *context)
+static gboolean q3o_read_scene(G3DStream *stream, G3DContext *context)
 {
 	gchar buffer[2048], *bufp;
 	guint32 bgw, bgh;
 	/* position: 3 x float */
-	fseek(f, 12, SEEK_CUR);
+
+	g3d_stream_skip(stream, 12);
 
 	/* transformation: matrix */
-	fseek(f, 64, SEEK_CUR);
+	g3d_stream_skip(stream, 64);
 
 	/* axis: 3 x float */
-	fseek(f, 12, SEEK_CUR);
+	g3d_stream_skip(stream, 12);
 
 	/* angle: float */
-	fseek(f, 4, SEEK_CUR);
+	g3d_stream_skip(stream, 4);
 
 	/* eyePosition: 3 x float */
-	fseek(f, 12, SEEK_CUR);
+	g3d_stream_skip(stream, 12);
 
 	/* eyeRotation: 3 x float */
-	fseek(f, 12, SEEK_CUR);
+	g3d_stream_skip(stream, 12);
 
 	/* foregroundColor: color */
-	fseek(f, 12, SEEK_CUR);
+	g3d_stream_skip(stream, 12);
 
 	/* backgroundColor: color */
 	g3d_context_set_bgcolor(context,
-		g3d_read_float_le(f),
-		g3d_read_float_le(f),
-		g3d_read_float_le(f),
+		g3d_stream_read_float_le(stream),
+		g3d_stream_read_float_le(stream),
+		g3d_stream_read_float_le(stream),
 		1.0);
 
 	/* usingEyeFilter: bool */
-	g3d_read_int8(f);
+	g3d_stream_read_int8(stream);
 
 	/* eyeFilterColor: color */
-	fseek(f, 12, SEEK_CUR);
+	g3d_stream_skip(stream, 12);
 
 	/* eyeFilterAmount: float */
-	g3d_read_float_le(f);
+	g3d_stream_read_float_le(stream);
 
 	/* lightColor: color */
-	fseek(f, 12, SEEK_CUR);
+	g3d_stream_skip(stream, 12);
 
 	/* backgroundImageWidth: int */
-	bgw = g3d_read_int32_le(f);
+	bgw = g3d_stream_read_int32_le(stream);
 
 	/* backgroundImageHeight: int */
-	bgh = g3d_read_int32_le(f);
+	bgh = g3d_stream_read_int32_le(stream);
 
-	if(bgw * bgh)
-	{
+	if(bgw * bgh) {
 
 		/* backgroundFilename */
 		memset(buffer, 0, 2048);
 		bufp = buffer;
-		while((*bufp = g3d_read_int8(f)) != '\0') bufp ++;
+		while((*bufp = g3d_stream_read_int8(stream)) != '\0')
+			bufp ++;
 
 #if DEBUG > 0
 		g_print("Q3O: scene: background image '%s' (%dx%d)\n",
@@ -566,34 +552,31 @@ static gboolean q3o_read_scene(FILE *f, G3DContext *context)
 #endif
 
 		/* backgroundImage: pixel[] */
-		fseek(f, bgw * bgh * 3, SEEK_CUR);
+		g3d_stream_skip(stream, bgw * bgh * 3);
 	}
 
 	/* depthCuing: float */
-	g3d_read_float_le(f);
+	g3d_stream_read_float_le(stream);
 
 	/* depthCueColor: color */
-	fseek(f, 12, SEEK_CUR);
+	g3d_stream_skip(stream, 12);
 
 	/* gamma: float */
-	g3d_read_float_le(f);
+	g3d_stream_read_float_le(stream);
 
 	return FALSE;
 }
 
-static int q3o_read_eof(FILE *f)
+static int q3o_read_eof(G3DStream *stream)
 {
 	gchar buffer[8];
 
-	fseek(f, -1, SEEK_CUR);
+	g3d_stream_seek(stream, -1, G_SEEK_CUR);
 
-	if(fread(buffer, 1, 8, f) == 8)
-	{
+	if(g3d_stream_read(stream, buffer, 1, 8) == 8) {
 		if(strncmp(buffer, "quick3Ds", 8) == 0) return TRUE;
 		g_warning("Q3O: did not get expected EOF marker");
-	}
-	else
-	{
+	} else {
 		g_warning("Q3O: premature end of file\n");
 	}
 	return FALSE;

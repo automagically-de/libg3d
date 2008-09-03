@@ -424,6 +424,7 @@ gboolean g3d_plugins_load_image(G3DContext *context, const gchar *filename,
 	G3DImage *image)
 {
 	G3DPlugin *plugin;
+	G3DStream *stream;
 	gchar *lcext;
 	gboolean retval;
 
@@ -438,6 +439,20 @@ gboolean g3d_plugins_load_image(G3DContext *context, const gchar *filename,
 		return FALSE;
 	}
 	g_free(lcext);
+
+	if(plugin->loadimagestream_func != NULL) {
+		/* prefer stream loader */
+		stream = g3d_stream_open_file(filename, "rb");
+		if(stream) {
+			retval = g3d_plugins_load_image_from_stream(context, stream,
+				image);
+			g3d_stream_close(stream);
+			return retval;
+		} else {
+			g_warning("failed to open stream for '%s'", filename);
+			return FALSE;
+		}
+	}
 
 	if(plugin->loadimage_func == NULL) {
 		g_warning("can't find symbol 'plugin_load_image' in %s", plugin->name);

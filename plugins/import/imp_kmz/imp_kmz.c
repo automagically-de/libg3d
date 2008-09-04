@@ -37,7 +37,7 @@ static int kml_stream_read_cb(gpointer ctx, gchar *buffer, gint len)
 	return g3d_stream_read((G3DStream *)ctx, buffer, 1, len);
 }
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model)
 {
 	G3DStream *stream_dockml, *stream_model;
@@ -49,9 +49,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	xmlInitParser();
 
-	stream_dockml = g3d_stream_open_zip(filename, "doc.kml");
+	stream_dockml = g3d_stream_open_zip_from_stream(stream, "doc.kml");
 	if(stream_dockml == NULL) {
-		g_warning("KMZ: failed to read 'doc.kml' from '%s'", filename);
+		g_warning("KMZ: failed to read 'doc.kml' from '%s'", stream->uri);
 		return FALSE;
 	}
 
@@ -65,14 +65,14 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 #if DEBUG > 1
 			g_debug("KMZ: loading '%s' from '%s'", daename, filename);
 #endif
-			stream_model = g3d_stream_open_zip(filename, daename);
+			stream_model = g3d_stream_open_zip_from_stream(stream, daename);
 			if(stream_model != NULL) {
 				retval = g3d_plugins_load_model_from_stream(context,
 					stream_model, model);
 				g3d_stream_close(stream_model);
 			} else {
 				g_warning("KMZ: failed to find '%s' in '%s'", daename,
-					filename);
+					stream->uri);
 			}
 		}
 

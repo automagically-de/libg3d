@@ -35,7 +35,7 @@
 
 static int dae_input_read_cb(gpointer ctx, gchar *buffer, gint len)
 {
-	return g3d_stream_read((G3DStream *)ctx, buffer, 1, len);
+	return g3d_stream_read((G3DStream *)ctx, buffer, len);
 }
 
 static gboolean dae_load_scene(G3DContext *context, G3DStream *stream,

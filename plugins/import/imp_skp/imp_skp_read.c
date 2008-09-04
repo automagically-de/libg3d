@@ -26,7 +26,7 @@ gchar *skp_read_char(G3DStream *stream)
 	n = g3d_stream_read_int16_le(stream);
 
 	text = g_new0(gchar, n + 1);
-	g3d_stream_read(stream, text, 1, n);
+	g3d_stream_read(stream, text, n);
 
 	return text;
 }

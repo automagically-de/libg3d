@@ -87,7 +87,7 @@ static gchar *r4_read_string(G3DStream *stream, guint32 *r)
 
 	len = g3d_stream_read_int16_be(stream);
 	str = g_malloc0(len + 1);
-	g3d_stream_read(stream, str, 1, len);
+	g3d_stream_read(stream, str, len);
 
 	if(r)
 		*r = len + 2;

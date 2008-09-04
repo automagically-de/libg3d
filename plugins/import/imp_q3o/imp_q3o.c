@@ -48,7 +48,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	gchar signature[8], ver_min, ver_maj, id;
 	guint32 nmeshes, nmats, ntexs, i;
 
-	g3d_stream_read(stream, signature, 1, 8);
+	g3d_stream_read(stream, signature, 8);
 	if(strncmp(signature, "quick3Ds", 8) && strncmp(signature, "quick3Do", 8))
 	{
 		g_warning("file '%s' is not a Quick3D file", stream->uri);
@@ -573,7 +573,7 @@ static int q3o_read_eof(G3DStream *stream)
 
 	g3d_stream_seek(stream, -1, G_SEEK_CUR);
 
-	if(g3d_stream_read(stream, buffer, 1, 8) == 8) {
+	if(g3d_stream_read(stream, buffer, 8) == 8) {
 		if(strncmp(buffer, "quick3Ds", 8) == 0) return TRUE;
 		g_warning("Q3O: did not get expected EOF marker");
 	} else {

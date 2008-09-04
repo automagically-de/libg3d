@@ -96,7 +96,7 @@ gboolean max_cb_debug_string(MaxGlobalData *global, MaxLocalData *local)
 		len = local->nb;
 
 	str = g_new0(gchar, len + 1);
-	g3d_stream_read(global->stream, str, 1, len);
+	g3d_stream_read(global->stream, str, len);
 	local->nb -= len;
 
 	g_debug("|%s[TEXT] %s (%d)",
@@ -128,7 +128,7 @@ gboolean max_cb_0x0001_0x0005(MaxGlobalData *global, MaxLocalData *local)
 		len = g3d_stream_read_int32_le(global->stream);
 		local->nb -= 4;
 		str = g_malloc0(len + 1);
-		g3d_stream_read(global->stream, str, 1, len);
+		g3d_stream_read(global->stream, str, len);
 		local->nb -= len;
 		for(i = 0; i < 3; i ++)
 			w3[i] = g3d_stream_read_int16_le(global->stream);

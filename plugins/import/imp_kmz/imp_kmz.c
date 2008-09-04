@@ -34,7 +34,7 @@ static gchar * kmz_find_model(xmlDocPtr xmldoc);
 
 static int kml_stream_read_cb(gpointer ctx, gchar *buffer, gint len)
 {
-	return g3d_stream_read((G3DStream *)ctx, buffer, 1, len);
+	return g3d_stream_read((G3DStream *)ctx, buffer, len);
 }
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,

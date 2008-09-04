@@ -29,11 +29,10 @@ typedef struct {
 	goffset size;
 } G3DStreamFile;
 
-static gsize g3d_stream_file_read(gpointer ptr, gsize size, gsize nmemb,
-	 gpointer data)
+static gsize g3d_stream_file_read(gpointer ptr, gsize size, gpointer data)
 {
 	G3DStreamFile *sf = (G3DStreamFile *)data;
-	return fread((void *)ptr, size, nmemb, sf->f);
+	return fread((void *)ptr, 1, size, sf->f);
 }
 
 static gchar *g3d_stream_file_read_line(gchar *buf, gsize size, gpointer data)

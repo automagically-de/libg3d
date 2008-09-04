@@ -31,18 +31,17 @@ typedef struct {
 	gboolean free_buffer;
 } G3DStreamBuffer;
 
-static gsize g3d_stream_buffer_read(gpointer ptr, gsize size, gsize nmemb,
-	 gpointer data)
+static gsize g3d_stream_buffer_read(gpointer ptr, gsize size, gpointer data)
 {
 	G3DStreamBuffer *sbuf = (G3DStreamBuffer *)data;
 	guint8 *outbufp = (guint8 *)ptr;
-	guint32 max_items;
+	gsize max_size;
 
-	max_items = MIN(nmemb, (sbuf->size - sbuf->offset) / size);
-	memcpy(outbufp, sbuf->buffer + sbuf->offset, max_items * size);
-	sbuf->offset += max_items * size;
+	max_size = MIN(sbuf->size - sbuf->offset, size);
+	memcpy(outbufp, sbuf->buffer + sbuf->offset, max_size);
+	sbuf->offset += max_size;
 
-	return max_items;
+	return max_size;
 }
 
 static gint g3d_stream_buffer_seek(gpointer data, goffset offset,

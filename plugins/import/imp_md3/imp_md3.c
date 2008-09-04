@@ -156,7 +156,7 @@ gboolean md3_read_tag(G3DStream *stream, G3DContext *context, G3DModel *model)
 {
 	gchar name[65];
 
-	g3d_stream_read(stream, name, 1, 64);
+	g3d_stream_read(stream, name, 64);
 	name[64] = '\0';
 
 	g_print("MD3: tag: %s\n", name);
@@ -220,7 +220,7 @@ gboolean md3_read_mesh(G3DStream *stream, G3DContext *context, G3DModel *model)
 	object = g_new0(G3DObject, 1);
 
 	/* read name */
-	g3d_stream_read(stream, name, 1, 64);
+	g3d_stream_read(stream, name, 64);
 	object->name = g_strndup(name, 64);
 
 	flags = g3d_stream_read_int32_le(stream);
@@ -264,7 +264,7 @@ gboolean md3_read_mesh(G3DStream *stream, G3DContext *context, G3DModel *model)
 
 	/* skins */
 	g3d_stream_seek(stream, off_start + off_skins, G_SEEK_SET);
-	g3d_stream_read(stream, name, 1, 64);
+	g3d_stream_read(stream, name, 64);
 	g_print("MD3: skin name: %s\n", name);
 
 	/* read texture image */

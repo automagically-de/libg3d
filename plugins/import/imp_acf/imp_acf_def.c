@@ -22,7 +22,7 @@ AcfFile *acf_def_read(G3DStream *stream, const AcfDef *def,
 		switch(value->type) {
 			case XCHR:
 				value->xchr = g_new0(gchar, value->num + 1);
-				g3d_stream_read(stream, value->xchr, 1, value->num);
+				g3d_stream_read(stream, value->xchr, value->num);
 #if DEBUG > ACF_DEBUG_TYPES
 				g_debug("ACF: XCHR: %s = %s", value->name, value->xchr);
 #endif

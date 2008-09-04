@@ -40,13 +40,12 @@ typedef struct {
 	gchar *uri;
 } G3DStreamGsf;
 
-static gsize g3d_stream_gsf_read(gpointer ptr, gsize size, gsize nmemb,
-	 gpointer data)
+static gsize g3d_stream_gsf_read(gpointer ptr, gsize size, gpointer data)
 {
 	G3DStreamGsf *sg = (G3DStreamGsf *)data;
 	gsize n;
 
-	n = MIN(nmemb * size, gsf_input_remaining(sg->input_subfile));
+	n = MIN(size, gsf_input_remaining(sg->input_subfile));
 	gsf_input_read(sg->input_subfile, n, (guint8 *)ptr);
 	return n;
 }

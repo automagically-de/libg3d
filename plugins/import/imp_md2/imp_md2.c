@@ -93,7 +93,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		skinnames = g_new0(gchar *, numskins);
 		for(i = 0; i < numskins; i ++) {
 			skinnames[i] = g_new0(gchar, MD2_SKINNAMELEN);
-			g3d_stream_read(stream, skinnames[i], 1, MD2_SKINNAMELEN);
+			g3d_stream_read(stream, skinnames[i], MD2_SKINNAMELEN);
 #if DEBUG > 0
 			g_printerr("skin #%d: %s\n", i + 1, skinnames[i]);
 #endif
@@ -125,7 +125,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		t0 = g3d_stream_read_float_le(stream); /* translate */
 		t1 = g3d_stream_read_float_le(stream);
 		t2 = g3d_stream_read_float_le(stream);
-		g3d_stream_read(stream, fname, 1, 16); /* frame name*/
+		g3d_stream_read(stream, fname, 16); /* frame name*/
 
 		for(j = 0; j < numverts; j ++) {
 			gfloat x,y,z;

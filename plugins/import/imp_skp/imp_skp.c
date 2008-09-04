@@ -187,7 +187,7 @@ static gchar *skp_find_section(G3DStream *stream, guint32 max_nlen,
 	}
 
 	name = g_new0(gchar, nlen + 1);
-	g3d_stream_read(stream, name, 1, nlen);
+	g3d_stream_read(stream, name, nlen);
 	if(name[0] != 'C') {
 		g_free(name);
 		g3d_stream_seek(stream, offset, G_SEEK_SET);

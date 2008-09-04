@@ -41,7 +41,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	gchar buf[HEADER_SIZE + 1];
 	guint32 flags = 0, version;
 
-	if(g3d_stream_read(stream, buf, 1, HEADER_SIZE) != HEADER_SIZE) {
+	if(g3d_stream_read(stream, buf, HEADER_SIZE) != HEADER_SIZE) {
 		g_warning("Blend: %s: failed to read header", stream->uri);
 		return FALSE;
 	}
@@ -90,14 +90,14 @@ static gboolean blend_read_file(G3DContext *context, G3DStream *stream,
 {
 	guint32 code, len, old, sdnanr, nr, x1;
 	gint32 i;
-	BlendSdna *sdna;
+	BlendSdna *sdna = NULL;
 
 	while(TRUE) {
 		code = blend_read_uint(stream, flags);
 		len = blend_read_uint(stream, flags);
-		if(code == MKID('E','N','D','B')) {
+		if(code == MKID('E','N','D','B'))
 			return TRUE;
-		}
+
 		old = blend_read_uint(stream, flags);
 		sdnanr = blend_read_uint(stream, flags);
 		nr = blend_read_uint(stream, flags);
@@ -117,7 +117,18 @@ static gboolean blend_read_file(G3DContext *context, G3DStream *stream,
 
 		switch(code) {
 			case MKID('D','N','A','1'):
+				if(sdna != NULL) {
+					/* already read */
+					g3d_stream_skip(stream, len);
+					break;
+				}
 				sdna = blend_sdna_read_dna1(stream, flags, len);
+				if(sdna == NULL) {
+					g_warning("Blend: failed to read DNA1, giving up...");
+					return FALSE;
+				}
+				/* rewind stream to really read content */
+				g3d_stream_seek(stream, HEADER_SIZE, G_SEEK_SET);
 				break;
 			default:
 				g3d_stream_skip(stream, len);

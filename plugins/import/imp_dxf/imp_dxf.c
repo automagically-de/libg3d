@@ -47,7 +47,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	setlocale(LC_NUMERIC, "C");
 
-	if((g3d_stream_read(stream, binmagic, 1, 22) == 22) &&
+	if((g3d_stream_read(stream, binmagic, 22) == 22) &&
 		 (strncmp(binmagic, "AutoCAD Binary DXF", 18) == 0))
 		global->binary = TRUE;
 	else {
@@ -344,7 +344,7 @@ gboolean dxf_skip_section(DxfGlobalData *global)
 	while(!g3d_stream_eof(global->stream))
 		if(global->binary) {
 			do { c = g3d_stream_read_int8(global->stream); } while(c != 0);
-			read = g3d_stream_read(global->stream, buf, 1, 7);
+			read = g3d_stream_read(global->stream, buf, 7);
 			if((read == 7) && (strncmp(buf, "ENDSEC", 6) == 0))
 				return TRUE;
 			else

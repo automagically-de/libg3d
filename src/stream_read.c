@@ -25,7 +25,7 @@
 gint32 g3d_stream_read_int8(G3DStream *stream)
 {
 	guint8 c;
-	if(g3d_stream_read(stream, &c, 1, 1) != 1)
+	if(g3d_stream_read(stream, &c, 1) != 1)
 		return 0;
 	return c;
 }

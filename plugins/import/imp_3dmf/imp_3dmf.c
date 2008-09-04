@@ -66,7 +66,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	g3d_iff_read_chunk(stream, &id, &len, 0);
 	if((id != G3D_IFF_MKID('3', 'D', 'M', 'F')) || (len != 16)) {
 		g3d_stream_seek(stream, 0, G_SEEK_SET);
-		g3d_stream_read(stream, txthead, sizeof(gchar), 10);
+		g3d_stream_read(stream, txthead, 10);
 		if(strncmp(txthead, "3DMetafile", 10) == 0) {
 			g_warning("file %s is an ASCII 3D Metafile (unhandled)\n",
 				stream->uri);

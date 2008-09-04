@@ -552,11 +552,11 @@ static gboolean leocad_library_read_piece(LeoCadLibrary *library,
 
 	piece = g_new0(LeoCadPiece, 1);
 
-	g3d_stream_read(idx, buffer, 1, 8);
+	g3d_stream_read(idx, buffer, 8);
 	buffer[8] = '\0';
 	piece->name = g_strdup(buffer);
 
-	g3d_stream_read(idx, buffer, 1, 64);
+	g3d_stream_read(idx, buffer, 64);
 	buffer[64] = '\0';
 	piece->description = g_strdup(buffer);
 
@@ -586,7 +586,7 @@ static gboolean leocad_library_read_pieces_idx(LeoCadLibrary *library,
 	guint32 nmoved, nbinsize, npieces, i;
 	LeoCadPiece *piece, *newpiece;
 
-	g3d_stream_read(idx, magic, 1, 32);
+	g3d_stream_read(idx, magic, 32);
 	if(strncmp(magic, "LeoCAD piece library index file", 31) != 0)
 	{
 		g_print("LeoCAD: pieces.idx: wrong magic\n");
@@ -617,8 +617,8 @@ static gboolean leocad_library_read_pieces_idx(LeoCadLibrary *library,
 		memset(nameold, 0, 9);
 		memset(namenew, 0, 9);
 
-		g3d_stream_read(idx, nameold, 1, 8);
-		g3d_stream_read(idx, namenew, 1, 8);
+		g3d_stream_read(idx, nameold, 8);
+		g3d_stream_read(idx, namenew, 8);
 
 		piece = g_hash_table_lookup(library->pieces, namenew);
 		if(piece) {

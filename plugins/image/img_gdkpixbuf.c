@@ -51,7 +51,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	loader = gdk_pixbuf_loader_new();
 	while(!g3d_stream_eof(stream)) {
-		n = g3d_stream_read(stream, buffer, 1, BUFSIZE);
+		n = g3d_stream_read(stream, buffer, BUFSIZE);
 		if(n <= 0)
 			break;
 		if(!gdk_pixbuf_loader_write(loader, buffer, n, &error)) {

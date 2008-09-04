@@ -32,10 +32,10 @@ gchar *g3d_stream_get_uri(G3DStream *stream)
 	return stream->uri;
 }
 
-gsize g3d_stream_read(G3DStream *stream, gpointer ptr, gsize size, gsize n)
+gsize g3d_stream_read(G3DStream *stream, gpointer ptr, gsize size)
 {
 	if(stream->read)
-		return stream->read(ptr, size, n, stream->data);
+		return stream->read(ptr, size, stream->data);
 	return -1;
 }
 
@@ -46,7 +46,7 @@ static gchar *generic_readline(G3DStream *stream, gchar *buf, gsize size)
 	for(i = 0; i < (size - 1); i ++) {
 		if(g3d_stream_eof(stream))
 			return NULL;
-		if(g3d_stream_read(stream, buf + i, 1, 1) <= 0)
+		if(g3d_stream_read(stream, buf + i, 1) <= 0)
 			return NULL;
 		if(buf[i] == '\n') {
 			buf[i + 1] = '\0';
@@ -76,7 +76,7 @@ gint g3d_stream_skip(G3DStream *stream, goffset offset)
 		guint8 *buffer = g_new0(guint8, 1024);
 		while(todo > 0) {
 			s = MIN(todo, 1024);
-			if(stream->read(buffer, 1, s, stream->data) < s) {
+			if(stream->read(buffer, s, stream->data) < s) {
 				g_free(buffer);
 				return -1;
 			}

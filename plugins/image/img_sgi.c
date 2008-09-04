@@ -60,7 +60,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	g3d_stream_read_int32_be(stream); /* PIXMIN */
 	g3d_stream_read_int32_be(stream); /* PIXMAX */
 	g3d_stream_read_int32_be(stream); /* DUMMY */
-	g3d_stream_read(stream, name, 1, 80);
+	g3d_stream_read(stream, name, 80);
 
 	if(strlen(name) > 0) {
 #if DEBUG > 0

@@ -296,7 +296,7 @@ static gboolean leocad_load_lcd_piece(G3DStream *stream, G3DModel *model,
 		/* common stuff */
 
 		/* name of piece */
-		g3d_stream_read(stream, name, 1, 9);
+		g3d_stream_read(stream, name, 9);
 
 		/* color */
 		color = g3d_stream_read_int8(stream);
@@ -416,7 +416,7 @@ static gboolean leocad_load_lcd(G3DStream *stream, G3DModel *model,
 	guint32 i, count;
 	gfloat r, g, b;
 
-	g3d_stream_read(stream, magic, 1, 32);
+	g3d_stream_read(stream, magic, 32);
 	if(strncmp(magic, "LeoCAD", 6) != 0) {
 		g_warning("LeoCAD: '%s' is not a valid LeoCAD project file",
 			stream->uri);

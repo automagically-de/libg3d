@@ -40,8 +40,7 @@ enum {
 	G3D_STREAM_WRITABLE = 0x02
 };
 
-typedef gsize (* G3DStreamReadFunc)(gpointer ptr, gsize size, gsize nmemb,
-	gpointer data);
+typedef gsize (* G3DStreamReadFunc)(gpointer ptr, gsize size, gpointer data);
 typedef gchar *(* G3DStreamReadLineFunc)(gchar *buf, gsize size,
 	gpointer data);
 typedef gint (*G3DStreamSeekFunc)(gpointer data, goffset offset,
@@ -171,7 +170,19 @@ gdouble g3d_stream_read_double_le(G3DStream *stream);
  */
 gint32 g3d_stream_read_cstr(G3DStream *stream, gchar *buffer, gint32 max_len);
 
-gsize g3d_stream_read(G3DStream *stream, gpointer ptr, gsize size, gsize n);
+/**
+ * g3d_stream_read:
+ *
+ * @stream: the stream to read from
+ * @ptr: pointer to memory storage
+ * @size: number of bytes to read
+ *
+ * Reads a number of bytes from the stream.
+ *
+ * Returns: number of bytes successfully read.
+ */
+gsize g3d_stream_read(G3DStream *stream, gpointer ptr, gsize size);
+
 gchar *g3d_stream_read_line(G3DStream *stream, gchar *buf, gsize size);
 
 /**
@@ -186,8 +197,40 @@ gchar *g3d_stream_read_line(G3DStream *stream, gchar *buf, gsize size);
  * Returns: 0 on success, -1 else
  */
 gint g3d_stream_skip(G3DStream *stream, goffset offset);
+
+/**
+ * g3d_stream_seek:
+ *
+ * @stream: stream to seek in
+ * @offset: number of bytes to seek
+ * @whence: seek type
+ *
+ * Moves around the current position in the stream.
+ *
+ * Returns: 0 on success, -1 else
+ */
 gint g3d_stream_seek(G3DStream *stream, goffset offset, GSeekType whence);
+
+/**
+ * g3d_stream_tell:
+ *
+ * @stream: stream to get position from
+ *
+ * Tells the current position in the stream.
+ *
+ * Returns: current stream position
+ */
 goffset g3d_stream_tell(G3DStream *stream);
+
+/**
+ * g3d_stream_size:
+ *
+ * @stream: stream to get size from
+ *
+ * Get the size in bytes of a stream.
+ *
+ * Returns: size of stream in bytes
+ */
 goffset g3d_stream_size(G3DStream *stream);
 gboolean g3d_stream_eof(G3DStream *stream);
 gint g3d_stream_close(G3DStream *stream);

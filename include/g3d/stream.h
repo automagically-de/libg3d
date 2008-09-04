@@ -205,6 +205,8 @@ G3DStream *g3d_stream_from_buffer(guint8 *buffer, gsize size,
 G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 	const gchar *subfile);
 G3DStream *g3d_stream_open_zip(const gchar *filename, const gchar *subfile);
+G3DStream *g3d_stream_open_zip_from_stream(G3DStream *stream,
+	const gchar *subfile);
 #endif
 
 G_END_DECLS

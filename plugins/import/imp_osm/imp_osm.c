@@ -28,6 +28,7 @@
 #include <libxml/tree.h>
 
 #include <g3d/types.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/object.h>
 #include <g3d/vector.h>
@@ -55,12 +56,13 @@ static OSMMaterial osm_materials[] = {
 	{ NULL,                        0.0, 0.0, 0.0, 0.0 }
 };
 
+static int osm_input_read_cb(gpointer ctx, gchar *buffer, gint len);
 static void osm_add_node(G3DObject *object, OSMNodeTransList *translist,
 	xmlNodePtr node);
 static void osm_add_way(G3DObject *object, OSMNodeTransList *translist,
 	xmlNodePtr node, GHashTable *materials);
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model)
 {
 	xmlDocPtr xmldoc;
@@ -75,9 +77,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	xmlInitParser();
 
-	xmldoc = xmlParseFile(filename);
+	xmldoc = xmlReadIO(osm_input_read_cb, NULL, stream, stream->uri, NULL, 0);
 	if(xmldoc == NULL) {
-		g_warning("OSM: failed to parse XML file '%s'", filename);
+		g_warning("OSM: failed to parse XML file '%s'", stream->uri);
 		xmlCleanupParser();
 		return FALSE;
 	}
@@ -147,6 +149,11 @@ char **plugin_extensions(void)
 /*****************************************************************************/
 /* helper functions
  *****************************************************************************/
+
+static int osm_input_read_cb(gpointer ctx, gchar *buffer, gint len)
+{
+	return g3d_stream_read((G3DStream *)ctx, buffer, len);
+}
 
 #if 0
 #define G(i) (gdouble)(i)

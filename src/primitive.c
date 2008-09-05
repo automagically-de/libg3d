@@ -139,7 +139,7 @@ G3DObject *g3d_primitive_cylinder(gfloat radius, gfloat height,
 	guint32 i;
 
 	if(sides < 3)
-		return FALSE;
+		return NULL;
 
 	object = g_new0(G3DObject, 1);
 

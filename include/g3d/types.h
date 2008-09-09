@@ -158,7 +158,6 @@ typedef struct {
 
 /**
  * G3DTransformation:
- *
  * @matrix: the transformation matrix
  * @flags: flags
  *

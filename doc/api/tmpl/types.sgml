@@ -9,12 +9,10 @@ types
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
-
 
 <!-- ##### SECTION Stability_Level ##### -->
 
@@ -25,6 +23,17 @@ types
 </para>
 
 
+
+<!-- ##### ENUM G3DTexEnv ##### -->
+<para>
+
+</para>
+
+@G3D_TEXENV_UNSPECIFIED: 
+@G3D_TEXENV_BLEND: 
+@G3D_TEXENV_DECAL: 
+@G3D_TEXENV_MODULATE: 
+@G3D_TEXENV_REPLACE: 
 
 <!-- ##### STRUCT G3DImage ##### -->
 <para>
@@ -76,4 +85,12 @@ types
 @tex_image: 
 @tex_vertex_count: 
 @tex_vertex_data: 
+
+<!-- ##### STRUCT G3DTransformation ##### -->
+<para>
+
+</para>
+
+@matrix: 
+@flags: 
 

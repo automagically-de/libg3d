@@ -30,15 +30,62 @@
 
 #include <g3d/types.h>
 
+/**
+ * G3D_IFF_PAD1:
+ *
+ * No padding is done after chunks.
+ */
 #define G3D_IFF_PAD1   0x01
+/**
+ * G3D_IFF_PAD2:
+ *
+ * Chunks are 2-byte aligned
+ */
 #define G3D_IFF_PAD2   0x02
+/**
+ * G3D_IFF_PAD4:
+ *
+ * Chunks are 4-byte aligned
+ */
 #define G3D_IFF_PAD4   0x04
+/**
+ * G3D_IFF_PAD8:
+ *
+ * Chunks are 8-byte aligned
+ */
 #define G3D_IFF_PAD8   0x08
 
+/**
+ * G3D_IFF_SUBCHUNK_LEN16:
+ *
+ * All chunks except the toplevel ones have 16-bit sizes.
+ */
 #define G3D_IFF_SUBCHUNK_LEN16   0x10
+/**
+ * G3D_IFF_LEN16:
+ *
+ * All chunks have 16-bit sizes.
+ */
 #define G3D_IFF_LEN16            0x20
+/**
+ * G3D_IFF_LE:
+ *
+ * The file has little-endian data.
+ */
 #define G3D_IFF_LE               0x40 /* little endian */
 
+/**
+ * G3D_IFF_MKID:
+ * @a: first byte
+ * @b: second byte
+ * @c: third byte
+ * @d: fourth byte
+ *
+ * Generate an IFF chunk identifier from character representation, e.g.
+ * G3D_IFF_MKID('F','O','R','M').
+ *
+ * Returns: unsigned integer identifier.
+ */
 #define G3D_IFF_MKID(a,b,c,d) ( \
 	(((guint32)(a))<<24) | \
 	(((guint32)(b))<<16) | \
@@ -54,7 +101,18 @@ G_BEGIN_DECLS
 #define g3d_iff_chunk_info G3DIffChunkInfo
 #endif
 
-/* global data */
+/**
+ * G3DIffGlobal:
+ * @context: a valid context
+ * @model: a model
+ * @stream: the stream to read model from
+ * @flags: IFF flags
+ * @user_data: to be used by plugin
+ * @f: file to read model from (DEPRECATED)
+ * @max_fpos: maximum file position (DEPRECATED)
+ *
+ * The plugin-global data to be given to IFF callback functions.
+ */
 typedef struct {
 	G3DContext *context;
 	G3DModel *model;
@@ -67,7 +125,21 @@ typedef struct {
 #endif
 } G3DIffGlobal;
 
-/* local data */
+/**
+ * G3DIffLocal:
+ * @id: chunk identifier
+ * @parent_id: parent chunk identifier
+ * @object: an object set by parent callbacks, may be NULL
+ * @level: level of chunk
+ * @level_object: object shared by callbacks on the same level, may be NULL
+ * @nb: number of bytes remaining in chunk, has to be decremented after
+ * correctly after reading from stream
+ * @finalize: for container chunks the callback function is called before
+ * and after processing possible sub-chunks, the second time @finalize is set
+ * to TRUE
+ *
+ * The function-local data for IFF callback functions.
+ */
 typedef struct {
 	guint32 id;
 	guint32 parent_id;
@@ -78,9 +150,27 @@ typedef struct {
 	gboolean finalize;
 } G3DIffLocal;
 
+/**
+ * G3DIffChunkCallback:
+ * @global: the global data
+ * @local: the local data
+ *
+ * IFF callback function prototype.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 typedef gboolean (* G3DIffChunkCallback)(
 	G3DIffGlobal *global, G3DIffLocal *local);
 
+/**
+ * G3DIffChunkInfo:
+ * @id: identifier of chunk
+ * @description: human-readable description of chunk type
+ * @container: TRUE if this chunk contains sub-chunks
+ * @callback: function to be called if such a chunk is found
+ *
+ * A chunk type description.
+ */
 typedef struct {
 	gchar *id;
 	gchar *description;

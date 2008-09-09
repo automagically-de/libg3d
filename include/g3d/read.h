@@ -119,7 +119,7 @@ gfloat g3d_read_float_le(FILE *f);
 gdouble g3d_read_double_be(FILE *f);
 
 /**
- * g3d_read_double_be:
+ * g3d_read_double_le:
  * @f: the file to read from
  *
  * Read a 8 byte little-endian double-precision floating point number from
@@ -127,9 +127,18 @@ gdouble g3d_read_double_be(FILE *f);
  *
  * Returns: The read value, 0 in case of error
  */
-
 gdouble g3d_read_double_le(FILE *f);
 
+/**
+ * g3d_read_cstr:
+ * @f: the file to read from
+ * @buffer: the buffer to store line in
+ * @max_len: maximum length of string including termination character
+ *
+ * Read a zero-terminated string from file.
+ *
+ * Returns: number of bytes read from file.
+ */
 gint32 g3d_read_cstr(FILE *f, gchar *buffer, gint32 max_len);
 
 G_END_DECLS

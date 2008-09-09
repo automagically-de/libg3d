@@ -105,7 +105,7 @@ void g3d_context_set_set_bgcolor_func(G3DContext *context,
 	G3DSetBgColorFunc func, gpointer user_data);
 
 /**
- * g3d_context_set_update_interface_func
+ * g3d_context_set_update_interface_func:
  * @context: a valid context
  * @func: the callback function
  */
@@ -113,7 +113,7 @@ void g3d_context_set_update_interface_func(G3DContext *context,
 	G3DUpdateInterfaceFunc func, gpointer user_data);
 
 /**
- * g3d_context_set_update_progress_bar_func
+ * g3d_context_set_update_progress_bar_func:
  * @context: a valid context
  * @func: the callback function
  * @user_data: user-defined opaque pointer

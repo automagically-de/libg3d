@@ -1,11 +1,13 @@
 <SECTION>
 <FILE>types</FILE>
 G3D_FLAG_IMG_GREYSCALE
+G3DTexEnv
 G3DImage
 G3D_FLAG_MAT_TWOSIDE
 G3D_FLAG_FAC_NORMALS
 G3D_FLAG_FAC_TEXMAP
 G3DFace
+G3DTransformation
 </SECTION>
 
 <SECTION>
@@ -147,17 +149,32 @@ G3DStreamTellFunc
 
 <SECTION>
 <FILE>iff</FILE>
+G3D_IFF_PAD1
+G3D_IFF_PAD2
+G3D_IFF_PAD4
+G3D_IFF_PAD8
+G3D_IFF_LE
+G3D_IFF_LEN16
+G3D_IFF_SUBCHUNK_LEN16
 G3D_IFF_MKID
-g3d_iff_open
-g3d_iff_readchunk
+
+g3d_iff_check
+g3d_iff_read_chunk
 g3d_iff_handle_chunk
 g3d_iff_read_ctnr
 g3d_iff_id_to_text
 
+g3d_iff_open
+g3d_iff_readchunk
+
 G3DIffChunkCallback
+g3d_iff_chunk_callback
 G3DIffChunkInfo
+g3d_iff_chunk_info
 G3DIffGlobal
+g3d_iff_gdata
 G3DIffLocal
+g3d_iff_ldata
 </SECTION>
 
 <SECTION>

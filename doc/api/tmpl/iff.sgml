@@ -17,6 +17,55 @@ IFF file helper functions
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### MACRO G3D_IFF_PAD1 ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO G3D_IFF_PAD2 ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO G3D_IFF_PAD4 ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO G3D_IFF_PAD8 ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO G3D_IFF_LE ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO G3D_IFF_LEN16 ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO G3D_IFF_SUBCHUNK_LEN16 ##### -->
+<para>
+
+</para>
+
+
+
 <!-- ##### MACRO G3D_IFF_MKID ##### -->
 <para>
 
@@ -28,23 +77,23 @@ IFF file helper functions
 @d: 
 
 
-<!-- ##### FUNCTION g3d_iff_open ##### -->
+<!-- ##### FUNCTION g3d_iff_check ##### -->
 <para>
 
 </para>
 
-@filename: 
+@stream: 
 @id: 
 @len: 
 @Returns: 
 
 
-<!-- ##### FUNCTION g3d_iff_readchunk ##### -->
+<!-- ##### FUNCTION g3d_iff_read_chunk ##### -->
 <para>
 
 </para>
 
-@f: 
+@stream: 
 @id: 
 @len: 
 @flags: 
@@ -84,6 +133,29 @@ IFF file helper functions
 @Returns: 
 
 
+<!-- ##### FUNCTION g3d_iff_open ##### -->
+<para>
+
+</para>
+
+@filename: 
+@id: 
+@len: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_iff_readchunk ##### -->
+<para>
+
+</para>
+
+@f: 
+@id: 
+@len: 
+@flags: 
+@Returns: 
+
+
 <!-- ##### USER_FUNCTION G3DIffChunkCallback ##### -->
 <para>
 
@@ -92,6 +164,13 @@ IFF file helper functions
 @global: 
 @local: 
 @Returns: 
+
+
+<!-- ##### MACRO g3d_iff_chunk_callback ##### -->
+<para>
+
+</para>
+
 
 
 <!-- ##### STRUCT G3DIffChunkInfo ##### -->
@@ -103,6 +182,13 @@ IFF file helper functions
 @description: 
 @container: 
 @callback: 
+
+<!-- ##### MACRO g3d_iff_chunk_info ##### -->
+<para>
+
+</para>
+
+
 
 <!-- ##### STRUCT G3DIffGlobal ##### -->
 <para>
@@ -117,6 +203,13 @@ IFF file helper functions
 @f: 
 @max_fpos: 
 
+<!-- ##### MACRO g3d_iff_gdata ##### -->
+<para>
+
+</para>
+
+
+
 <!-- ##### STRUCT G3DIffLocal ##### -->
 <para>
 
@@ -129,4 +222,11 @@ IFF file helper functions
 @level_object: 
 @nb: 
 @finalize: 
+
+<!-- ##### MACRO g3d_iff_ldata ##### -->
+<para>
+
+</para>
+
+
 

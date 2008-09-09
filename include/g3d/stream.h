@@ -287,19 +287,89 @@ gboolean g3d_stream_eof(G3DStream *stream);
  */
 gint g3d_stream_close(G3DStream *stream);
 
-
+/**
+ * g3d_stream_new_custom:
+ * @flags: stream capability flags
+ * @uri: URI of new stream, must not be NULL
+ * @readfunc: read callback function
+ * @readlinefunc: read line callback function, may be NULL in which case
+ * line reading is emulated with g3d_stream_read()
+ * @seekfunc: seek callback function
+ * @tellfunc: tell callback function
+ * @sizefunc: size callback function
+ * @eoffunc: end-of-file callback function
+ * @closefunc: close callback function
+ * @data: opaque data for all callback functions
+ *
+ * Creates a new #G3DStream with custom callback functions.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error.
+ */
 G3DStream *g3d_stream_new_custom(guint32 flags, const gchar *uri,
 	G3DStreamReadFunc readfunc, G3DStreamReadLineFunc readlinefunc,
 	G3DStreamSeekFunc seekfunc, G3DStreamTellFunc tellfunc,
 	G3DStreamSizeFunc sizefunc,
 	G3DStreamEofFunc eoffunc, G3DStreamCloseFunc closefunc, gpointer data);
+
+/**
+ * g3d_stream_open_file:
+ * @filename: the name of the file to open
+ * @mode: the mode to open the file, as given to fopen()
+ *
+ * Opens a file with the C stdio routines.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error.
+ */
 G3DStream *g3d_stream_open_file(const gchar *filename, const gchar *mode);
+
+/**
+ * g3d_stream_from_buffer:
+ * @buffer: memory buffer to use
+ * @size: size of buffer
+ * @title: optional title of stream, may be NULL
+ * @free_buffer: whether to free the memory with g_free() on g3d_stream_close()
+ *
+ * Use a buffer in memory as #G3DStream.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error.
+ */
 G3DStream *g3d_stream_from_buffer(guint8 *buffer, gsize size,
 	const gchar *title, gboolean free_buffer);
 #ifdef HAVE_LIBGSF
+/**
+ * g3d_stream_open_structured_file:
+ * @filename: name of container file
+ * @subfile: name of (contained) sub-file
+ *
+ * Open a file within a Structured File as #G3DStream.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error.
+ */
 G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 	const gchar *subfile);
+
+/**
+ * g3d_stream_open_zip:
+ * @filename: name of container file
+ * @subfile: name of (contained) sub-file
+ *
+ * Open a file within a Zip archive.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error.
+ */
 G3DStream *g3d_stream_open_zip(const gchar *filename, const gchar *subfile);
+
+/**
+ * g3d_stream_open_zip_from_stream:
+ * @stream: stream of container file
+ * @subfile: name of (contained) sub-file
+ *
+ * Open a file within a Zip archive which is opened as a stream. At the
+ * moment this only works for streams opened by g3d_stream_open_file() as
+ * the file is directly opened again.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error.
+ */
 G3DStream *g3d_stream_open_zip_from_stream(G3DStream *stream,
 	const gchar *subfile);
 #endif

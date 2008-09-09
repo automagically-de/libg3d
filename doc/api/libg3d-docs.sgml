@@ -23,6 +23,7 @@
 	<chapter>
 		<title>plugin interface</title>
     	<xi:include href="xml/plugins.xml"/>
+		<xi:include href="xml/stream.xml"/>
 	    <xi:include href="xml/iff.xml"/>
     	<xi:include href="xml/read.xml"/>
 	    <xi:include href="xml/matrix.xml"/>

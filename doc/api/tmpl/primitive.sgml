@@ -29,6 +29,31 @@ primitive
 @Returns: 
 
 
+<!-- ##### FUNCTION g3d_primitive_box ##### -->
+<para>
+
+</para>
+
+@width: 
+@height: 
+@depth: 
+@material: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_primitive_box_strip_2d ##### -->
+<para>
+
+</para>
+
+@vcnt: 
+@vdata: 
+@height: 
+@width: 
+@material: 
+@Returns: 
+
+
 <!-- ##### FUNCTION g3d_primitive_cylinder ##### -->
 <para>
 

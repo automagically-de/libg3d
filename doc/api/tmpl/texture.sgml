@@ -28,6 +28,17 @@ Texture loading and manipulation
 @Returns: 
 
 
+<!-- ##### FUNCTION g3d_texture_load_from_stream ##### -->
+<para>
+
+</para>
+
+@context: 
+@model: 
+@stream: 
+@Returns: 
+
+
 <!-- ##### FUNCTION g3d_texture_load ##### -->
 <para>
 

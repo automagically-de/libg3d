@@ -26,6 +26,16 @@
 #include <stdio.h>
 #include <glib.h>
 
+/**
+ * SECTION:read
+ * @short_description: file reading abstraction (deprecated)
+ * @see_also: g3d_stream_open_file
+ * @include: g3d/read.h
+ *
+ * The g3d_read_* family of functions is deprecated in favour of the #G3DStream
+ * interface.
+ */
+
 G_BEGIN_DECLS
 
 /**

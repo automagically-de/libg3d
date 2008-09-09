@@ -17,6 +17,21 @@ Material generation and manipulation
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### STRUCT G3DMaterial ##### -->
+<para>
+
+</para>
+
+@name: 
+@r: 
+@g: 
+@b: 
+@a: 
+@shininess: 
+@specular: 
+@flags: 
+@tex_image: 
+
 <!-- ##### FUNCTION g3d_material_new ##### -->
 <para>
 

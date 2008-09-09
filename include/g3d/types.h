@@ -23,6 +23,12 @@
 #ifndef __G3D_TYPES_H__
 #define __G3D_TYPES_H__
 
+/**
+ * SECTION:types
+ * @short_description: some defined types for libg3d
+ * @include: g3d/g3d.h
+ */
+
 #include <glib.h>
 
 #include <g3d/config.h>
@@ -268,13 +274,22 @@ typedef struct _G3DPlugin G3DPlugin;
  * G3DModel
  *****************************************************************************/
 
+/**
+ * G3DModel:
+ * @filename: file name or URI of loaded model, may be set by application
+ * @materials: list of materials (#G3DMaterial)
+ * @objects: list of objects (#G3DObject)
+ */
 typedef struct {
 	gchar *filename;
+	/*< private >*/
 	G3DContext *context;
 
+	/*< public >*/
 	GSList *materials;
 	GSList *objects;
 
+	/*< private >*/
 	GHashTable *tex_images;
 
 	/* the plugin used to load the image, may be NULL */

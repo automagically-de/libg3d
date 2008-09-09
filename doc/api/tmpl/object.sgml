@@ -17,6 +17,20 @@ Object manipulation
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### STRUCT G3DObject ##### -->
+<para>
+
+</para>
+
+@name: 
+@materials: 
+@faces: 
+@objects: 
+@transformation: 
+@hide: 
+@vertex_count: 
+@vertex_data: 
+
 <!-- ##### FUNCTION g3d_object_free ##### -->
 <para>
 

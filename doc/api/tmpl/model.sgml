@@ -17,6 +17,15 @@ Model manipulation functions
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### STRUCT G3DModel ##### -->
+<para>
+
+</para>
+
+@filename: 
+@materials: 
+@objects: 
+
 <!-- ##### FUNCTION g3d_model_new ##### -->
 <para>
 
@@ -32,6 +41,17 @@ Model manipulation functions
 
 @context: 
 @filename: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g3d_model_load_full ##### -->
+<para>
+
+</para>
+
+@context: 
+@filename: 
+@flags: 
 @Returns: 
 
 

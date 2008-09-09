@@ -3,22 +3,20 @@
 G3D_FLAG_IMG_GREYSCALE
 G3DImage
 G3D_FLAG_MAT_TWOSIDE
-G3DMaterial
 G3D_FLAG_FAC_NORMALS
 G3D_FLAG_FAC_TEXMAP
 G3DFace
-G3DObject
-G3DSetBgColorFunc
-G3DUpdateInterfaceFunc
-G3DUpdateProgressBarFunc
-G3DContext
-G3DModel
 </SECTION>
 
 <SECTION>
 <FILE>context</FILE>
+G3DContext
 g3d_context_new
 g3d_context_free
+
+G3DSetBgColorFunc
+G3DUpdateInterfaceFunc
+G3DUpdateProgressBarFunc
 
 g3d_context_update_interface
 g3d_context_set_update_interface_func
@@ -32,8 +30,10 @@ g3d_context_set_set_bgcolor_func
 
 <SECTION>
 <FILE>model</FILE>
+G3DModel
 g3d_model_new
 g3d_model_load
+g3d_model_load_full
 g3d_model_check
 g3d_model_center
 g3d_model_clear
@@ -43,6 +43,7 @@ g3d_model_get_object_by_name
 
 <SECTION>
 <FILE>object</FILE>
+G3DObject
 g3d_object_free
 g3d_object_radius
 g3d_object_scale
@@ -61,6 +62,7 @@ g3d_face_free
 
 <SECTION>
 <FILE>material</FILE>
+G3DMaterial
 g3d_material_new
 g3d_material_free
 </SECTION>
@@ -68,6 +70,7 @@ g3d_material_free
 <SECTION>
 <FILE>texture</FILE>
 g3d_texture_load_cached
+g3d_texture_load_from_stream
 g3d_texture_load
 g3d_texture_free
 g3d_texture_prepare
@@ -86,12 +89,60 @@ PluginLoadModelFunc
 PluginLoadImageFunc
 PluginGetDescFunc
 PluginGetExtFunc
+
 G3DPlugin
+
 g3d_plugins_init
 g3d_plugins_cleanup
+
 g3d_plugins_load_model
+g3d_plugins_load_model_from_stream
 g3d_plugins_load_image
+g3d_plugins_load_image_from_stream
+
 g3d_plugins_get_image_extensions
+</SECTION>
+
+<SECTION>
+<FILE>stream</FILE>
+G3DStream
+
+g3d_stream_open_file
+g3d_stream_open_structured_file
+g3d_stream_open_zip
+g3d_stream_open_zip_from_stream
+g3d_stream_from_buffer
+g3d_stream_new_custom
+
+g3d_stream_close
+g3d_stream_skip
+g3d_stream_seek
+g3d_stream_tell
+g3d_stream_size
+g3d_stream_eof
+g3d_stream_is_seekable
+g3d_stream_get_uri
+
+g3d_stream_read
+g3d_stream_read_line
+g3d_stream_read_int8
+g3d_stream_read_int16_be
+g3d_stream_read_int16_le
+g3d_stream_read_int32_be
+g3d_stream_read_int32_le
+g3d_stream_read_float_be
+g3d_stream_read_float_le
+g3d_stream_read_double_be
+g3d_stream_read_double_le
+g3d_stream_read_cstr
+
+G3DStreamCloseFunc
+G3DStreamEofFunc
+G3DStreamReadFunc
+G3DStreamReadLineFunc
+G3DStreamSeekFunc
+G3DStreamSizeFunc
+G3DStreamTellFunc
 </SECTION>
 
 <SECTION>
@@ -102,6 +153,11 @@ g3d_iff_readchunk
 g3d_iff_handle_chunk
 g3d_iff_read_ctnr
 g3d_iff_id_to_text
+
+G3DIffChunkCallback
+G3DIffChunkInfo
+G3DIffGlobal
+G3DIffLocal
 </SECTION>
 
 <SECTION>
@@ -121,6 +177,8 @@ g3d_read_cstr
 <SECTION>
 <FILE>primitive</FILE>
 g3d_primitive_cube
+g3d_primitive_box
+g3d_primitive_box_strip_2d
 g3d_primitive_cylinder
 g3d_primitive_tube
 g3d_primitive_sphere

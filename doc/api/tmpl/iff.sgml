@@ -84,3 +84,49 @@ IFF file helper functions
 @Returns: 
 
 
+<!-- ##### USER_FUNCTION G3DIffChunkCallback ##### -->
+<para>
+
+</para>
+
+@global: 
+@local: 
+@Returns: 
+
+
+<!-- ##### STRUCT G3DIffChunkInfo ##### -->
+<para>
+
+</para>
+
+@id: 
+@description: 
+@container: 
+@callback: 
+
+<!-- ##### STRUCT G3DIffGlobal ##### -->
+<para>
+
+</para>
+
+@context: 
+@model: 
+@stream: 
+@flags: 
+@user_data: 
+@f: 
+@max_fpos: 
+
+<!-- ##### STRUCT G3DIffLocal ##### -->
+<para>
+
+</para>
+
+@id: 
+@parent_id: 
+@object: 
+@level: 
+@level_object: 
+@nb: 
+@finalize: 
+

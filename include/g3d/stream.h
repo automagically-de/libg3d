@@ -23,8 +23,11 @@
 #ifndef _G3D_STREAM_H
 #define _G3D_STREAM_H
 
-/*
- * abstraction of I/O for plugins
+/**
+ * SECTION:stream
+ * @short_description: I/O abstraction layer for plugins
+ * @see_also: #G3DStream
+ * @include: g3d/stream.h
  */
 
 #include <glib.h>
@@ -50,7 +53,13 @@ typedef goffset (*G3DStreamSizeFunc)(gpointer data);
 typedef gboolean (*G3DStreamEofFunc)(gpointer data);
 typedef gint (*G3DStreamCloseFunc)(gpointer data);
 
+/**
+ * G3DStream:
+ *
+ * An abstraction of input handling.
+ */
 struct _G3DStream {
+	/*< private >*/
 	guint32 flags;
 	gchar *uri;
 	G3DStreamReadFunc read;
@@ -64,7 +73,26 @@ struct _G3DStream {
 };
 
 /* public interface */
+
+/**
+ * g3d_stream_is_seekable:
+ * @stream: the stream
+ *
+ * Get information whether it is possible to seek in a stream.
+ *
+ * Returns: TRUE if seekable, FALSE else
+ */
 gboolean g3d_stream_is_seekable(G3DStream *stream);
+
+/**
+ * g3d_stream_get_uri:
+ * @stream: the stream
+ *
+ * Get the URI of a stream
+ *
+ * Returns: a non-NULL, zero-terminated string containing the URI of the
+ * string. This return value should not be freed.
+ */
 gchar *g3d_stream_get_uri(G3DStream *stream);
 
 /**
@@ -172,7 +200,6 @@ gint32 g3d_stream_read_cstr(G3DStream *stream, gchar *buffer, gint32 max_len);
 
 /**
  * g3d_stream_read:
- *
  * @stream: the stream to read from
  * @ptr: pointer to memory storage
  * @size: number of bytes to read
@@ -183,11 +210,21 @@ gint32 g3d_stream_read_cstr(G3DStream *stream, gchar *buffer, gint32 max_len);
  */
 gsize g3d_stream_read(G3DStream *stream, gpointer ptr, gsize size);
 
+/**
+ * g3d_stream_read_line:
+ * @stream: stream to read a line from
+ * @buf: an allocated buffer to be filled
+ * @size: maximum length of line including terminating zero
+ *
+ * Read a line (terminated by a newline character or end of file) from a
+ * stream.
+ *
+ * Returns: the read line or NULL in case of an error.
+ */
 gchar *g3d_stream_read_line(G3DStream *stream, gchar *buf, gsize size);
 
 /**
  * g3d_stream_skip:
- *
  * @stream: stream to skip bytes from
  * @offset: number of bytes to skip
  *
@@ -200,7 +237,6 @@ gint g3d_stream_skip(G3DStream *stream, goffset offset);
 
 /**
  * g3d_stream_seek:
- *
  * @stream: stream to seek in
  * @offset: number of bytes to seek
  * @whence: seek type
@@ -213,7 +249,6 @@ gint g3d_stream_seek(G3DStream *stream, goffset offset, GSeekType whence);
 
 /**
  * g3d_stream_tell:
- *
  * @stream: stream to get position from
  *
  * Tells the current position in the stream.
@@ -224,7 +259,6 @@ goffset g3d_stream_tell(G3DStream *stream);
 
 /**
  * g3d_stream_size:
- *
  * @stream: stream to get size from
  *
  * Get the size in bytes of a stream.
@@ -232,7 +266,25 @@ goffset g3d_stream_tell(G3DStream *stream);
  * Returns: size of stream in bytes
  */
 goffset g3d_stream_size(G3DStream *stream);
+
+/**
+ * g3d_stream_eof:
+ * @stream: the stream
+ *
+ * Checks whether the stream has reached its end.
+ *
+ * Returns: TRUE if no more data can be read, FALSE else.
+ */
 gboolean g3d_stream_eof(G3DStream *stream);
+
+/**
+ * g3d_stream_close:
+ * @stream: the stream
+ *
+ * Closes an open stream.
+ *
+ * Returns: 0 on success.
+ */
 gint g3d_stream_close(G3DStream *stream);
 
 

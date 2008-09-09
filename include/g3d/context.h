@@ -25,6 +25,13 @@
 
 #include <g3d/types.h>
 
+/**
+ * SECTION:context
+ * @short_description: Libg3d initialization and configuration
+ * @see_also: #G3DContext
+ * @include: g3d/g3d.h
+ */
+
 G_BEGIN_DECLS
 
 /**

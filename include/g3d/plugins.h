@@ -23,6 +23,17 @@
 #ifndef __G3D_PLUGINS_H__
 #define __G3D_PLUGINS_H__
 
+/**
+ * SECTION:plugins
+ * @short_description: Plugin interface
+ * @see_also: #G3DPlugin
+ * @include: g3d/plugins.h
+ *
+ * Direct interaction with the plugin system is normally not needed when using
+ * libg3d. It may be required when writing a plugin which should load a
+ * #G3DImage or a #G3DModel with another plugin.
+ */
+
 #include <gmodule.h>
 #include <g3d/types.h>
 
@@ -52,7 +63,13 @@ typedef gchar *(* PluginGetDescFunc)(G3DContext *context);
 
 typedef gchar **(* PluginGetExtFunc)(G3DContext *context);
 
+/**
+ * G3DPlugin:
+ *
+ * A libg3d plugin.
+ */
 struct _G3DPlugin {
+	/*< private >*/
 	gchar *name;
 	gchar *path;
 	guint32 type;
@@ -72,8 +89,23 @@ struct _G3DPlugin {
 	GModule *module;
 };
 
+/**
+ * g3d_plugins_init:
+ * @context: a valid #G3DContext
+ *
+ * Initializes the plugin system. This is implicitly done when using
+ * g3d_context_new().
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 gboolean g3d_plugins_init(G3DContext *context);
 
+/**
+ * g3d_plugins_cleanup:
+ * @context: a valid context
+ *
+ * Clean up the plugin system. Usually done by g3d_context_free().
+ */
 void g3d_plugins_cleanup(G3DContext *context);
 
 gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,

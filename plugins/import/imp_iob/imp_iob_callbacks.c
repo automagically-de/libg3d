@@ -20,12 +20,12 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <g3d/iff.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 
 #include "imp_iob.h"
 
-gboolean iob_cb_xLSx(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_xLSx(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	G3DMaterial *material;
@@ -37,12 +37,12 @@ gboolean iob_cb_xLSx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if((local->id & 0xFF) == '2')
 	{
-		nitems = g3d_read_int32_be(global->f);
+		nitems = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 	}
 	else
 	{
-		nitems = g3d_read_int16_be(global->f);
+		nitems = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
 	}
 
@@ -56,6 +56,7 @@ gboolean iob_cb_xLSx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		if(material == NULL)
 		{
 			material = g3d_material_new();
+			material->flags |= G3D_FLAG_MAT_TWOSIDE;
 			material->name = g_strdup_printf("per face material #%d", i);
 			object->materials = g_slist_append(object->materials, material);
 
@@ -69,27 +70,27 @@ gboolean iob_cb_xLSx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		{
 			case G3D_IFF_MKID('C', 'L', 'S', 'T'):
 			case G3D_IFF_MKID('C', 'L', 'S', '2'):
-				material->r = (gfloat)g3d_read_int8(global->f) / 255.0;
-				material->g = (gfloat)g3d_read_int8(global->f) / 255.0;
-				material->b = (gfloat)g3d_read_int8(global->f) / 255.0;
+				material->r = (gfloat)g3d_stream_read_int8(global->stream) / 255.0;
+				material->g = (gfloat)g3d_stream_read_int8(global->stream) / 255.0;
+				material->b = (gfloat)g3d_stream_read_int8(global->stream) / 255.0;
 				break;
 
 			case G3D_IFF_MKID('R', 'L', 'S', 'T'):
 			case G3D_IFF_MKID('R', 'L', 'S', '2'):
 				material->specular[0] =
-					(gfloat)g3d_read_int8(global->f) / 255.0;
+					(gfloat)g3d_stream_read_int8(global->stream) / 255.0;
 				material->specular[1] =
-					(gfloat)g3d_read_int8(global->f) / 255.0;
+					(gfloat)g3d_stream_read_int8(global->stream) / 255.0;
 				material->specular[2] =
-					(gfloat)g3d_read_int8(global->f) / 255.0;
+					(gfloat)g3d_stream_read_int8(global->stream) / 255.0;
 				break;
 
 			case G3D_IFF_MKID('T', 'L', 'S', 'T'):
 			case G3D_IFF_MKID('T', 'L', 'S', '2'):
 				material->a = 1.0 - (
-					(gfloat)g3d_read_int8(global->f) / 255.0 +
-					(gfloat)g3d_read_int8(global->f) / 255.0 +
-					(gfloat)g3d_read_int8(global->f) / 255.0) / 3.0;
+					(gfloat)g3d_stream_read_int8(global->stream) / 255.0 +
+					(gfloat)g3d_stream_read_int8(global->stream) / 255.0 +
+					(gfloat)g3d_stream_read_int8(global->stream) / 255.0) / 3.0;
 				break;
 		}
 
@@ -99,7 +100,7 @@ gboolean iob_cb_xLSx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-gboolean iob_cb_COLR(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_COLR(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	G3DMaterial *material;
@@ -110,16 +111,16 @@ gboolean iob_cb_COLR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	material = g_slist_nth_data(object->materials, 0);
 	g_return_val_if_fail(material != NULL, FALSE);
 
-	g3d_read_int8(global->f);
-	material->r = (float)g3d_read_int8(global->f) / 255.0;
-	material->g = (float)g3d_read_int8(global->f) / 255.0;
-	material->b = (float)g3d_read_int8(global->f) / 255.0;
+	g3d_stream_read_int8(global->stream);
+	material->r = (float)g3d_stream_read_int8(global->stream) / 255.0;
+	material->g = (float)g3d_stream_read_int8(global->stream) / 255.0;
+	material->b = (float)g3d_stream_read_int8(global->stream) / 255.0;
 	local->nb -= 4;
 
 	return TRUE;
 }
 
-gboolean iob_cb_DESC(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_DESC(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	G3DMaterial *material;
@@ -140,7 +141,7 @@ gboolean iob_cb_DESC(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-gboolean iob_cb_EDGx(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_EDGx(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	gint32 i, nedges;
@@ -151,12 +152,12 @@ gboolean iob_cb_EDGx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(local->id == G3D_IFF_MKID('E','D','G','E'))
 	{
-		nedges = g3d_read_int16_be(global->f);
+		nedges = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
 	}
 	else
 	{
-		nedges = g3d_read_int32_be(global->f);
+		nedges = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 	}
 
@@ -165,14 +166,14 @@ gboolean iob_cb_EDGx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	{
 		if(local->id == G3D_IFF_MKID('E','D','G','E'))
 		{
-			edges[i * 2 + 0] = g3d_read_int16_be(global->f);
-			edges[i * 2 + 1] = g3d_read_int16_be(global->f);
+			edges[i * 2 + 0] = g3d_stream_read_int16_be(global->stream);
+			edges[i * 2 + 1] = g3d_stream_read_int16_be(global->stream);
 			local->nb -= 4;
 		}
 		else
 		{
-			edges[i * 2 + 0] = g3d_read_int32_be(global->f);
-			edges[i * 2 + 1] = g3d_read_int32_be(global->f);
+			edges[i * 2 + 0] = g3d_stream_read_int32_be(global->stream);
+			edges[i * 2 + 1] = g3d_stream_read_int32_be(global->stream);
 			local->nb -= 8;
 		}
 	}
@@ -182,7 +183,7 @@ gboolean iob_cb_EDGx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-gboolean iob_cb_FACx(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_FACx(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	gint32 *edges, e[3], v1, v2, v3;
@@ -197,12 +198,12 @@ gboolean iob_cb_FACx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(local->id == G3D_IFF_MKID('F','A','C','E'))
 	{
-		nfaces = g3d_read_int16_be(global->f);
+		nfaces = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
 	}
 	else
 	{
-		nfaces = g3d_read_int32_be(global->f);
+		nfaces = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 	}
 
@@ -214,16 +215,16 @@ gboolean iob_cb_FACx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 		if(local->id == G3D_IFF_MKID('F','A','C','E'))
 		{
-			e[0] = g3d_read_int16_be(global->f);
-			e[1] = g3d_read_int16_be(global->f);
-			e[2] = g3d_read_int16_be(global->f);
+			e[0] = g3d_stream_read_int16_be(global->stream);
+			e[1] = g3d_stream_read_int16_be(global->stream);
+			e[2] = g3d_stream_read_int16_be(global->stream);
 			local->nb -= 6;
 		}
 		else
 		{
-			e[0] = g3d_read_int32_be(global->f);
-			e[1] = g3d_read_int32_be(global->f);
-			e[2] = g3d_read_int32_be(global->f);
+			e[0] = g3d_stream_read_int32_be(global->stream);
+			e[1] = g3d_stream_read_int32_be(global->stream);
+			e[2] = g3d_stream_read_int32_be(global->stream);
 			local->nb -= 12;
 		}
 
@@ -251,7 +252,7 @@ gboolean iob_cb_FACx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-gboolean iob_cb_NAME(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_NAME(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	gchar buffer[512];
@@ -259,7 +260,7 @@ gboolean iob_cb_NAME(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	object = (G3DObject *)local->object;
 	g_return_val_if_fail(object != NULL, FALSE);
 
-	fread(buffer, 1, local->nb, global->f);
+	g3d_stream_read(global->stream, buffer, local->nb);
 
 	object->name = g_convert(buffer, local->nb,
 		"UTF-8", "ISO-8859-1",
@@ -270,7 +271,7 @@ gboolean iob_cb_NAME(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-gboolean iob_cb_PNTx(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_PNTx(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	gint32 i;
@@ -280,12 +281,12 @@ gboolean iob_cb_PNTx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	if(local->id == G3D_IFF_MKID('P','N','T','S'))
 	{
-		object->vertex_count = g3d_read_int16_be(global->f);
+		object->vertex_count = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 2;
 	}
 	else
 	{
-		object->vertex_count = g3d_read_int32_be(global->f);
+		object->vertex_count = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
 	}
 
@@ -293,19 +294,20 @@ gboolean iob_cb_PNTx(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	for(i = 0; i < object->vertex_count; i ++)
 	{
-		object->vertex_data[i * 3 + 0] = iob_read_fract(global->f);
-		object->vertex_data[i * 3 + 1] = iob_read_fract(global->f);
-		object->vertex_data[i * 3 + 2] = iob_read_fract(global->f);
+		object->vertex_data[i * 3 + 0] = iob_read_fract(global->stream);
+		object->vertex_data[i * 3 + 1] = iob_read_fract(global->stream);
+		object->vertex_data[i * 3 + 2] = iob_read_fract(global->stream);
 		local->nb -= 12;
 	}
 
 	return TRUE;
 }
 
-gboolean iob_cb_REFL(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_REFL(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	G3DMaterial *material;
+	gint32 i;
 
 	object = (G3DObject *)local->object;
 	g_return_val_if_fail(object != NULL, FALSE);
@@ -313,16 +315,16 @@ gboolean iob_cb_REFL(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	material = g_slist_nth_data(object->materials, 0);
 	g_return_val_if_fail(material != NULL, FALSE);
 
-	g3d_read_int8(global->f);
-	material->specular[0] = (float)g3d_read_int8(global->f) / 255.0;
-	material->specular[1] = (float)g3d_read_int8(global->f) / 255.0;
-	material->specular[2] = (float)g3d_read_int8(global->f) / 255.0;
+	g3d_stream_read_int8(global->stream);
+	for(i = 0; i < 3; i ++)
+		material->specular[i] =
+			(gfloat)g3d_stream_read_int8(global->stream) / 255.0;
 	local->nb -= 4;
 
 	return TRUE;
 }
 
-gboolean iob_cb_TRAN(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean iob_cb_TRAN(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	G3DMaterial *material;
@@ -333,11 +335,11 @@ gboolean iob_cb_TRAN(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	material = g_slist_nth_data(object->materials, 0);
 	g_return_val_if_fail(material != NULL, FALSE);
 
-	g3d_read_int8(global->f);
+	g3d_stream_read_int8(global->stream);
 	material->a = 1.0 - (
-		(gfloat)g3d_read_int8(global->f) / 255.0 +
-		(gfloat)g3d_read_int8(global->f) / 255.0 +
-		(gfloat)g3d_read_int8(global->f) / 255.0) / 3.0;
+		(gfloat)g3d_stream_read_int8(global->stream) / 255.0 +
+		(gfloat)g3d_stream_read_int8(global->stream) / 255.0 +
+		(gfloat)g3d_stream_read_int8(global->stream) / 255.0) / 3.0;
 	local->nb -= 4;
 
 	return TRUE;

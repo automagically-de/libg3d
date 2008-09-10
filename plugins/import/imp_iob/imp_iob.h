@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <glib.h>
 
-gfloat iob_read_fract(FILE *f);
+#include <g3d/stream.h>
+
+gfloat iob_read_fract(G3DStream *stream);
 
 #endif /* _IMP_IOB_H */

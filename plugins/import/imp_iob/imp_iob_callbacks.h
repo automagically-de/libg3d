@@ -24,14 +24,14 @@
 
 #include <g3d/iff.h>
 
-gboolean iob_cb_xLSx(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean iob_cb_COLR(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean iob_cb_DESC(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean iob_cb_EDGx(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean iob_cb_FACx(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean iob_cb_NAME(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean iob_cb_PNTx(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean iob_cb_REFL(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean iob_cb_TRAN(g3d_iff_gdata *global, g3d_iff_ldata *local);
+gboolean iob_cb_xLSx(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean iob_cb_COLR(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean iob_cb_DESC(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean iob_cb_EDGx(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean iob_cb_FACx(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean iob_cb_NAME(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean iob_cb_PNTx(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean iob_cb_REFL(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean iob_cb_TRAN(G3DIffGlobal *global, G3DIffLocal *local);
 
 #endif /* _IMP_IOB_CALLBACKS_H */

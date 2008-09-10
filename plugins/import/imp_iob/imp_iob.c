@@ -28,33 +28,30 @@
 #include <g3d/types.h>
 #include <g3d/context.h>
 #include <g3d/material.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/iff.h>
 
 #include "imp_iob_chunks.h"
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	g3d_iff_gdata *global;
-	g3d_iff_ldata *local;
+	G3DIffGlobal *global;
+	G3DIffLocal *local;
 	guint32 id, len;
-	FILE *f;
 
-	f = g3d_iff_open(filename, &id, &len);
-	if(id != G3D_IFF_MKID('T','D','D','D'))
-	{
-		g_warning("file is not an .iob (TDDD) file %s", filename);
-		fclose(f);
+	if(!g3d_iff_check(stream, &id, &len) ||
+		(id != G3D_IFF_MKID('T','D','D','D'))) {
+		g_warning("file is not an .iob (TDDD) file %s", stream->uri);
 		return FALSE;
 	}
 
-	local = g_new0(g3d_iff_ldata, 1);
-	global = g_new0(g3d_iff_gdata, 1);
+	local = g_new0(G3DIffLocal, 1);
+	global = g_new0(G3DIffGlobal, 1);
 
 	global->context = context;
 	global->model = model;
-	global->f = f;
+	global->stream = stream;
 
 	local->parent_id = id;
 	local->nb = len;
@@ -83,9 +80,9 @@ char **plugin_extensions(void)
 /* IOB specific                                                              */
 /*****************************************************************************/
 
-gfloat iob_read_fract(FILE *f)
+gfloat iob_read_fract(G3DStream *stream)
 {
-	gint32 i = g3d_read_int32_be(f);
+	gint32 i = g3d_stream_read_int32_be(stream);
 	return (gfloat)(i / 0xFFFF);
 }
 

@@ -26,7 +26,7 @@
 
 #include "imp_iob_callbacks.h"
 
-static g3d_iff_chunk_info iob_chunks[] = {
+static G3DIffChunkInfo iob_chunks[] = {
 	{ "AXIS", "coordinate system",                0, NULL },
 	{ "BBOX", "bounding box data",                0, NULL },
 	{ "BRS4", "brush (4)",                        0, NULL },

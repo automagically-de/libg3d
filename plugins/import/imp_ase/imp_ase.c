@@ -26,15 +26,16 @@
 #include <locale.h>
 
 #include <g3d/types.h>
+#include <g3d/context.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model)
 {
-	FILE *f;
 	gchar line[2048], tmp[128], *s;
-	guint32 i, j, a, b, c, ab, bc, ca, mtlid, glid = 0, tvertcnt = 0;
+	guint32 i, j, a, b, c, ab, bc, ca, mtlid, glid = 0, tvertcnt = 0, lnum = 0;
 	gfloat x, y, z, *tverts = NULL;
 	G3DObject *object = NULL;
 	G3DMaterial *material;
@@ -42,15 +43,8 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	setlocale(LC_NUMERIC, "C");
 
-	f = fopen(filename, "r");
-	if(f == NULL)
-	{
-		g_warning("E: failed to open '%s'\n", filename);
-		return EXIT_FAILURE;
-	}
-
-	while(fgets(line, 2048, f))
-	{
+	while(g3d_stream_read_line(stream, line, 2048)) {
+		lnum ++;
 		g_strstrip(line);
 
 #if DEBUG > 4
@@ -225,26 +219,28 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 				}
 			}
 		}
-	}
+		if((lnum % 10) == 0)
+			g3d_context_update_progress_bar(context,
+				(gfloat)g3d_stream_tell(stream) /
+				(gfloat)g3d_stream_size(stream), TRUE);
+	} /* read line */
 
 	/* clean up */
-	if(tverts)
-	{
+	if(tverts) {
 		g_free(tverts);
 		tvertcnt = 0;
 	}
-
-	fclose(f);
+	g3d_context_update_progress_bar(context, 0.0, FALSE);
 
 	return TRUE;
 }
 
-char *plugin_description(void)
+gchar *plugin_description(void)
 {
 	return g_strdup("import plugin for ASCII Scene Exporter (ASE) files\n");
 }
 
-char **plugin_extensions(void)
+gchar **plugin_extensions(void)
 {
 	return g_strsplit("ase", ":", 0);
 }

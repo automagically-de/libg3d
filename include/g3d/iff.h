@@ -29,9 +29,10 @@
  * @include: g3d/iff.h
  */
 
-#ifndef G3D_DISABLE_DEPRECATED
+/* FIXME: still needed for FILE until all plugins are converted
+ * #ifndef G3D_DISABLE_DEPRECATED */
 #include <stdio.h>
-#endif
+/* #endif */
 #include <glib.h>
 
 #include <g3d/types.h>

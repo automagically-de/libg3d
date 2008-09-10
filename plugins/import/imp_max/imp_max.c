@@ -24,7 +24,6 @@
 
 #include <g3d/types.h>
 #include <g3d/context.h>
-#include <g3d/read.h>
 #include <g3d/object.h>
 #include <g3d/material.h>
 #include <g3d/stream.h>
@@ -34,7 +33,7 @@
 
 
 static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
-	const gchar *filename, const gchar *subfile);
+	G3DStream *stream, const gchar *subfile);
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	guint32 level, gint32 parentid, gpointer object, guint32 *l2cnt,
 	GNode *tree);
@@ -78,7 +77,7 @@ typedef struct {
 	gchar *text;
 } MaxTreeItem;
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model)
 {
 	gboolean retval = FALSE;
@@ -99,7 +98,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	model->materials = g_slist_append(model->materials, material);
 
 	while(*subfile) {
-		retval = max_read_subfile(context, model, filename, *subfile);
+		retval = max_read_subfile(context, model, stream, *subfile);
 		subfile ++;
 	}
 
@@ -108,12 +107,12 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	return retval;
 }
 
-char *plugin_description(void)
+gchar *plugin_description(void)
 {
 	return g_strdup("import plugin for 3D Studio MAX files (EXPERIMENTAL)\n");
 }
 
-char **plugin_extensions(void)
+gchar **plugin_extensions(void)
 {
 	return g_strsplit("max:gmax", ":", 0);
 }
@@ -140,7 +139,7 @@ static void max_walk_tree(GNode *tree, guint32 level)
 }
 
 static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
-	const gchar *filename, const gchar *subfile)
+	G3DStream *stream, const gchar *subfile)
 {
 	G3DStream *ssf;
 	MaxGlobalData *global;
@@ -153,10 +152,10 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	rootitem->text = g_strdup("ROOT");
 	tree = g_node_new(rootitem);
 
-	ssf = g3d_stream_open_structured_file(filename, subfile);
+	ssf = g3d_stream_open_structured_file_from_stream(stream, subfile);
 	if(ssf == NULL) {
 		g_warning("MAX: failed to open '%s' in structured file '%s'",
-			subfile, filename);
+			subfile, stream->uri);
 		return FALSE;
 	}
 

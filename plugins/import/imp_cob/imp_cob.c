@@ -29,37 +29,25 @@
 #include <g3d/material.h>
 #include <g3d/vector.h>
 #include <g3d/matrix.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/iff.h>
 
-static gboolean cob_read_file_bin(FILE *f, G3DModel *model, gboolean is_be,
-	G3DContext *context);
+static gboolean cob_read_file_bin(G3DStream *stream, G3DModel *model,
+	gboolean is_be, G3DContext *context);
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	FILE *f;
 	gchar header[32];
 	gboolean file_is_ascii, file_is_be;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("COB: could not open '%s'", filename);
-		return FALSE;
-	}
-
-	if(fread(header, 1, 32, f) != 32)
-	{
+	if(g3d_stream_read(stream, header, 32) != 32) {
 		g_warning("COB: could not read header");
-		fclose(f);
 		return FALSE;
 	}
 
-	if(strncmp(header, "Caligari ", 9) != 0)
-	{
-		g_warning("COB: '%s' is not a valid TrueSpace file", filename);
-		fclose(f);
+	if(strncmp(header, "Caligari ", 9) != 0) {
+		g_warning("COB: '%s' is not a valid TrueSpace file", stream->uri);
 		return FALSE;
 	}
 
@@ -73,26 +61,22 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		file_is_be ? "big" : "little" );
 #endif
 
-	if(file_is_ascii)
-	{
+	if(file_is_ascii) {
 		g_warning("COB: ASCII files are unsupported at the moment");
-		fclose(f);
 		return FALSE;
 	}
 
-	cob_read_file_bin(f, model, file_is_be, context);
-
-	fclose(f);
+	cob_read_file_bin(stream, model, file_is_be, context);
 
 	return TRUE;
 }
 
-char *plugin_description(void)
+gchar *plugin_description(void)
 {
 	return g_strdup("import plugin for Caligari TrueSpace objects\n");
 }
 
-char **plugin_extensions(void)
+gchar **plugin_extensions(void)
 {
 	return g_strsplit("cob", ":", 0);
 }
@@ -101,44 +85,44 @@ char **plugin_extensions(void)
  * COB specific
  */
 
-#define cob_read_e(file, what, be) \
-	((be) ? g3d_read_ ## what ## _be(file) : \
-		g3d_read_ ## what ## _le(file))
+#define cob_read_e(stream, what, be) \
+	((be) ? g3d_stream_read_ ## what ## _be(stream) : \
+		g3d_stream_read_ ## what ## _le(stream))
 
 #define COB_F_HOLE     0x08
 #define COB_F_BACKCULL 0x10
 
-static gboolean cob_read_chunk_header_bin(FILE *f, gboolean is_be,
+static gboolean cob_read_chunk_header_bin(G3DStream *stream, gboolean is_be,
 	guint32 *type, guint16 *ver_maj, guint16 *ver_min,
 	guint32 *id, guint32 *parent_id, guint32 *len)
 {
 	*type =
-		(g3d_read_int8(f) << 24) +
-		(g3d_read_int8(f) << 16) +
-		(g3d_read_int8(f) << 8) +
-		(g3d_read_int8(f));
-	*ver_maj = cob_read_e(f, int16, is_be);
-	*ver_min = cob_read_e(f, int16, is_be);
-	*id = cob_read_e(f, int32, is_be);
-	*parent_id = cob_read_e(f, int32, is_be);
-	*len = cob_read_e(f, int32, is_be);
+		(g3d_stream_read_int8(stream) << 24) +
+		(g3d_stream_read_int8(stream) << 16) +
+		(g3d_stream_read_int8(stream) << 8) +
+		(g3d_stream_read_int8(stream));
+	*ver_maj = cob_read_e(stream, int16, is_be);
+	*ver_min = cob_read_e(stream, int16, is_be);
+	*id = cob_read_e(stream, int32, is_be);
+	*parent_id = cob_read_e(stream, int32, is_be);
+	*len = cob_read_e(stream, int32, is_be);
 
 	return TRUE;
 }
 
-static gchar *cob_read_name_bin(FILE *f, guint32 *len, gboolean is_be)
+static gchar *cob_read_name_bin(G3DStream *stream, guint32 *len, gboolean is_be)
 {
 	gchar *buffer, *name;
 	guint32 dc, namelen;
 
-	dc = cob_read_e(f, int16, is_be);
+	dc = cob_read_e(stream, int16, is_be);
 	*len -= 2;
 
-	namelen = cob_read_e(f, int16, is_be);
+	namelen = cob_read_e(stream, int16, is_be);
 	*len -= 2;
 
 	buffer = g_new0(gchar, namelen + 1);
-	fread(buffer, 1, namelen, f);
+	g3d_stream_read(stream, buffer, namelen);
 	*len -= namelen;
 
 	name = g_strdup_printf("%s (%d)", buffer, dc);
@@ -147,27 +131,27 @@ static gchar *cob_read_name_bin(FILE *f, guint32 *len, gboolean is_be)
 	return name;
 }
 
-static G3DObject *cob_read_grou_bin(FILE *f, guint32 len, gboolean is_be)
+static G3DObject *cob_read_grou_bin(G3DStream *stream, guint32 len, gboolean is_be)
 {
 	G3DObject *object;
 
 #if DEBUG > 0
-	g_print("COB: Grou chunk @ 0x%08lx\n", ftell(f));
+	g_print("COB: Grou chunk @ 0x%08x\n", (guint32)g3d_stream_tell(stream));
 #endif
 
 	object = g_new0(G3DObject, 1);
-	object->name = cob_read_name_bin(f, &len, is_be);
+	object->name = cob_read_name_bin(stream, &len, is_be);
 #if DEBUG > 0
 	g_print("COB: Grou: name is '%s'\n", object->name);
 #endif
 
 	if(len > 0)
-		fseek(f, len, SEEK_CUR);
+		g3d_stream_skip(stream, len);
 
 	return object;
 }
 
-static G3DObject *cob_read_polh_bin(FILE *f, guint32 len, gboolean is_be,
+static G3DObject *cob_read_polh_bin(G3DStream *stream, guint32 len, gboolean is_be,
 	G3DContext *context)
 {
 	G3DObject *object;
@@ -175,24 +159,24 @@ static G3DObject *cob_read_polh_bin(FILE *f, guint32 len, gboolean is_be,
 	gfloat curpos[16];
 
 #if DEBUG > 0
-	g_print("COB: PolH chunk @ 0x%08lx\n", ftell(f));
+	g_print("COB: PolH chunk @ 0x%08x\n", (guint32)g3d_stream_tell(stream));
 #endif
 
 	object = g_new0(G3DObject, 1);
-	object->name = cob_read_name_bin(f, &len, is_be);
+	object->name = cob_read_name_bin(stream, &len, is_be);
 #if DEBUG > 0
 	g_print("COB: PolH: name is '%s'\n", object->name);
 #endif
 
 	/* local axes: 4 x 12 */
-	fseek(f, 48, SEEK_CUR);
+	g3d_stream_skip(stream, 48);
 	len -= 48;
 
 	/* current position: 3 x 16 */
 	g3d_matrix_identity(curpos);
 	for(i = 0; i < 12; i ++)
 	{
-		curpos[i] = cob_read_e(f, float, is_be);
+		curpos[i] = cob_read_e(stream, float, is_be);
 		len -= 4;
 	}
 	g3d_matrix_transpose(curpos);
@@ -200,14 +184,14 @@ static G3DObject *cob_read_polh_bin(FILE *f, guint32 len, gboolean is_be,
 	/*g3d_matrix_dump(curpos);*/
 
 	/* vertex list */
-	object->vertex_count = cob_read_e(f, int32, is_be);
+	object->vertex_count = cob_read_e(stream, int32, is_be);
 	len -= 4;
 	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
 	for(i = 0; i < object->vertex_count; i ++)
 	{
-		object->vertex_data[i*3+0] = cob_read_e(f, float, is_be);
-		object->vertex_data[i*3+1] = cob_read_e(f, float, is_be);
-		object->vertex_data[i*3+2] = cob_read_e(f, float, is_be);
+		object->vertex_data[i*3+0] = cob_read_e(stream, float, is_be);
+		object->vertex_data[i*3+1] = cob_read_e(stream, float, is_be);
+		object->vertex_data[i*3+2] = cob_read_e(stream, float, is_be);
 		g3d_vector_transform(
 			&(object->vertex_data[i*3+0]),
 			&(object->vertex_data[i*3+1]),
@@ -218,19 +202,19 @@ static G3DObject *cob_read_polh_bin(FILE *f, guint32 len, gboolean is_be,
 	}
 
 	/* texture vertex list */
-	object->tex_vertex_count = cob_read_e(f, int32, is_be);
+	object->tex_vertex_count = cob_read_e(stream, int32, is_be);
 	len -= 4;
 	object->tex_vertex_data = g_new0(gfloat, object->tex_vertex_count * 2);
 	for(i = 0; i < object->tex_vertex_count; i ++)
 	{
-		object->tex_vertex_data[i*2+0] = cob_read_e(f, float, is_be);
-		object->tex_vertex_data[i*2+1] = cob_read_e(f, float, is_be);
+		object->tex_vertex_data[i*2+0] = cob_read_e(stream, float, is_be);
+		object->tex_vertex_data[i*2+1] = cob_read_e(stream, float, is_be);
 		g3d_context_update_interface(context);
 		len -= 8;
 	}
 
 	/* faces and holes */
-	nfaces = cob_read_e(f, int32, is_be);
+	nfaces = cob_read_e(stream, int32, is_be);
 	len -= 4;
 	for(i = 0; i < nfaces; i ++)
 	{
@@ -238,26 +222,26 @@ static G3DObject *cob_read_polh_bin(FILE *f, guint32 len, gboolean is_be,
 		guint8 flags;
 		guint32 nverts, j, matidx;
 
-		flags = g3d_read_int8(f);
+		flags = g3d_stream_read_int8(stream);
 		len -= 1;
 		if(flags & COB_F_HOLE)
 		{
 			/* hole: ignore for now */
-			nverts = cob_read_e(f, int16, is_be);
+			nverts = cob_read_e(stream, int16, is_be);
 			len -= 2;
 			for(j = 0; j < nverts; j ++)
 			{
-				cob_read_e(f, int32, is_be);
-				cob_read_e(f, int32, is_be);
+				cob_read_e(stream, int32, is_be);
+				cob_read_e(stream, int32, is_be);
 				len -= 8;
 			}
 		}
 		else
 		{
 			/* "real" face */
-			nverts = cob_read_e(f, int16, is_be);
+			nverts = cob_read_e(stream, int16, is_be);
 			len -= 2;
-			matidx = cob_read_e(f, int16, is_be);
+			matidx = cob_read_e(stream, int16, is_be);
 			len -= 2;
 			face = g_new0(G3DFace, 1);
 
@@ -265,8 +249,8 @@ static G3DObject *cob_read_polh_bin(FILE *f, guint32 len, gboolean is_be,
 			face->vertex_indices = g_new0(guint32, nverts);
 			for(j = 0; j < nverts; j ++)
 			{
-				face->vertex_indices[j] = cob_read_e(f, int32, is_be);
-				cob_read_e(f, int32, is_be); /* UV indices */
+				face->vertex_indices[j] = cob_read_e(stream, int32, is_be);
+				cob_read_e(stream, int32, is_be); /* UV indices */
 				len -= 8;
 			}
 
@@ -294,12 +278,12 @@ static G3DObject *cob_read_polh_bin(FILE *f, guint32 len, gboolean is_be,
 	}
 
 	if(len > 0)
-		fseek(f, len, SEEK_CUR);
+		g3d_stream_skip(stream, len);
 
 	return object;
 }
 
-static int cob_read_mat1_bin(FILE *f, guint32 len, gboolean is_be,
+static int cob_read_mat1_bin(G3DStream *stream, guint32 len, gboolean is_be,
 	G3DObject *object)
 {
 	G3DMaterial *material;
@@ -307,7 +291,7 @@ static int cob_read_mat1_bin(FILE *f, guint32 len, gboolean is_be,
 
 	g_return_val_if_fail(object != NULL, FALSE);
 
-	matidx = cob_read_e(f, int16, is_be);
+	matidx = cob_read_e(stream, int16, is_be);
 	len -= 2;
 
 	material = g_slist_nth_data(object->materials, matidx);
@@ -318,22 +302,22 @@ static int cob_read_mat1_bin(FILE *f, guint32 len, gboolean is_be,
 		material->name = g_strdup_printf("material #%d", matidx);
 
 		/* shader type */
-		g3d_read_int8(f);
+		g3d_stream_read_int8(stream);
 		len --;
 
 		/* facet type */
-		g3d_read_int8(f);
+		g3d_stream_read_int8(stream);
 		len --;
 
 		/* autofacet angle */
-		g3d_read_int8(f);
+		g3d_stream_read_int8(stream);
 		len --;
 
 		/* RGBA */
-		material->r = cob_read_e(f, float, is_be);
-		material->g = cob_read_e(f, float, is_be);
-		material->b = cob_read_e(f, float, is_be);
-		material->a = cob_read_e(f, float, is_be);
+		material->r = cob_read_e(stream, float, is_be);
+		material->g = cob_read_e(stream, float, is_be);
+		material->b = cob_read_e(stream, float, is_be);
+		material->a = cob_read_e(stream, float, is_be);
 		len -= 16;
 	}
 	else
@@ -344,12 +328,12 @@ static int cob_read_mat1_bin(FILE *f, guint32 len, gboolean is_be,
 	}
 
     if(len > 0)
-        fseek(f, len, SEEK_CUR);
+		g3d_stream_skip(stream, len);
 
 	return TRUE;
 }
 
-static int cob_read_unit_bin(FILE *f, guint32 len, gboolean is_be)
+static int cob_read_unit_bin(G3DStream *stream, guint32 len, gboolean is_be)
 {
 	guint16 uidx;
 #if DEBUG > 0
@@ -365,7 +349,7 @@ static int cob_read_unit_bin(FILE *f, guint32 len, gboolean is_be)
 		"points" };
 #endif
 
-	uidx = cob_read_e(f, int16, is_be);
+	uidx = cob_read_e(stream, int16, is_be);
 #if DEBUG > 0
 	if(uidx >= (sizeof(units) / sizeof(gchar *)))
 	{
@@ -377,18 +361,24 @@ static int cob_read_unit_bin(FILE *f, guint32 len, gboolean is_be)
 	return TRUE;
 }
 
-static gboolean cob_read_file_bin(FILE *f, G3DModel *model, gboolean is_be,
-	G3DContext *context)
+static gboolean cob_read_file_bin(G3DStream *stream, G3DModel *model,
+	gboolean is_be, G3DContext *context)
 {
 	G3DObject *object = NULL;
 	guint32 type, id, parent_id, len;
 	guint16 ver_min, ver_maj;
 	gboolean exit = FALSE;
 
-	do
-	{
-		cob_read_chunk_header_bin(f, is_be, &type, &ver_maj, &ver_min,
+	do {
+		cob_read_chunk_header_bin(stream, is_be, &type, &ver_maj, &ver_min,
 			&id, &parent_id, &len);
+
+#if DEBUG > 0
+		g_debug("\\[%c%c%c%c] 0x%08x (0x%08x) %d bytes",
+			(type >> 24) & 0xFF, (type >> 16) & 0xFF,
+			(type >> 8) & 0xFF, type & 0xFF,
+			id, parent_id, len);
+#endif
 
 		switch(type)
 		{
@@ -399,24 +389,24 @@ static gboolean cob_read_file_bin(FILE *f, G3DModel *model, gboolean is_be,
 
 			case G3D_IFF_MKID('G', 'r', 'o', 'u'):
 				/* group */
-				object = cob_read_grou_bin(f, len, is_be);
+				object = cob_read_grou_bin(stream, len, is_be);
 #if 0
 				model->objects = g_slist_append(model->objects, object);
 #endif
 				break;
 
 			case G3D_IFF_MKID('M', 'a', 't', '1'):
-				cob_read_mat1_bin(f, len, is_be, object);
+				cob_read_mat1_bin(stream, len, is_be, object);
 				break;
 
 			case G3D_IFF_MKID('P', 'o', 'l', 'H'):
 				/* polygonal data */
-				object = cob_read_polh_bin(f, len, is_be, context);
+				object = cob_read_polh_bin(stream, len, is_be, context);
 				model->objects = g_slist_append(model->objects, object);
 				break;
 
 			case G3D_IFF_MKID('U', 'n', 'i', 't'):
-				cob_read_unit_bin(f, len, is_be);
+				cob_read_unit_bin(stream, len, is_be);
 				break;
 
 			default:
@@ -427,7 +417,7 @@ static gboolean cob_read_file_bin(FILE *f, G3DModel *model, gboolean is_be,
 					(type >> 8) & 0xFF, type & 0xFF,
 					id, parent_id, len);
 #endif
-				fseek(f, len, SEEK_CUR);
+				g3d_stream_skip(stream, len);
 				break;
 		}
 	}

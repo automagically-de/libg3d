@@ -25,7 +25,7 @@
 #include <g3d/model.h>
 #include <g3d/material.h>
 #include <g3d/primitive.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/matrix.h>
 #include <g3d/debug.h>
 
@@ -33,7 +33,7 @@
 #include "imp_maya_var.h"
 
 /* compound? */
-gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_CMPD(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gint32 flags, i;
 	gdouble *val;
@@ -48,18 +48,18 @@ gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	/* var */
 	var = g_new0(gchar, local->nb - 25);
-	fread(var, 1, local->nb - 25, global->f);
+	g3d_stream_read(global->stream, var, local->nb - 25);
 	local->nb -= (local->nb - 25);
 
 	/* flags ? */
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
 	val = g_new0(gdouble, 3);
 
 	for(i = 0; i < 3; i ++)
 	{
-		val[i] = g3d_read_double_be(global->f);
+		val[i] = g3d_stream_read_double_be(global->stream);
 		local->nb -= 8;
 	}
 
@@ -79,7 +79,7 @@ gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* creator */
-gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_CREA(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	MayaObject *obj;
 	gint32 max_len, flags;
@@ -87,14 +87,14 @@ gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	gchar *padding = "                    ";
 
 	/* flags ? */
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
 	max_len = local->nb;
 	buffer = g_malloc(max_len + 1);
 
 	/* object name */
-	local->nb -= g3d_read_cstr(global->f, buffer, max_len);
+	local->nb -= g3d_stream_read_cstr(global->stream, buffer, max_len);
 	name = g_strdup(buffer);
 
 	obj = (MayaObject *)local->object;
@@ -103,7 +103,7 @@ gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	/* parent name */
 	if(local->nb > 0)
-		local->nb -= g3d_read_cstr(global->f, buffer, max_len);
+		local->nb -= g3d_stream_read_cstr(global->stream, buffer, max_len);
 	else
 		*buffer = '\0';
 
@@ -120,23 +120,23 @@ gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	return TRUE;
 }
 
-gboolean maya_cb_CWFL(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_CWFL(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gchar *buffer, *name;
 	gchar *padding = "                    ";
 	guint32 flags, max_len;
 
 	/* flags ? */
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
 	max_len = local->nb;
 	buffer = g_malloc(max_len + 1);
 
-	local->nb -= g3d_read_cstr(global->f, buffer, max_len);
+	local->nb -= g3d_stream_read_cstr(global->stream, buffer, max_len);
 	name = g_strdup(buffer);
 
-	local->nb -= g3d_read_cstr(global->f, buffer, max_len);
+	local->nb -= g3d_stream_read_cstr(global->stream, buffer, max_len);
 
 	g_debug("\\%s[Maya][CWFL] %s; %s (flags: %u, %d bytes left)",
 		padding + (strlen(padding) - local->level),
@@ -149,7 +149,7 @@ gboolean maya_cb_CWFL(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* double # */
-gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_DBLn(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gint32 len, flags, ndbl, i;
 	gdouble *val;
@@ -158,17 +158,17 @@ gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	len = local->nb - 9;
 	var = g_malloc(len);
-	fread(var, 1, len, global->f);
+	g3d_stream_read(global->stream, var, len);
 	local->nb -= len;
 
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
 	ndbl = local->nb / 8;
 	val = g_new0(gdouble, ndbl);
 	for(i = 0; i < ndbl; i ++)
 	{
-		val[i] = g3d_read_double_be(global->f);
+		val[i] = g3d_stream_read_double_be(global->stream);
 		local->nb -= 8;
 	}
 
@@ -187,7 +187,7 @@ gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* double 2 */
-gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_DBL2(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gint32 len, flags;
 	gdouble *val;
@@ -196,15 +196,15 @@ gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	len = local->nb - 17;
 	var = g_malloc(len);
-	fread(var, 1, len, global->f);
+	g3d_stream_read(global->stream, var, len);
 	local->nb -= len;
 
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
 	val = g_new0(gdouble, 2);
-	val[0] = g3d_read_double_be(global->f);
-	val[1] = g3d_read_double_be(global->f);
+	val[0] = g3d_stream_read_double_be(global->stream);
+	val[1] = g3d_stream_read_double_be(global->stream);
 	local->nb -= 16;
 
 	g_debug("\\%s[Maya][DBL2] %s = (%g,%g) (0x%02X)",
@@ -222,7 +222,7 @@ gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* double 3 */
-gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_DBL3(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gint32 len, flags;
 	gdouble *val;
@@ -231,16 +231,16 @@ gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	len = local->nb - 25;
 	var = g_malloc(len);
-	fread(var, 1, len, global->f);
+	g3d_stream_read(global->stream, var, len);
 	local->nb -= len;
 
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
 	val = g_new0(gdouble, 3);
-	val[0] = g3d_read_double_be(global->f);
-	val[1] = g3d_read_double_be(global->f);
-	val[2] = g3d_read_double_be(global->f);
+	val[0] = g3d_stream_read_double_be(global->stream);
+	val[1] = g3d_stream_read_double_be(global->stream);
+	val[2] = g3d_stream_read_double_be(global->stream);
 	local->nb -= 24;
 
 	g_debug("\\%s[Maya][DBL3] %s = (%g,%g,%g) (0x%02X)",
@@ -258,7 +258,7 @@ gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* double */
-gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_DBLE(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gint32 len, flags;
 	gdouble val;
@@ -273,13 +273,13 @@ gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
 	}
 
 	var = g_malloc(len);
-	fread(var, 1, len, global->f);
+	g3d_stream_read(global->stream, var, len);
 	local->nb -= len;
 
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
-	val = g3d_read_double_be(global->f);
+	val = g3d_stream_read_double_be(global->stream);
 	local->nb -= 8;
 
 	g_debug("\\%s[Maya][DBLE] %s = %g (0x%02X)",
@@ -295,7 +295,7 @@ gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* mesh object */
-gboolean maya_cb_DMSH(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_DMSH(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	MayaObject *obj;
 	G3DObject *object, *parent;
@@ -336,7 +336,7 @@ gboolean maya_cb_DMSH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* float 3 */
-gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_FLT3(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gint32 len, flags;
 	gfloat *val;
@@ -345,16 +345,16 @@ gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	len = local->nb - 13;
 	var = g_malloc(len);
-	fread(var, 1, len, global->f);
+	g3d_stream_read(global->stream, var, len);
 	local->nb -= len;
 
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
 	val = g_new0(gfloat, 3);
-	val[0] = g3d_read_float_be(global->f);
-	val[1] = g3d_read_float_be(global->f);
-	val[2] = g3d_read_float_be(global->f);
+	val[0] = g3d_stream_read_float_be(global->stream);
+	val[1] = g3d_stream_read_float_be(global->stream);
+	val[2] = g3d_stream_read_float_be(global->stream);
 	local->nb -= 12;
 
 	g_debug("\\%s[Maya][DBL3] %s = (%g; %g; %g) (0x%02X)",
@@ -372,7 +372,7 @@ gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* matrix */
-gboolean maya_cb_MATR(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_MATR(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gint32 flags, i;
 	gfloat *val;
@@ -387,18 +387,18 @@ gboolean maya_cb_MATR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 	/* var */
 	var = g_new0(gchar, local->nb - 129);
-	fread(var, 1, local->nb - 129, global->f);
+	g3d_stream_read(global->stream, var, local->nb - 129);
 	local->nb -= (local->nb - 129);
 
 	/* flags ? */
-	flags = g3d_read_int8(global->f);
+	flags = g3d_stream_read_int8(global->stream);
 	local->nb -= 1;
 
 	val = g_new0(gfloat, 16);
 
 	for(i = 0; i < 16; i ++)
 	{
-		val[i] = (gfloat)g3d_read_double_be(global->f);
+		val[i] = (gfloat)g3d_stream_read_double_be(global->stream);
 		local->nb -= 8;
 	}
 
@@ -425,17 +425,17 @@ gboolean maya_cb_MATR(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* mesh */
-gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_MESH(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	G3DObject *object;
 	G3DMaterial *material;
 	G3DFace *face;
 	gint32 x1, x2, x3, x4, i, i1, i2;
 
-	x1 = g3d_read_int16_be(global->f);
-	x2 = g3d_read_int16_be(global->f);
-	x3 = g3d_read_int16_be(global->f);
-	x4 = g3d_read_int16_be(global->f);
+	x1 = g3d_stream_read_int16_be(global->stream);
+	x2 = g3d_stream_read_int16_be(global->stream);
+	x3 = g3d_stream_read_int16_be(global->stream);
+	x4 = g3d_stream_read_int16_be(global->stream);
 	local->nb -= 8;
 
 	object = (G3DObject *)((MayaObject *)local->object)->user_data;
@@ -448,14 +448,14 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 
 		for(i = 0; i < object->vertex_count; i ++)
 		{
-			object->vertex_data[i * 3 + 0] = g3d_read_float_be(global->f);
-			object->vertex_data[i * 3 + 1] = g3d_read_float_be(global->f);
-			object->vertex_data[i * 3 + 2] = g3d_read_float_be(global->f);
+			object->vertex_data[i * 3 + 0] = g3d_stream_read_float_be(global->stream);
+			object->vertex_data[i * 3 + 1] = g3d_stream_read_float_be(global->stream);
+			object->vertex_data[i * 3 + 2] = g3d_stream_read_float_be(global->stream);
 			local->nb -= 12;
 		}
 
-		x3 = g3d_read_int16_be(global->f);
-		x4 = g3d_read_int16_be(global->f);
+		x3 = g3d_stream_read_int16_be(global->stream);
+		x4 = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 4;
 #if 0
 		g_debug("[Maya][MESH] %d %d", x3, x4);
@@ -466,8 +466,8 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		{
 			if(i1 == -1)
 			{
-				i1 = g3d_read_int32_be(global->f) & 0xFFFFFF;
-				i2 = g3d_read_int32_be(global->f) & 0xFFFFFF;
+				i1 = g3d_stream_read_int32_be(global->stream) & 0xFFFFFF;
+				i2 = g3d_stream_read_int32_be(global->stream) & 0xFFFFFF;
 				local->nb -= 8;
 			}
 			else
@@ -478,9 +478,9 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 				face->vertex_indices[0] = i1;
 				face->vertex_indices[1] = i2;
 				face->vertex_indices[2] =
-					g3d_read_int32_be(global->f) & 0xFFFFFF;
+					g3d_stream_read_int32_be(global->stream) & 0xFFFFFF;
 				face->vertex_indices[3] =
-					g3d_read_int32_be(global->f) & 0xFFFFFF;
+					g3d_stream_read_int32_be(global->stream) & 0xFFFFFF;
 				face->material = material;
 				local->nb -= 8;
 				i1 = face->vertex_indices[3];
@@ -490,15 +490,15 @@ gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local)
 			}
 		}
 
-		x3 = g3d_read_int16_be(global->f);
-		x4 = g3d_read_int16_be(global->f);
+		x3 = g3d_stream_read_int16_be(global->stream);
+		x4 = g3d_stream_read_int16_be(global->stream);
 		local->nb -= 4;
 	}
 	return TRUE;
 }
 
 /* poly cube */
-gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_PCUB(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	MayaObject *obj;
 	G3DObject *object;
@@ -510,9 +510,9 @@ gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local)
 		obj = (MayaObject *)local->object;
 		g_return_val_if_fail(obj != NULL, FALSE);
 
-		w = maya_var_get_double(obj, "sw", 1.0);
-		h = maya_var_get_double(obj, "sh", 1.0);
-		d = maya_var_get_double(obj, "sd", 1.0);
+		w = maya_var_get_double(obj, "w", 1.0);
+		h = maya_var_get_double(obj, "h", 1.0);
+		d = maya_var_get_double(obj, "d", 1.0);
 
 		material = g3d_material_new();
 		object = g3d_primitive_box(w, h, d, material);
@@ -536,57 +536,54 @@ gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* cylinder */
-gboolean maya_cb_PCYL(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_PCYL(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	MayaObject *obj;
 	G3DObject *object;
 	G3DMaterial *material;
-	gdouble h;
+	gdouble h, r;
 	guint32 s;
 
-	if(local->finalize)
-	{
+	if(local->finalize) {
 		obj = (MayaObject *)local->object;
 		g_return_val_if_fail(obj != NULL, FALSE);
 
 		h = maya_var_get_double(obj, "h", 1.0);
-		s = (guint32)maya_var_get_double(obj, "sc", 5);
+		r = maya_var_get_double(obj, "r", 0.5);
+		s = MAX(3, (guint32)maya_var_get_double(obj, "sx", 20));
 
 		material = g3d_material_new();
-		object = g3d_primitive_cylinder(1.0, h, s, TRUE, TRUE, material);
-		object->name = obj->name ? g_strdup(obj->name) :
-			g_strdup("(unnamed cylinder)");
+		object = g3d_primitive_cylinder(r, h, s, TRUE, TRUE, material);
+		if(object) {
+			object->name = obj->name ? g_strdup(obj->name) :
+				g_strdup("(unnamed cylinder)");
 
-		object->materials = g_slist_append(object->materials, material);
-		maya_obj_add_to_tree(obj, global->model, object);
-
+			object->materials = g_slist_append(object->materials, material);
+			maya_obj_add_to_tree(obj, global->model, object);
+		}
 		/* destroy object */
 		maya_obj_free(obj);
-	}
-	else
-	{
+	} else {
 		/* create object */
 		obj = maya_obj_new();
 		local->object = obj;
 	}
-
 	return TRUE;
-
 }
 
 /* string */
-gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_STR_(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	gchar *buffer, *var;
 	gchar *padding = "                       ";
 
 	/* variable */
 	buffer = g_malloc(local->nb);
-	local->nb -= g3d_read_cstr(global->f, buffer, local->nb);
+	local->nb -= g3d_stream_read_cstr(global->stream, buffer, local->nb);
 	var = g_strdup(buffer);
 
 	/* value */
-	local->nb -= g3d_read_cstr(global->f, buffer, local->nb);
+	local->nb -= g3d_stream_read_cstr(global->stream, buffer, local->nb);
 
 	g_debug("\\%s[Maya][STR ] %s = '%.*s' (%d characters)",
 		padding + (strlen(padding) - local->level),
@@ -602,7 +599,7 @@ gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local)
 }
 
 /* transformation */
-gboolean maya_cb_XFRM(g3d_iff_gdata *global, g3d_iff_ldata *local)
+gboolean maya_cb_XFRM(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	MayaObject *obj;
 	G3DObject *object;

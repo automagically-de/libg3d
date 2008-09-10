@@ -24,20 +24,20 @@
 
 #include <g3d/iff.h>
 
-gboolean maya_cb_CMPD(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_CREA(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_CWFL(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_DBLn(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_DBL2(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_DBL3(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_DBLE(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_DMSH(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_FLT3(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_MATR(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_MESH(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_PCUB(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_PCYL(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_STR_(g3d_iff_gdata *global, g3d_iff_ldata *local);
-gboolean maya_cb_XFRM(g3d_iff_gdata *global, g3d_iff_ldata *local);
+gboolean maya_cb_CMPD(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_CREA(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_CWFL(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_DBLn(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_DBL2(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_DBL3(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_DBLE(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_DMSH(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_FLT3(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_MATR(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_MESH(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_PCUB(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_PCYL(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_STR_(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_XFRM(G3DIffGlobal *global, G3DIffLocal *local);
 
 #endif /* _IMP_MAYA_CALLBACKS_H */

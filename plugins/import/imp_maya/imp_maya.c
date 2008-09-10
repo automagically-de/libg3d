@@ -26,31 +26,29 @@
 #include <glib.h>
 
 #include <g3d/iff.h>
+#include <g3d/stream.h>
 
 #include "imp_maya_chunks.h"
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	g3d_iff_gdata *global;
-	g3d_iff_ldata *local;
+	G3DIffGlobal *global;
+	G3DIffLocal *local;
 	guint32 id, len;
-	FILE *f;
 
-	f = g3d_iff_open(filename, &id, &len);
-	if(id != G3D_IFF_MKID('M','a','y','a'))
-	{
-		g_warning("file is not an Maya file %s", filename);
-		if(f) fclose(f);
+	if(!g3d_iff_check(stream, &id, &len) ||
+		(id != G3D_IFF_MKID('M','a','y','a'))) {
+		g_warning("file is not an Maya file %s", stream->uri);
 		return FALSE;
 	}
 
-	local = g_new0(g3d_iff_ldata, 1);
-	global = g_new0(g3d_iff_gdata, 1);
+	local = g_new0(G3DIffLocal, 1);
+	global = g_new0(G3DIffGlobal, 1);
 
 	global->context = context;
 	global->model = model;
-	global->f = f;
+	global->stream = stream;
 
 	local->parent_id = id;
 	local->nb = len;
@@ -73,5 +71,4 @@ gchar **plugin_extensions(void)
 {
 	return g_strsplit("mb", ":", 0);
 }
-
 

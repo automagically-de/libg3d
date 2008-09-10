@@ -26,7 +26,7 @@
 
 #include "imp_maya_callbacks.h"
 
-static g3d_iff_chunk_info maya_chunks[] = {
+static G3DIffChunkInfo maya_chunks[] = {
 	{ "ATTR", "unknown",                           0, NULL },
 	{ "AUDI", "audio",                             1, NULL }, /* FOR4 */
 	{ "AUNI", "angle unit",                        0, NULL },

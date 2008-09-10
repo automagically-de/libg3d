@@ -23,12 +23,40 @@
 #ifndef __G3D_TEXTURE_H__
 #define __G3D_TEXTURE_H__
 
+/**
+ * SECTION:texture
+ * @short_description: Texture loading and manipulation
+ * @include: g3d/texture.h
+ */
+
 #include <g3d/types.h>
 
 G_BEGIN_DECLS
 
+/**
+ * g3d_texture_load:
+ * @context: a valid context
+ * @filename: the file name of the texture
+ *
+ * Load a texture from a file. The type of file is determined by the file
+ * extension.
+ *
+ * Returns: the texture image or NULL in case of an error.
+ */
 G3DImage *g3d_texture_load(G3DContext *context, const gchar *filename);
 
+/**
+ * g3d_texture_load_from_stream:
+ * @context: a valid context
+ * @model: a valid model or NULL
+ * @stream: an open stream
+ *
+ * Load a texture image from a stream. The file type is determined by the
+ * extension of the stream URI, so it should be valid. If @model is not NULL
+ * the texture image is cached (or retrieved from cache if available).
+ *
+ * Returns: the texture image or NULL in case of an error.
+ */
 G3DImage *g3d_texture_load_from_stream(G3DContext *context, G3DModel *model,
 	G3DStream *stream);
 
@@ -46,6 +74,12 @@ G3DImage *g3d_texture_load_from_stream(G3DContext *context, G3DModel *model,
 G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 	const gchar *filename);
 
+/**
+ * g3d_texture_free:
+ * @texture: a texture image
+ *
+ * Frees all memory used by this texture image.
+ */
 void g3d_texture_free(G3DImage *texture);
 
 /**
@@ -60,8 +94,26 @@ void g3d_texture_free(G3DImage *texture);
  */
 gboolean g3d_texture_prepare(G3DImage *texture);
 
+/**
+ * g3d_texture_flip_y:
+ * @texture: a texture image
+ *
+ * Mirror the image along the x axis - all y coordinates are inverted.
+ *
+ * Returns: TRUE on success, FALSE on error.
+ */
 gboolean g3d_texture_flip_y(G3DImage *texture);
 
+/**
+ * g3d_texture_merge_alpha:
+ * @image: a texture image or NULL
+ * @aimage: an image with alpha information
+ *
+ * Merges alpha information from @aimage into output image. If @image is NULL a
+ * new image is created, else @image is returned with alpha from @aimage.
+ *
+ * Returns: a texture image or NULL in case of an error.
+ */
 G3DImage *g3d_texture_merge_alpha(G3DImage *image, G3DImage *aimage);
 
 G_END_DECLS

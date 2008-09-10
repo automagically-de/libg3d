@@ -20,8 +20,14 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef __G3D_FACE_H__
-#define __G3D_FACE_H__
+#ifndef _G3D_FACE_H
+#define _G3D_FACE_H
+
+/**
+ * SECTION:face
+ * @short_description: Face manipulation
+ * @include: g3d/face.h
+ */
 
 #include <g3d/types.h>
 
@@ -79,4 +85,4 @@ static inline G3DFace *g3d_face_new_tri(G3DMaterial *material,
 
 G_END_DECLS
 
-#endif /* __G3D_FACE_H__ */
+#endif /* _G3D_FACE_H */

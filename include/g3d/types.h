@@ -45,6 +45,16 @@ G_BEGIN_DECLS
 
 #define G3D_FLAG_IMG_GREYSCALE       (1L << 1)
 
+/**
+ * G3DTexEnv:
+ * @G3D_TEXENV_UNSPECIFIED: unspecified, application decides
+ * @G3D_TEXENV_BLEND: use blending
+ * @G3D_TEXENV_DECAL: use as decal
+ * @G3D_TEXENV_MODULATE: use modulate
+ * @G3D_TEXENV_REPLACE: replace color
+ *
+ * Specify how the texture should interact with other material properties.
+ */
 typedef enum {
 	G3D_TEXENV_UNSPECIFIED = 0,
 	G3D_TEXENV_BLEND,
@@ -68,7 +78,6 @@ typedef enum {
  *
  * Object containing a two-dimensional pixel image.
  */
-
 typedef struct {
 	gchar *name;
 	guint32 width;
@@ -118,7 +127,17 @@ typedef struct {
  * G3DFace
  *****************************************************************************/
 
+/**
+ * G3D_FLAG_FAC_NORMALS:
+ *
+ * The face has custom normals.
+ */
 #define G3D_FLAG_FAC_NORMALS    (1L << 0)
+/**
+ * G3D_FLAG_FAC_TEXMAP:
+ *
+ * The face has a texture map and texture coordinates.
+ */
 #define G3D_FLAG_FAC_TEXMAP     (1L << 1)
 
 /**
@@ -136,7 +155,6 @@ typedef struct {
  *
  * An object representing a surface.
  */
-
 typedef struct {
 	guint32 vertex_count;
 	guint32 *vertex_indices;
@@ -163,7 +181,6 @@ typedef struct {
  *
  * A three-dimensional matrix transformation object.
  */
-
 typedef struct {
 	gfloat matrix[16];
 	guint32 flags;
@@ -187,7 +204,6 @@ typedef struct {
  *
  * A three-dimensional object.
  */
-
 typedef struct {
 	gchar *name;
 
@@ -227,19 +243,52 @@ typedef struct {
  * G3DContext
  *****************************************************************************/
 
+/**
+ * G3DSetBgColorFunc:
+ * @r: red component
+ * @g: green component
+ * @b: blue component
+ * @a: alpha component
+ * @user_data: opaque data as given to g3d_context_set_set_bgcolor_func()
+ *
+ * Background color setting callback.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 typedef gboolean (* G3DSetBgColorFunc)(gfloat r, gfloat g, gfloat b, gfloat a,
 	gpointer user_data);
 
+/**
+ * G3DUpdateInterfaceFunc:
+ * @user_data: opaque data as given to g3d_context_set_update_interface_func()
+ *
+ * Interface updating callback.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 typedef gboolean (* G3DUpdateInterfaceFunc)(gpointer user_data);
 
+/**
+ * G3DUpdateProgressBarFunc:
+ * @percentage: progress of plugin operation
+ * @show: #TRUE if the progress bar should be visible, #FALSE else
+ * @user_data: opaque data as given to
+ * g3d_context_set_update_progress_bar_func()
+ *
+ * Progress updating callback.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 typedef gboolean (* G3DUpdateProgressBarFunc)(gfloat percentage,
 	gboolean show, gpointer user_data);
 
+/*< private >*/
 #ifdef USE_LIBMAGIC
 #define MAGIC_PTR_TYPE magic_t
 #else
 #define MAGIC_PTR_TYPE void *
 #endif
+/*< public >*/
 
 /**
  * G3DContext:
@@ -278,6 +327,8 @@ typedef struct _G3DPlugin G3DPlugin;
  * @filename: file name or URI of loaded model, may be set by application
  * @materials: list of materials (#G3DMaterial)
  * @objects: list of objects (#G3DObject)
+ *
+ * A 3D model.
  */
 typedef struct {
 	gchar *filename;

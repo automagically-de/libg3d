@@ -20,18 +20,23 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef __G3D_MATRIX_H__
-#define __G3D_MATRIX_H__
+#ifndef _G3D_MATRIX_H
+#define _G3D_MATRIX_H
 
 #include <glib.h>
 
 G_BEGIN_DECLS
 
-/*
+/**
+ * SECTION:matrix
+ * @short_description: Matrix manipulation and calculation
+ * @include: g3d/matrix.h
+ *
+ * Matrices in libg3d have the following layout:
+ *
  * gfloat matrix[16]:
  *
  * matrix[col * 4 + row] = f;
- *
  */
 
 /**
@@ -120,6 +125,14 @@ gboolean g3d_matrix_scale(gfloat x, gfloat y, gfloat z, gfloat *rm);
  */
 gboolean g3d_matrix_transpose(gfloat *matrix);
 
+/**
+ * g3d_matrix_determinant:
+ * @matrix: the matrix
+ *
+ * Calculate the determinant of the matrix (FIXME: not verified).
+ *
+ * Returns: the determinant.
+ */
 gfloat g3d_matrix_determinant(gfloat *matrix);
 
 /**
@@ -134,4 +147,4 @@ gboolean g3d_matrix_dump(gfloat *matrix);
 
 G_END_DECLS
 
-#endif /* __G3D_MATRIX_H__ */
+#endif /* _G3D_MATRIX_H */

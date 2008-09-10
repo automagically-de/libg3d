@@ -23,6 +23,12 @@
 #ifndef __G3D_OBJECT_H__
 #define __G3D_OBJECT_H__
 
+/**
+ * SECTION:object
+ * @short_description: Object manipulation
+ * @include: g3d/object.h
+ */
+
 #include <g3d/types.h>
 
 G_BEGIN_DECLS
@@ -41,7 +47,7 @@ void g3d_object_free(G3DObject *object);
  *
  * Calculates the radius of the object. This is the maximum from the
  * center to a vertex.
- * 
+ *
  * Returns: the radius of the given object
  */
 gdouble g3d_object_radius(G3DObject *object);
@@ -52,7 +58,7 @@ gdouble g3d_object_radius(G3DObject *object);
  * @scale: scale factor
  *
  * Resizes the object by the factor @scale.
- * 
+ *
  * Returns: TRUE on success, FALSE else
  */
 gboolean g3d_object_scale(G3DObject *object, gfloat scale);
@@ -68,6 +74,15 @@ gboolean g3d_object_scale(G3DObject *object, gfloat scale);
  */
 gboolean g3d_object_transform(G3DObject *object, gfloat *matrix);
 
+/**
+ * g3d_object_transform_normals:
+ * @object: the object to transform
+ * @matrix: the transformation matrix
+ *
+ * Multiplies all normals of the object with the transformation matrix.
+ *
+ * Returns: TRUE on success, FALSE else
+ */
 gboolean g3d_object_transform_normals(G3DObject *object, gfloat *matrix);
 
 /**
@@ -85,7 +100,7 @@ G3DObject *g3d_object_duplicate(G3DObject *object);
  * @object: the object to optimize
  *
  * Puts all vertex and face information into special arrays for faster
- * rendering.
+ * rendering. It is deprecated and should not be used.
  *
  * Returns: TRUE on success, FALSE else
  */

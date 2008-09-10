@@ -23,6 +23,12 @@
 #ifndef __G3D_MATERIAL_H__
 #define __G3D_MATERIAL_H__
 
+/**
+ * SECTION:material
+ * @short_description: Material generation and manipulation
+ * @include: g3d/material.h
+ */
+
 #include <g3d/types.h>
 
 G_BEGIN_DECLS

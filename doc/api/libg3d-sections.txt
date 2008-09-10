@@ -1,16 +1,4 @@
 <SECTION>
-<FILE>types</FILE>
-G3D_FLAG_IMG_GREYSCALE
-G3DTexEnv
-G3DImage
-G3D_FLAG_MAT_TWOSIDE
-G3D_FLAG_FAC_NORMALS
-G3D_FLAG_FAC_TEXMAP
-G3DFace
-G3DTransformation
-</SECTION>
-
-<SECTION>
 <FILE>context</FILE>
 G3DContext
 g3d_context_new
@@ -32,6 +20,10 @@ g3d_context_set_set_bgcolor_func
 
 <SECTION>
 <FILE>model</FILE>
+G3D_MODEL_CENTER
+G3D_MODEL_NOCHECK
+G3D_MODEL_OPTIMIZE
+G3D_MODEL_SCALE
 G3DModel
 g3d_model_new
 g3d_model_load
@@ -46,10 +38,12 @@ g3d_model_get_object_by_name
 <SECTION>
 <FILE>object</FILE>
 G3DObject
+G3DTransformation
 g3d_object_free
 g3d_object_radius
 g3d_object_scale
 g3d_object_transform
+g3d_object_transform_normals
 g3d_object_duplicate
 g3d_object_optimize
 g3d_object_smooth
@@ -58,6 +52,10 @@ g3d_object_merge
 
 <SECTION>
 <FILE>face</FILE>
+G3D_FLAG_MAT_TWOSIDE
+G3D_FLAG_FAC_NORMALS
+G3D_FLAG_FAC_TEXMAP
+G3DFace
 g3d_face_get_normal
 g3d_face_free
 </SECTION>
@@ -71,6 +69,10 @@ g3d_material_free
 
 <SECTION>
 <FILE>texture</FILE>
+G3D_FLAG_IMG_GREYSCALE
+G3DTexEnv
+G3DImage
+
 g3d_texture_load_cached
 g3d_texture_load_from_stream
 g3d_texture_load
@@ -88,7 +90,9 @@ G3D_PLUGIN_IMAGE
 PluginInitFunc
 PluginCleanupFunc
 PluginLoadModelFunc
+PluginLoadModelFromStreamFunc
 PluginLoadImageFunc
+PluginLoadImageStreamFunc
 PluginGetDescFunc
 PluginGetExtFunc
 
@@ -161,6 +165,7 @@ G3D_IFF_MKID
 g3d_iff_check
 g3d_iff_read_chunk
 g3d_iff_handle_chunk
+g3d_iff_chunk_matches
 g3d_iff_read_ctnr
 g3d_iff_id_to_text
 
@@ -210,6 +215,7 @@ g3d_matrix_rotate
 g3d_matrix_rotate_xyz
 g3d_matrix_scale
 g3d_matrix_transpose
+g3d_matrix_determinant
 g3d_matrix_dump
 </SECTION>
 

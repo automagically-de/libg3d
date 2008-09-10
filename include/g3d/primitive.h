@@ -23,27 +23,47 @@
 #ifndef __G3D_PRIMITIVE_H__
 #define __G3D_PRIMITIVE_H__
 
+/**
+ * SECTION:primitive
+ * @short_description: 3D primitive generation functions
+ * @include: g3d/primitive.h
+ */
+
 #include <g3d/types.h>
 
 G_BEGIN_DECLS
 
 /**
  * g3d_primitive_box:
- * @width: the width of the cube
- * @height: the height of the cube
- * @depth: the depth of the cube
+ * @width: the width of the box
+ * @height: the height of the box
+ * @depth: the depth of the box
  * @material: the material to use for all faces
  *
- * Generates an object containing a cube.
+ * Generates an object containing a box.
  *
- * returns: the cube object
+ * Returns: the box object
  */
 
 G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
 	G3DMaterial *material);
 
+#ifndef G3D_DISABLE_DEPRECATED
+/**
+ * g3d_primitive_cube:
+ * @width: the width of the box
+ * @height: the height of the box
+ * @depth: the depth of the box
+ * @material: the material to use for all faces
+ *
+ * Generates an object containing a box. It is deprecated and now a wrapper for
+ * g3d_primitive_box().
+ *
+ * Returns: the box object
+ */
 G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
 	G3DMaterial *material);
+#endif
 
 /**
  * g3d_primitive_cylinder:

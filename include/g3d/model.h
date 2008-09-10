@@ -23,6 +23,12 @@
 #ifndef __G3D_MODEL_H__
 #define __G3D_MODEL_H__
 
+/**
+ * SECTION:model
+ * @short_description: Model manipulation functions
+ * @include: g3d/g3d.h
+ */
+
 #include <g3d/types.h>
 
 G_BEGIN_DECLS
@@ -41,6 +47,17 @@ G3DModel *g3d_model_new(void);
 #define G3D_MODEL_OPTIMIZE        (1 << 2)
 #define G3D_MODEL_NOCHECK         (1 << 3)
 
+/**
+ * g3d_model_load_full:
+ * @context: a valid context
+ * @filename: the file name of the model to load
+ * @flags: object manipulation flags
+ *
+ * Loads a model from a file. Depending on @flags the model is checked,
+ * centered, resized, optimized.
+ *
+ * Returns: the loaded model or NULL in case of an error.
+ */
 G3DModel *g3d_model_load_full(G3DContext *context, const gchar *filename,
 	guint32 flags);
 

@@ -23,6 +23,12 @@
 #ifndef __G3D_VECTOR_H__
 #define __G3D_VECTOR_H__
 
+/**
+ * SECTION:vector
+ * @short_description: Vector manipulation and calculation
+ * @include: g3d/vector.h
+ */
+
 #include <glib.h>
 
 G_BEGIN_DECLS

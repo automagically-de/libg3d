@@ -23,6 +23,12 @@
 #ifndef __G3D_IFF_H__
 #define __G3D_IFF_H__
 
+/**
+ * SECTION:iff
+ * @short_description: IFF file helper functions
+ * @include: g3d/iff.h
+ */
+
 #ifndef G3D_DISABLE_DEPRECATED
 #include <stdio.h>
 #endif
@@ -231,13 +237,52 @@ FILE *g3d_iff_open(const gchar *filename, guint32 *id, guint32 *len);
 int g3d_iff_readchunk(FILE *f, guint32 *id, guint32 *len, guint32 flags);
 #endif /* G3D_DISABLE_DEPRECATED */
 
+/**
+ * g3d_iff_id_to_text:
+ * @id: an IFF identifier
+ *
+ * Get the text representation of an IFF chunk identifier.
+ *
+ * Returns: a newly allocated string containing the text identifier.
+ */
 gchar *g3d_iff_id_to_text(guint32 id);
 
+/**
+ * g3d_iff_chunk_matches:
+ * @id: IFF identifier
+ * @tid: textual representation of identifier
+ *
+ * Check whether @id and @tid match.
+ *
+ * Returns: TRUE on match, FALSE else.
+ */
 gboolean g3d_iff_chunk_matches(guint32 id, gchar *tid);
 
+/**
+ * g3d_iff_handle_chunk:
+ * @global: global data
+ * @plocal: local data of parent chunk, must not be NULL
+ * @chunks: chunk description list
+ * @flags: IFF flags
+ *
+ * Handle an IFF chunk based on chunk description.
+ *
+ * Returns: level object for siblings, may be NULL.
+ */
 gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
 	G3DIffChunkInfo *chunks, guint32 flags);
 
+/**
+ * g3d_iff_read_ctnr:
+ * @global: global data
+ * @local: local data of current chunk, must not be NULL
+ * @chunks: chunk description list
+ * @flags: IFF flags
+ *
+ * Read subchunks in current chunk and handle them appropriately.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 	G3DIffChunkInfo *chunks, guint32 flags);
 

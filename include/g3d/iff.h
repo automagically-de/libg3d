@@ -125,10 +125,8 @@ typedef struct {
 	G3DStream *stream;
 	guint32 flags;
 	gpointer user_data;
-#ifndef G3D_DISABLE_DEPRECATED
 	FILE *f;
 	long int max_fpos;
-#endif
 } G3DIffGlobal;
 
 /**

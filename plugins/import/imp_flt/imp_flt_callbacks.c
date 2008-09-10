@@ -23,7 +23,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/model.h>
 
@@ -35,10 +35,10 @@ gboolean flt_cb_0001(FltGlobalData *gd, FltLocalData *ld)
 {
 	gchar id[8];
 
-	fread(id, 1, 8, gd->f);
+	g3d_stream_read(gd->stream, id, 8);
 	id[7] = '\0';
 	ld->nb -= 8;
-	gd->fversion = g3d_read_int32_be(gd->f);
+	gd->fversion = g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 4;
 
 	g_debug("FLT: header: '%s' revision %u", id, gd->fversion);
@@ -61,7 +61,7 @@ gboolean flt_cb_0002(FltGlobalData *gd, FltLocalData *ld)
 	ld->g3dobj = object;
 
 	/* group ID */
-	fread(namebuf, 1, 8, gd->f);
+	g3d_stream_read(gd->stream, namebuf, 8);
 	ld->nb -= 8;
 	namebuf[7] = '\0';
 	object->name = g_strdup_printf("group '%s'", namebuf);
@@ -89,37 +89,37 @@ gboolean flt_cb_0004(FltGlobalData *gd, FltLocalData *ld)
 	object->materials = g_slist_append(object->materials, material);
 
 	/* object ID */
-	fread(namebuf, 1, 8, gd->f);
+	g3d_stream_read(gd->stream, namebuf, 8);
 	ld->nb -= 8;
 	namebuf[7] = '\0';
 	object->name = g_strdup_printf("object '%s'", namebuf);
 
 	/* flags */
-	g3d_read_int32_be(gd->f);
+	g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 4;
 
 	/* relative priority */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* transparency */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* special effect ID 1 */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* special effect ID 2 */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* significance */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* reserved */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	return TRUE;
@@ -159,40 +159,40 @@ gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld)
 	}
 
 	/* id */
-	fseek(gd->f, 8, SEEK_CUR);
+	g3d_stream_skip(gd->stream, 8);
 	ld->nb -= 8;
 	/* IR color code */
-	g3d_read_int32_be(gd->f);
+	g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 4;
 	/* relative priority */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	/* draw type */
-	g3d_read_int8(gd->f);
+	g3d_stream_read_int8(gd->stream);
 	ld->nb --;
 	/* texture white */
-	g3d_read_int8(gd->f);
+	g3d_stream_read_int8(gd->stream);
 	ld->nb --;
 	/* color name index */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	/* alternate color name index */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	/* reserved */
-	g3d_read_int8(gd->f);
+	g3d_stream_read_int8(gd->stream);
 	ld->nb --;
 	/* template (billboard) */
-	g3d_read_int8(gd->f);
+	g3d_stream_read_int8(gd->stream);
 	ld->nb --;
 	/* detail texture pattern */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	/* texture pattern */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	/* material index */
-	index = g3d_read_int16_be(gd->f);
+	index = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	if(index != -1) {
 		material = g_slist_nth_data(gd->model->materials, index);
@@ -200,41 +200,41 @@ gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld)
 			face->material = material;
 	}
 	/* surface material code */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	/* feature ID */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	/* IR material code */
-	g3d_read_int32_be(gd->f);
+	g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 4;
 	/* transparency */
-	g3d_read_int16_be(gd->f);
+	g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	/* LOD generation control */
-	g3d_read_int8(gd->f);
+	g3d_stream_read_int8(gd->stream);
 	ld->nb --;
 	/* line style index */
-	g3d_read_int8(gd->f);
+	g3d_stream_read_int8(gd->stream);
 	ld->nb --;
 	/* flags */
-	flags = g3d_read_int32_be(gd->f);
+	flags = g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 4;
 	/* light mode */
-	g3d_read_int8(gd->f);
+	g3d_stream_read_int8(gd->stream);
 	ld->nb --;
 	/* reserved */
-	fseek(gd->f, 7, SEEK_CUR);
+	g3d_stream_skip(gd->stream, 7);
 	ld->nb -= 7;
 	/* packed color, primary */
 	if((flags & (1 << 1)) /* no color */ ||
 		!(flags & (1 << 3))) /* packed color */
-		g3d_read_int32_be(gd->f);
+		g3d_stream_read_int32_be(gd->stream);
 	else {
-		g3d_read_int8(gd->f); /* alpha, unused */
-		b = (gfloat)g3d_read_int8(gd->f) / 255.0;
-		g = (gfloat)g3d_read_int8(gd->f) / 255.0;
-		r = (gfloat)g3d_read_int8(gd->f) / 255.0;
+		g3d_stream_read_int8(gd->stream); /* alpha, unused */
+		b = (gfloat)g3d_stream_read_int8(gd->stream) / 255.0;
+		g = (gfloat)g3d_stream_read_int8(gd->stream) / 255.0;
+		r = (gfloat)g3d_stream_read_int8(gd->stream) / 255.0;
 		material = g3d_material_new();
 		material->r = r;
 		material->g = g;
@@ -244,10 +244,10 @@ gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld)
 	}
 	ld->nb -= 4;
 	/* packed color, alternate */
-	g3d_read_int32_be(gd->f);
+	g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 4;
 	/* texture mapping index */
-	index = g3d_read_int16_be(gd->f);
+	index = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 	if(index != -1) {
 		g_debug("FLT: 0005: texture mapping index %d", index);
@@ -289,20 +289,19 @@ gboolean flt_cb_0032(FltGlobalData *gd, FltLocalData *ld)
 	gd->model->objects = g_slist_append(gd->model->objects, cobj);
 
 	/* skip reserved bytes */
-	fseek(gd->f, 128, SEEK_CUR);
+	g3d_stream_skip(gd->stream, 128);
 	ld->nb -= 128;
 
 	/* get colors */
-	for(i = 0; i < 1024; i ++)
-	{
+	for(i = 0; i < 1024; i ++) {
 		material = g3d_material_new();
 		material->name = g_strdup_printf("color %d", i);
 		cobj->materials = g_slist_append(cobj->materials, material);
 
-		material->a = g3d_read_int8(gd->f) / 255.0;
-		material->b = g3d_read_int8(gd->f) / 255.0;
-		material->g = g3d_read_int8(gd->f) / 255.0;
-		material->r = g3d_read_int8(gd->f) / 255.0;
+		material->a = g3d_stream_read_int8(gd->stream) / 255.0;
+		material->b = g3d_stream_read_int8(gd->stream) / 255.0;
+		material->g = g3d_stream_read_int8(gd->stream) / 255.0;
+		material->r = g3d_stream_read_int8(gd->stream) / 255.0;
 		ld->nb -= 4;
 	}
 
@@ -314,7 +313,7 @@ gboolean flt_cb_0064(FltGlobalData *gd, FltLocalData *ld)
 {
 	gchar fname[201];
 
-	fread(fname, 1, 200, gd->f);
+	g3d_stream_read(gd->stream, fname, 200);
 	ld->nb -= 200;
 
 	g_debug("FLT: 0064: %s", fname);
@@ -400,10 +399,10 @@ static gboolean flt_handle_vertex_color(FltGlobalData *gd, FltLocalData *ld,
 		vcolobj->name = g_strdup("vertex colors");
 		gd->model->objects = g_slist_append(gd->model->objects, vcolobj);
 	}
-	a = (gfloat)g3d_read_int8(gd->f) / 255.0;
-	b = (gfloat)g3d_read_int8(gd->f) / 255.0;
-	g = (gfloat)g3d_read_int8(gd->f) / 255.0;
-	r = (gfloat)g3d_read_int8(gd->f) / 255.0;
+	a = (gfloat)g3d_stream_read_int8(gd->stream) / 255.0;
+	b = (gfloat)g3d_stream_read_int8(gd->stream) / 255.0;
+	g = (gfloat)g3d_stream_read_int8(gd->stream) / 255.0;
+	r = (gfloat)g3d_stream_read_int8(gd->stream) / 255.0;
 	ld->nb -= 4;
 
 	if(flags & FLT_FLAG_PACKED_COLOR) {
@@ -420,7 +419,7 @@ static gboolean flt_handle_vertex_color(FltGlobalData *gd, FltLocalData *ld,
 		}
 	} else {
 		/* color index */
-		material = flt_material_by_index(gd, g3d_read_int32_be(gd->f));
+		material = flt_material_by_index(gd, g3d_stream_read_int32_be(gd->stream));
 		ld->nb -= 4;
 	}
 	gd->vertex_palette->vertex_materials[gd->vertex_palette->n_entries - 1] =
@@ -444,17 +443,17 @@ gboolean flt_cb_0068(FltGlobalData *gd, FltLocalData *ld)
 
 	/* color name index */
 	gd->vertex_palette->vertex_materials[index] =
-		flt_material_by_index(gd, g3d_read_int16_be(gd->f));
+		flt_material_by_index(gd, g3d_stream_read_int16_be(gd->stream));
 	ld->nb -= 2;
 
 	/* flags */
-	flags = g3d_read_int16_be(gd->f);
+	flags = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* vertex coordinate */
 	for(i = 0; i < 3; i ++) {
 		gd->vertex_palette->vertex_data[index * 3 + i] =
-			g3d_read_double_be(gd->f);
+			g3d_stream_read_double_be(gd->stream);
 		ld->nb -= 8;
 	}
 
@@ -479,24 +478,24 @@ gboolean flt_cb_0069(FltGlobalData *gd, FltLocalData *ld)
 
 	/* color name index */
 	gd->vertex_palette->vertex_materials[index] =
-		flt_material_by_index(gd, g3d_read_int16_be(gd->f));
+		flt_material_by_index(gd, g3d_stream_read_int16_be(gd->stream));
 	ld->nb -= 2;
 
 	/* flags */
-	flags = g3d_read_int16_be(gd->f);
+	flags = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* vertex coordinate */
 	for(i = 0; i < 3; i ++) {
 		gd->vertex_palette->vertex_data[index * 3 + i] =
-			g3d_read_double_be(gd->f);
+			g3d_stream_read_double_be(gd->stream);
 		ld->nb -= 8;
 	}
 
 	/* vertex normal */
 	for(i = 0; i < 3; i ++) {
 		gd->vertex_palette->normal_data[index * 3 + i] =
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
 		ld->nb -= 4;
 	}
 
@@ -522,31 +521,31 @@ gboolean flt_cb_0070(FltGlobalData *gd, FltLocalData *ld)
 
 	/* color name index */
 	gd->vertex_palette->vertex_materials[index] =
-		flt_material_by_index(gd, g3d_read_int16_be(gd->f));
+		flt_material_by_index(gd, g3d_stream_read_int16_be(gd->stream));
 	ld->nb -= 2;
 
 	/* flags */
-	flags = g3d_read_int16_be(gd->f);
+	flags = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* vertex coordinate */
 	for(i = 0; i < 3; i ++) {
 		gd->vertex_palette->vertex_data[index * 3 + i] =
-			g3d_read_double_be(gd->f);
+			g3d_stream_read_double_be(gd->stream);
 		ld->nb -= 8;
 	}
 
 	/* vertex normal */
 	for(i = 0; i < 3; i ++) {
 		gd->vertex_palette->normal_data[index * 3 + i] =
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
 		ld->nb -= 4;
 	}
 
 	/* vertex texture coordinate */
 	for(i = 0; i < 2; i ++) {
 		gd->vertex_palette->tex_vertex_data[index * 2 + i] =
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
 		ld->nb -= 4;
 	}
 
@@ -571,24 +570,24 @@ gboolean flt_cb_0071(FltGlobalData *gd, FltLocalData *ld)
 
 	/* color name index */
 	gd->vertex_palette->vertex_materials[index] =
-		flt_material_by_index(gd, g3d_read_int16_be(gd->f));
+		flt_material_by_index(gd, g3d_stream_read_int16_be(gd->stream));
 	ld->nb -= 2;
 
 	/* flags */
-	flags = g3d_read_int16_be(gd->f);
+	flags = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
 
 	/* vertex coordinate */
 	for(i = 0; i < 3; i ++) {
 		gd->vertex_palette->vertex_data[index * 3 + i] =
-			g3d_read_double_be(gd->f);
+			g3d_stream_read_double_be(gd->stream);
 		ld->nb -= 8;
 	}
 
 	/* vertex texture coordinate */
 	for(i = 0; i < 2; i ++) {
 		gd->vertex_palette->tex_vertex_data[index * 2 + i] =
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
 		ld->nb -= 4;
 	}
 
@@ -627,7 +626,7 @@ gboolean flt_cb_0072(FltGlobalData *gd, FltLocalData *ld)
 	face->vertex_indices = g_new0(guint32, n);
 
 	for(i = 0; i < n; i ++) {
-		j = g3d_read_int32_be(gd->f);
+		j = g3d_stream_read_int32_be(gd->stream);
 		ld->nb -= 4;
 
 #define FLT_SUPPORT_BROKEN_VERTEX_LIST 1
@@ -686,8 +685,8 @@ gboolean flt_cb_0085(FltGlobalData *gd, FltLocalData *ld)
 	object = (G3DObject *)g_queue_peek_head(gd->oqueue);
 	g_return_val_if_fail(object != NULL, FALSE);
 
-	nverts = g3d_read_int32_be(gd->f);
-	attrmask = g3d_read_int32_be(gd->f);
+	nverts = g3d_stream_read_int32_be(gd->stream);
+	attrmask = g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 8;
 
 	printf("FLT: 0085: %d vertices, attrmask: 0x%08x\n", nverts, attrmask);
@@ -699,85 +698,85 @@ gboolean flt_cb_0085(FltGlobalData *gd, FltLocalData *ld)
 	{
 		if(attrmask & (1 << 31)) /* has position */
 		{
-			object->vertex_data[i * 3 + 0] = g3d_read_double_be(gd->f);
-			object->vertex_data[i * 3 + 1] = g3d_read_double_be(gd->f);
-			object->vertex_data[i * 3 + 2] = g3d_read_double_be(gd->f);
+			object->vertex_data[i * 3 + 0] = g3d_stream_read_double_be(gd->stream);
+			object->vertex_data[i * 3 + 1] = g3d_stream_read_double_be(gd->stream);
+			object->vertex_data[i * 3 + 2] = g3d_stream_read_double_be(gd->stream);
 			ld->nb -= 24;
 		}
 
 		if(attrmask & (1 << 30)) /* has color index */
 		{
-			g3d_read_int32_be(gd->f);
+			g3d_stream_read_int32_be(gd->stream);
 			ld->nb -= 4;
 		}
 
 		if(attrmask & (1 << 29)) /* has RGBA color */
 		{
-			g3d_read_int32_be(gd->f);
+			g3d_stream_read_int32_be(gd->stream);
 			ld->nb -= 4;
 		}
 
 		if(attrmask & (1 << 28)) /* has normal */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 12;
 		}
 
 		if(attrmask & (1 << 27)) /* has base UV */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
 		if(attrmask & (1 << 26)) /* has UV layer 1 */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
 		if(attrmask & (1 << 25)) /* has UV layer 2 */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
 		if(attrmask & (1 << 24)) /* has UV layer 3 */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
 		if(attrmask & (1 << 23)) /* has UV layer 4 */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
 		if(attrmask & (1 << 22)) /* has UV layer 5 */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
 		if(attrmask & (1 << 21)) /* has UV layer 6 */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
 		if(attrmask & (1 << 20)) /* has UV layer 7 */
 		{
-			g3d_read_float_be(gd->f);
-			g3d_read_float_be(gd->f);
+			g3d_stream_read_float_be(gd->stream);
+			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 	}
@@ -796,9 +795,9 @@ gboolean flt_cb_0086(FltGlobalData *gd, FltLocalData *ld)
 	object = (G3DObject *)g_queue_peek_head(gd->oqueue);
 	g_return_val_if_fail(object != NULL, FALSE);
 
-	type = g3d_read_int16_be(gd->f);
-	isize = g3d_read_int16_be(gd->f);
-	nverts = g3d_read_int32_be(gd->f);
+	type = g3d_stream_read_int16_be(gd->stream);
+	isize = g3d_stream_read_int16_be(gd->stream);
+	nverts = g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 8;
 
 	printf("FLT: 0086: type: %d, index size: %d, %d vertices\n",
@@ -824,7 +823,7 @@ gboolean flt_cb_0086(FltGlobalData *gd, FltLocalData *ld)
 			for(i = 0; i < nverts; i ++)
 			{
 				face->vertex_indices[i] = flt_read_typed_index(
-					gd->f, isize, &(ld->nb));
+					gd->stream, isize, &(ld->nb));
 			}
 			object->faces = g_slist_append(object->faces, face);
 			break;
@@ -845,41 +844,41 @@ gboolean flt_cb_0113(FltGlobalData *gd, FltLocalData *ld)
 	material = g3d_material_new();
 
 	/* material index */
-	g3d_read_int32_be(gd->f);
+	g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 4;
 	/* material name */
-	fread(name, 1, 12, gd->f);
+	g3d_stream_read(gd->stream, name, 12);
 	ld->nb -= 12;
 	name[12] = '\0';
 	material->name = g_strdup(name);
 	/* flags */
-	g3d_read_int32_be(gd->f);
+	g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 4;
 	/* ambient */
-	g3d_read_float_be(gd->f);
-	g3d_read_float_be(gd->f);
-	g3d_read_float_be(gd->f);
+	g3d_stream_read_float_be(gd->stream);
+	g3d_stream_read_float_be(gd->stream);
+	g3d_stream_read_float_be(gd->stream);
 	ld->nb -= 12;
 	/* diffuse */
-	material->r = g3d_read_float_be(gd->f);
-	material->g = g3d_read_float_be(gd->f);
-	material->b = g3d_read_float_be(gd->f);
+	material->r = g3d_stream_read_float_be(gd->stream);
+	material->g = g3d_stream_read_float_be(gd->stream);
+	material->b = g3d_stream_read_float_be(gd->stream);
 	ld->nb -= 12;
 	/* specular */
-	material->specular[0] = g3d_read_float_be(gd->f);
-	material->specular[1] = g3d_read_float_be(gd->f);
-	material->specular[2] = g3d_read_float_be(gd->f);
+	material->specular[0] = g3d_stream_read_float_be(gd->stream);
+	material->specular[1] = g3d_stream_read_float_be(gd->stream);
+	material->specular[2] = g3d_stream_read_float_be(gd->stream);
 	ld->nb -= 12;
 	/* emissive */
-	g3d_read_float_be(gd->f);
-	g3d_read_float_be(gd->f);
-	g3d_read_float_be(gd->f);
+	g3d_stream_read_float_be(gd->stream);
+	g3d_stream_read_float_be(gd->stream);
+	g3d_stream_read_float_be(gd->stream);
 	ld->nb -= 12;
 	/* shininess */
-	material->shininess = g3d_read_float_be(gd->f);
+	material->shininess = g3d_stream_read_float_be(gd->stream);
 	ld->nb -= 4;
 	/* alpha */
-	material->a = g3d_read_float_be(gd->f);
+	material->a = g3d_stream_read_float_be(gd->stream);
 	ld->nb -= 4;
 
 	gd->model->materials = g_slist_append(gd->model->materials, material);

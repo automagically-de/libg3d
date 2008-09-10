@@ -22,9 +22,9 @@
 #ifndef _IMP_FLT_H
 #define _IMP_FLT_H
 
-#include <stdio.h>
 #include <glib.h>
+#include <g3d/stream.h>
 
-guint32 flt_read_typed_index(FILE *f, guint32 type, gint32 *len);
+guint32 flt_read_typed_index(G3DStream *stream, guint32 type, gint32 *len);
 
 #endif /* _IMP_FLT_H */

@@ -20,21 +20,18 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <stdio.h>
-
 #include <g3d/types.h>
 #include <g3d/context.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 
 #include "imp_flt_opcodes.h"
 
 FltOpcode *flt_opcode_info(guint32 opcode);
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	FILE *f;
 	guint16 opcode, rlen;
 	FltOpcode *oi;
 	FltGlobalData *gd;
@@ -43,24 +40,16 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	gpointer level_object = NULL;
 	gchar *pad;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("FLT: failed to open '%s'", filename);
-		return FALSE;
-	}
-
 	gd = g_new0(FltGlobalData, 1);
 	gd->context = context;
 	gd->model = model;
-	gd->f = f;
+	gd->stream = stream;
 	gd->oqueue = g_queue_new();
 
-	while(!feof(f))
-	{
+	while(!g3d_stream_eof(stream)) {
 		/* get record information */
-		opcode = g3d_read_int16_be(f);
-		rlen = g3d_read_int16_be(f);
+		opcode = g3d_stream_read_int16_be(stream);
+		rlen = g3d_stream_read_int16_be(stream);
 
 		/* create local data */
 		ld = g_new0(FltLocalData, 1);
@@ -69,8 +58,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		ld->g3dobj = g3dobj;
 		ld->level_object = level_object;
 
-		if(opcode == 0)
-		{
+		if(opcode == 0) {
 			/* end of file or error */
 			break;
 		}
@@ -87,11 +75,9 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		if(oi && oi->callback)
 			oi->callback(gd, ld);
 
+		/* skip remaining bytes */
 		if(ld->nb > 0)
-		{
-			/* skip remaining bytes */
-			fseek(f, ld->nb, SEEK_CUR);
-		}
+			g3d_stream_skip(stream, ld->nb);
 
 		/* free local data */
 		g3dobj = ld->g3dobj;
@@ -113,7 +99,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		g_free(gd->vertex_palette);
 	}
 	g_free(gd);
-	fclose(f);
 
 	return TRUE;
 }
@@ -137,29 +122,26 @@ FltOpcode *flt_opcode_info(guint32 opcode)
 	guint32 i;
 
 	for(i = 0; flt_opcodes[i].opcode != 0; i ++)
-	{
 		if(flt_opcodes[i].opcode == opcode)
 			return &(flt_opcodes[i]);
-	}
 	return NULL;
 }
 
-guint32 flt_read_typed_index(FILE *f, guint32 type, gint32 *len)
+guint32 flt_read_typed_index(G3DStream *stream, guint32 type, gint32 *len)
 {
 	guint32 val = 0;
 
-	switch(type)
-	{
+	switch(type) {
 		case 1:
-			val = g3d_read_int8(f);
+			val = g3d_stream_read_int8(stream);
 			*len -= 1;
 			break;
 		case 2:
-			val = g3d_read_int16_be(f);
+			val = g3d_stream_read_int16_be(stream);
 			*len -= 2;
 			break;
 		case 4:
-			val = g3d_read_int32_be(f);
+			val = g3d_stream_read_int32_be(stream);
 			*len -= 4;
 			break;
 		default:

@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <g3d/types.h>
+#include <g3d/stream.h>
 
 typedef struct {
 	guint32 n_entries;
@@ -46,7 +47,7 @@ typedef struct {
 typedef struct {
 	G3DContext *context;
 	G3DModel *model;
-	FILE *f;
+	G3DStream *stream;
 	guint32 level;
 	GQueue *oqueue;
 	FltVertexPalette *vertex_palette;

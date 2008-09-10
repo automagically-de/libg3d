@@ -92,6 +92,8 @@ static gint g3d_stream_gsf_close(gpointer data)
 	return 0;
 }
 
+/****************************************************************************/
+
 static GsfInput *stream_gsf_chdir(GsfInput *input, gchar *dirname)
 {
 	GsfInput *parent = input, *newinput;
@@ -110,6 +112,9 @@ static GsfInput *stream_gsf_chdir(GsfInput *input, gchar *dirname)
 	g_strfreev(dirs);
 	return newinput;
 }
+
+/*****************************************************************************/
+/* Zip stuff                                                                 */
 
 static G3DStream *g3d_stream_open_zip_from_input(GsfInput *input,
 	const gchar *subfile) {
@@ -201,7 +206,10 @@ G3DStream *g3d_stream_open_zip_from_stream(G3DStream *stream,
 	return g3d_stream_open_zip_from_input(input, subfile);
 }
 
-G3DStream *g3d_stream_open_structured_file(const gchar *filename,
+/*****************************************************************************/
+/* Structured File stuff                                                     */
+
+static G3DStream *g3d_stream_open_structured_file_from_input(GsfInput *input,
 	const gchar *subfile)
 {
 	G3DStreamGsf *sg;
@@ -210,26 +218,12 @@ G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 	guint32 flags = 0;
 
 	sg = g_new0(G3DStreamGsf, 1);
+	sg->input_container = input;
 
-#if DEBUG > 2
-	g_debug("GSF: Hello, World!");
-#endif
-
-	sg->input_container = gsf_input_stdio_new(filename, &error);
-	if(error != NULL) {
-		g_warning("error opening structured file '%s': %s", filename,
-			error->message);
-		g_error_free(error);
-		g_free(sg);
-		return NULL;
-	}
-#if DEBUG > 2
-	g_debug("GSF: opened file '%s'", filename);
-#endif
 	sg->infile_msole = gsf_infile_msole_new(sg->input_container, &error);
 	if(error != NULL) {
 		g_warning("error reading OLE data from '%s': %s",
-			filename, error->message);
+			gsf_input_name(input), error->message);
 		g_object_unref(sg->input_container);
 		g_error_free(error);
 		g_free(sg);
@@ -241,7 +235,7 @@ G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 	sg->input_subfile = gsf_infile_child_by_name(sg->infile_msole, subfile);
 	if(error != NULL) {
 		g_warning("error opening contained file '%s' in '%s': %s",
-			subfile, filename, error->message);
+			subfile, gsf_input_name(input), error->message);
 		g_object_unref(sg->infile_msole);
 		g_object_unref(sg->input_container);
 		g_error_free(error);
@@ -273,10 +267,56 @@ G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 	flags |= (1 << G3D_STREAM_READABLE);
 	flags |= (1 << G3D_STREAM_SEEKABLE);
 
-	return g3d_stream_new_custom(flags, filename,
+	sg->uri = g_strdup_printf("wsf://%s/%s", gsf_input_name(input), subfile);
+	return g3d_stream_new_custom(flags, sg->uri,
 		g3d_stream_gsf_read, NULL,
 		g3d_stream_gsf_seek, g3d_stream_gsf_tell,
 		g3d_stream_gsf_size, g3d_stream_gsf_eof,
 		g3d_stream_gsf_close, sg);
+}
+
+G3DStream *g3d_stream_open_structured_file(const gchar *filename,
+	const gchar *subfile)
+{
+	GsfInput *container;
+	GError *error = NULL;
+
+#if DEBUG > 2
+	g_debug("GSF: Hello, World!");
+#endif
+
+	container = gsf_input_stdio_new(filename, &error);
+	if(error != NULL) {
+		g_warning("error opening structured file '%s': %s", filename,
+			error->message);
+		g_error_free(error);
+		return NULL;
+	}
+#if DEBUG > 2
+	g_debug("GSF: opened file '%s'", filename);
+#endif
+
+	return g3d_stream_open_structured_file_from_input(container, subfile);
+}
+
+G3DStream *g3d_stream_open_structured_file_from_stream(G3DStream *stream,
+	const gchar *subfile)
+{
+	GsfInput *input;
+    GError *error = NULL;
+
+	/* FIXME: generic way to read from G3DStream?
+	 *   GsfInput:   nope
+	 *   GIOChannel: nope
+	 */
+	input = gsf_input_stdio_new(stream->uri, &error);
+	if(error != NULL) {
+		g_warning("error opening stream uri as file '%s': %s", stream->uri,
+			error->message);
+		g_error_free(error);
+		return NULL;
+	}
+
+	return g3d_stream_open_structured_file_from_input(input, subfile);
 }
 

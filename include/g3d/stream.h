@@ -349,6 +349,20 @@ G3DStream *g3d_stream_open_structured_file(const gchar *filename,
 	const gchar *subfile);
 
 /**
+ * g3d_stream_open_structured_file_from_stream:
+ * @stream: stream of container file
+ * @subfile: name of (contained) sub-file
+ *
+ * Open a file within a Structured File which is opened as a stream. At the
+ * moment this only works for streams opened by g3d_stream_open_file() as
+ * the file is directly opened again.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error.
+ */
+G3DStream *g3d_stream_open_structured_file_from_stream(G3DStream *stream,
+	const gchar *subfile);
+
+/**
  * g3d_stream_open_zip:
  * @filename: name of container file
  * @subfile: name of (contained) sub-file

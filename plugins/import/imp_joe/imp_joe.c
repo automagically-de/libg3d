@@ -22,11 +22,10 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
 #include <locale.h>
 
 #include <g3d/types.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/iff.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
@@ -43,7 +42,7 @@ void joe_object_flip_x(G3DObject *object);
 /* plugin interface                                                          */
 /*****************************************************************************/
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer plugin_data)
 {
 	G3DObject *object;
@@ -51,12 +50,12 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	gchar *value;
 	gfloat x, y, z;
 
-	if(g_strcasecmp(filename + strlen(filename) - 3, "car") == 0)
+	if(g_strcasecmp(stream->uri + strlen(stream->uri) - 3, "car") == 0)
 	{
 		/* .car file */
 		setlocale(LC_NUMERIC, "C");
 
-		cardata = joe_load_car(filename);
+		cardata = joe_load_car(stream->uri);
 
 		joe_load_object(context, "body.joe", model);
 		joe_load_object(context, "interior.joe", model);
@@ -112,7 +111,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	else
 	{
 		/* .joe file */
-		return (joe_load_object(context, filename, model) != NULL);
+		return (joe_load_object(context, stream->uri, model) != NULL);
 	}
 
 	return TRUE;
@@ -134,7 +133,7 @@ gchar **plugin_extensions(void)
 G3DObject *joe_load_object(G3DContext *context, const gchar *filename,
 	G3DModel *model)
 {
-	FILE *f;
+	G3DStream *stream;
 	gchar *basename, *texname;
 	G3DObject *object;
 	G3DMaterial *material;
@@ -147,18 +146,16 @@ G3DObject *joe_load_object(G3DContext *context, const gchar *filename,
 	guint16 *tex_indices, *normal_indices;
 	gfloat *normals = NULL, *texcoords = NULL;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
+	stream = g3d_stream_open_file(filename, "rb");
+	if(stream == NULL) {
 		g_printerr("JOE: failed to read '%s'\n", filename);
 		return NULL;
 	}
 
-	magic = g3d_read_int32_be(f);
-	if(magic != G3D_IFF_MKID('I','D','P','2'))
-	{
+	magic = g3d_stream_read_int32_be(stream);
+	if(magic != G3D_IFF_MKID('I','D','P','2')) {
 		g_printerr("JOE: wrong magic in '%s'\n", filename);
-		fclose(f);
+		g3d_stream_close(stream);
 		return NULL;
 	}
 
@@ -167,9 +164,9 @@ G3DObject *joe_load_object(G3DContext *context, const gchar *filename,
 
 	/* version 3 */
 
-	version = g3d_read_int32_le(f);
-	num_faces = g3d_read_int32_le(f);
-	num_frames = g3d_read_int32_le(f);
+	version = g3d_stream_read_int32_le(stream);
+	num_faces = g3d_stream_read_int32_le(stream);
+	num_frames = g3d_stream_read_int32_le(stream);
 
 	printf("JOE: faces: %d, frames: %d\n", num_faces, num_frames);
 
@@ -195,74 +192,69 @@ G3DObject *joe_load_object(G3DContext *context, const gchar *filename,
 	object->materials = g_slist_append(object->materials, material);
 
 	/* frames */
-	for(frame = 0; frame < 1; frame ++)
-	{
+	for(frame = 0; frame < 1; frame ++) {
 		/* create temporary storage */
 		tex_indices = g_new0(guint16, num_faces * 3 * 3);
 		normal_indices = g_new0(guint16, num_faces * 3 * 2);
 
 		/* faces blob */
-		for(i = 0; i < num_faces; i ++)
-		{
+		for(i = 0; i < num_faces; i ++) {
 			face = g_new0(G3DFace, 1);
 			face->material = material;
 			face->vertex_count = 3;
 			face->vertex_indices = g_new0(guint32, 3);
 
 			for(j = 0; j < 3; j ++)
-				face->vertex_indices[j] = g3d_read_int16_le(f);
+				face->vertex_indices[j] = g3d_stream_read_int16_le(stream);
 
 			/* normalIndex */
 			for(j = 0; j < 3; j ++)
-				normal_indices[i * 3 + j] = g3d_read_int16_le(f);
+				normal_indices[i * 3 + j] = g3d_stream_read_int16_le(stream);
 
 			/* textureIndex */
 			/* JOE_MAX_TEXTURES times, 1x for version 3 */
 			for(j = 0; j < 3; j ++)
-				tex_indices[i * 3 + j] = g3d_read_int16_le(f);
+				tex_indices[i * 3 + j] = g3d_stream_read_int16_le(stream);
 
 			object->faces = g_slist_append(object->faces, face);
 		}
 
 		/* num_verts */
-		num_verts = g3d_read_int32_le(f);
+		num_verts = g3d_stream_read_int32_le(stream);
 
 		/* num_texcoords */
-		num_texcoords = g3d_read_int32_le(f);
+		num_texcoords = g3d_stream_read_int32_le(stream);
 		if(num_texcoords != 0)
 			texcoords = g_new0(gfloat, num_texcoords * 2);
 
 		/* num_normals */
-		num_normals = g3d_read_int32_le(f);
+		num_normals = g3d_stream_read_int32_le(stream);
 		if(num_normals != 0)
 			normals = g_new0(gfloat, num_normals * 3);
 
-		printf("JOE: verts: %d, texcoords: %d, normals: %d\n",
+		g_debug("JOE: verts: %d, texcoords: %d, normals: %d\n",
 			num_verts, num_texcoords, num_normals);
 
 		/* verts blob */
 		object->vertex_count = num_verts;
 		object->vertex_data = g_new0(gfloat, num_verts * 3);
-		for(i = 0; i < num_verts; i ++)
-		{
-			object->vertex_data[i * 3 + 0] = g3d_read_float_le(f);
-			object->vertex_data[i * 3 + 1] = g3d_read_float_le(f);
-			object->vertex_data[i * 3 + 2] = g3d_read_float_le(f);
+		for(i = 0; i < num_verts; i ++) {
+			object->vertex_data[i * 3 + 0] = g3d_stream_read_float_le(stream);
+			object->vertex_data[i * 3 + 1] = g3d_stream_read_float_le(stream);
+			object->vertex_data[i * 3 + 2] = g3d_stream_read_float_le(stream);
 		}
 
 		/* normals blob */
-		for(i = 0; i < num_normals; i ++)
-		{
-			normals[i * 3 + 0] = - g3d_read_float_le(f);
-			normals[i * 3 + 1] = - g3d_read_float_le(f);
-			normals[i * 3 + 2] = - g3d_read_float_le(f);
+		for(i = 0; i < num_normals; i ++) {
+			normals[i * 3 + 0] = - g3d_stream_read_float_le(stream);
+			normals[i * 3 + 1] = - g3d_stream_read_float_le(stream);
+			normals[i * 3 + 2] = - g3d_stream_read_float_le(stream);
 		}
 
 		/* texcoords blob */
-		for(i = 0; i < num_texcoords; i ++)
-		{
-			texcoords[i * 2 + 0] = g3d_read_float_le(f);
-			texcoords[i * 2 + 1] = g3d_read_float_le(f);
+		for(i = 0; i < num_texcoords; i ++) {
+			texcoords[i * 2 + 0] = g3d_stream_read_float_le(stream);
+			texcoords[i * 2 + 1] = g3d_stream_read_float_le(stream);
 		}
 
 		/* fix faces */
@@ -309,21 +301,20 @@ G3DObject *joe_load_object(G3DContext *context, const gchar *filename,
 
 	/* clean up */
 	g_free(basename);
-	fclose(f);
+	g3d_stream_close(stream);
 
 	return object;
 }
 
 GHashTable *joe_load_car(const gchar *filename)
 {
-	FILE *f;
+	G3DStream *stream;
 	GHashTable *ht;
 	gchar buffer[2048 + 1], section[256], varname[256], value[256];
 	gchar *ep;
 
-	f = fopen(filename, "r");
-	if(f == NULL)
-	{
+	stream = g3d_stream_open_file(filename, "r");
+	if(stream == NULL) {
 		g_printerr("JOE: failed to read '%s'\n", filename);
 		return NULL;
 	}
@@ -332,23 +323,18 @@ GHashTable *joe_load_car(const gchar *filename)
 
 	memset(section, 0, 256);
 
-	while(!feof(f))
-	{
-		fgets(buffer, 2048, f);
+	while(!g3d_stream_eof(stream)) {
+		g3d_stream_read_line(stream, buffer, 2048);
 		if((buffer[0] == '\0') || (buffer[0] == '\n'))
 			continue;
 
-		if(buffer[0] == '[')
-		{
+		if(buffer[0] == '[') {
 			/* section title */
-			if(sscanf(buffer, "[ %s ]", section) != 1)
-			{
+			if(sscanf(buffer, "[ %s ]", section) != 1) {
 				g_warning("JOE: CAR: failed to read section title '%s'\n",
 					buffer);
 			}
-		}
-		else
-		{
+		} else {
 			/* property */
 			ep = strchr(buffer, '=');
 			if(ep != NULL)

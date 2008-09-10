@@ -99,12 +99,14 @@ G3DImage *g3d_texture_load_from_stream(G3DContext *context, G3DModel *model,
 {
 	G3DImage *image;
 
-	if(model->tex_images == NULL)
-		model->tex_images = g_hash_table_new(g_str_hash, g_str_equal);
+	if(model != NULL) {
+		if(model->tex_images == NULL)
+			model->tex_images = g_hash_table_new(g_str_hash, g_str_equal);
 
-	image = g_hash_table_lookup(model->tex_images, stream->uri);
-	if(image != NULL)
-		return image;
+		image = g_hash_table_lookup(model->tex_images, stream->uri);
+		if(image != NULL)
+			return image;
+	}
 
 	image = g_new0(G3DImage, 1);
 	image->tex_scale_u = 1.0;
@@ -112,7 +114,9 @@ G3DImage *g3d_texture_load_from_stream(G3DContext *context, G3DModel *model,
 
 	if(g3d_plugins_load_image_from_stream(context, stream, image)) {
 		image->tex_id = g_str_hash(stream->uri);
-		g_hash_table_insert(model->tex_images, g_strdup(stream->uri), image);
+		if(model != NULL)
+			g_hash_table_insert(model->tex_images, g_strdup(stream->uri),
+				image);
 		return image;
 	}
 	g_free(image);

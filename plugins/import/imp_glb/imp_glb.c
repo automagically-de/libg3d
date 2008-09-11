@@ -25,19 +25,19 @@
 #include <string.h>
 
 #include <g3d/types.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
 #include <g3d/iff.h>
 #include <g3d/vector.h>
 
-G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
+static G3DObject *glb_load_object(G3DContext *context, G3DStream *stream,
 	G3DModel *model);
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	return (glb_load_object(context, filename, model) != NULL);
+	return (glb_load_object(context, stream, model) != NULL);
 }
 
 gchar *plugin_description(G3DContext *context)
@@ -53,54 +53,43 @@ gchar **plugin_extensions(G3DContext *context)
 /*****************************************************************************/
 /* GLB specific                                                              */
 
-gfloat glb_get_float(FILE *f)
+static gfloat glb_get_float(G3DStream *stream)
 {
 	return 0.001 * (
-		(float)((guint32)g3d_read_int32_be(f)) - (float)(0x7FFFFFFF));
+		(float)((guint32)g3d_stream_read_int32_be(stream)) - (float)(0x7FFFFFFF));
 }
 
-G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
+static G3DObject *glb_load_object(G3DContext *context, G3DStream *stream,
 	G3DModel *model)
 {
 	G3DObject *pobject, *object;
 	G3DMaterial *material;
 	G3DFace *face;
-	FILE *f;
 	guint32 magic, otype, index;
 	gint32 i, j, msize, namelen, datalen, nvertices, nindices;
 	gchar *name;
 	gfloat *normals = NULL, *texcoords = NULL;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("failed to read '%s'\n", filename);
-		return NULL;
-	}
-
-	magic = g3d_read_int32_be(f);
-	if(magic != G3D_IFF_MKID('\0', 'G', 'L', 'B'))
-	{
+	magic = g3d_stream_read_int32_be(stream);
+	if(magic != G3D_IFF_MKID('\0', 'G', 'L', 'B')) {
 		g_warning("%s is not a correct GLB file (wrong magic)\n",
-			filename);
-		fclose(f);
+			stream->uri);
 		return NULL;
 	}
 
 	pobject = g_new0(G3DObject, 1);
-	pobject->name = g_strdup(filename);
+	pobject->name = g_strdup(stream->uri);
 	model->objects = g_slist_append(model->objects, pobject);
 
-	while(!feof(f))
-	{
-		otype = g3d_read_int32_be(f);
-		namelen = g3d_read_int32_be(f);
+	while(!g3d_stream_eof(stream)) {
+		otype = g3d_stream_read_int32_be(stream);
+		namelen = g3d_stream_read_int32_be(stream);
 
 		if(namelen == 0)
 			break;
 
 		name = g_new0(gchar, namelen + 1);
-		fread(name, 1, namelen, f);
+		g3d_stream_read(stream, name, namelen);
 #if DEBUG > 0
 		printf("GLB: object named '%s'\n", name);
 #endif
@@ -114,71 +103,66 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 		if(strncmp(object->name, "Collision plane", 15) == 0)
 			object->hide = TRUE;
 
-		datalen = g3d_read_int32_be(f);
+		datalen = g3d_stream_read_int32_be(stream);
 
-		if(otype != 0)
-		{
+		if(otype != 0) {
 			/* skip */
-			fseek(f, datalen, SEEK_CUR);
+			g3d_stream_skip(stream, datalen);
 			continue;
 		}
 
 		/* object type 0 */
-		msize = g3d_read_int32_be(f);
-		nvertices = g3d_read_int32_be(f);
-		nindices = g3d_read_int32_be(f);
+		msize = g3d_stream_read_int32_be(stream);
+		nvertices = g3d_stream_read_int32_be(stream);
+		nindices = g3d_stream_read_int32_be(stream);
 
 #if DEBUG > 0
 		printf("GLB: material size: %d bytes, %d vertices, %d indices\n",
 			msize, nvertices, nindices);
 #endif
-		if(msize > 0)
-		{
+		if(msize > 0) {
 			/* material */
 			material = g3d_material_new();
 			material->name = g_strdup("default material");
 			object->materials = g_slist_append(object->materials, material);
 
-			material->r = (gfloat)g3d_read_int8(f) / 255.0;
-			material->g = (gfloat)g3d_read_int8(f) / 255.0;
-			material->b = (gfloat)g3d_read_int8(f) / 255.0;
-			material->a = (gfloat)g3d_read_int8(f) / 255.0;
+			material->r = (gfloat)g3d_stream_read_int8(stream) / 255.0;
+			material->g = (gfloat)g3d_stream_read_int8(stream) / 255.0;
+			material->b = (gfloat)g3d_stream_read_int8(stream) / 255.0;
+			material->a = (gfloat)g3d_stream_read_int8(stream) / 255.0;
 
 			if(material->a == 0.0)
 				material->a = 1.0;
 
 			/* replacement color */
-			g3d_read_int8(f);
-			g3d_read_int8(f);
-			g3d_read_int8(f);
-			g3d_read_int8(f); /* unused */
+			g3d_stream_read_int8(stream);
+			g3d_stream_read_int8(stream);
+			g3d_stream_read_int8(stream);
+			g3d_stream_read_int8(stream); /* unused */
 
-			g3d_read_int8(f); /* LODs */
-			g3d_read_int8(f); /* reflectance */
+			g3d_stream_read_int8(stream); /* LODs */
+			g3d_stream_read_int8(stream); /* reflectance */
 			/* emissivity */
-			material->shininess = (gfloat)g3d_read_int8(f) / 255.0;
-			g3d_read_int8(f); /* static friction */
-			g3d_read_int8(f); /* dynamic friction */
-			g3d_read_int8(f); /* unused */
-			g3d_read_int8(f); /* unused */
-			g3d_read_int8(f); /* unused */
+			material->shininess = (gfloat)g3d_stream_read_int8(stream) / 255.0;
+			g3d_stream_read_int8(stream); /* static friction */
+			g3d_stream_read_int8(stream); /* dynamic friction */
+			g3d_stream_read_int8(stream); /* unused */
+			g3d_stream_read_int8(stream); /* unused */
+			g3d_stream_read_int8(stream); /* unused */
 
 			/* texture name */
 			namelen = msize - 16;
-			if(namelen > 0)
-			{
+			if(namelen > 0) {
 				name = g_new0(gchar, namelen + 1);
-				fread(name, 1, namelen, f);
+				g3d_stream_read(stream, name, namelen);
 #if DEBUG > 1
 				printf("GLB: texture name: %s\n", name);
 #endif
 
 				/* texture name is something like "0", the real name is in
 				 * "../$carname.conf"; try to load default texture */
-				if(name[0] == '0')
-				{
-					if(g_file_test("textures.jpg", G_FILE_TEST_EXISTS))
-					{
+				if(name[0] == '0') {
+					if(g_file_test("textures.jpg", G_FILE_TEST_EXISTS)) {
 						material->tex_image = g3d_texture_load_cached(
 							context, model, "textures.jpg");
 						if(material->tex_image != NULL)
@@ -191,18 +175,16 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 		}
 
 		/* vertices */
-		if(nvertices > 0)
-		{
+		if(nvertices > 0) {
 			object->vertex_count = nvertices;
 			object->vertex_data = g_new0(gfloat, nvertices * 3);
 			normals = g_new0(gfloat, nvertices * 3);
 			texcoords = g_new0(gfloat, nvertices * 2);
 
-			for(i = 0; i < nvertices; i ++)
-			{
-				object->vertex_data[i * 3 + 0] = glb_get_float(f);
-				object->vertex_data[i * 3 + 1] = glb_get_float(f);
-				object->vertex_data[i * 3 + 2] = glb_get_float(f);
+			for(i = 0; i < nvertices; i ++) {
+				object->vertex_data[i * 3 + 0] = glb_get_float(stream);
+				object->vertex_data[i * 3 + 1] = glb_get_float(stream);
+				object->vertex_data[i * 3 + 2] = glb_get_float(stream);
 
 #if DEBUG > 3
 				printf("D: %f, %f, %f\n",
@@ -212,32 +194,29 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 #endif
 
 				/* normal */
-				normals[i * 3 + 0] = glb_get_float(f);
-				normals[i * 3 + 1] = glb_get_float(f);
-				normals[i * 3 + 2] = glb_get_float(f);
+				normals[i * 3 + 0] = glb_get_float(stream);
+				normals[i * 3 + 1] = glb_get_float(stream);
+				normals[i * 3 + 2] = glb_get_float(stream);
 				g3d_vector_unify(
 					normals + i * 3 + 0,
 					normals + i * 3 + 1,
 					normals + i * 3 + 2);
 
 				/* texture coordinates */
-				texcoords[i * 2 + 0] = glb_get_float(f) / 64;
-				texcoords[i * 2 + 1] = 1.0 - glb_get_float(f) / 64;
+				texcoords[i * 2 + 0] = glb_get_float(stream) / 64;
+				texcoords[i * 2 + 1] = 1.0 - glb_get_float(stream) / 64;
 			}
 		}
 
-		if(nindices > 0)
-		{
-			for(i = 0; i < nindices; i += 3)
-			{
+		if(nindices > 0) {
+			for(i = 0; i < nindices; i += 3) {
 				face = g_new0(G3DFace, 1);
 				face->vertex_count = 3;
 				face->vertex_indices = g_new0(guint32, 3);
 				face->normals = g_new0(gfloat, 3 * 3);
 				face->flags |= G3D_FLAG_FAC_NORMALS;
-				for(j = 0; j < 3; j ++)
-				{
-					face->vertex_indices[j] = g3d_read_int32_be(f);
+				for(j = 0; j < 3; j ++) {
+					face->vertex_indices[j] = g3d_stream_read_int32_be(stream);
 
 					/* set normals */
 					index = face->vertex_indices[j];
@@ -247,13 +226,11 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 				}
 				face->material = g_slist_nth_data(object->materials, 0);
 
-				if(face->material->tex_image != NULL)
-				{
+				if(face->material->tex_image != NULL) {
 					face->tex_vertex_count = 3;
 					face->tex_vertex_data = g_new0(gfloat, 3 * 2);
 					face->tex_image = face->material->tex_image;
-					for(j = 0; j < 3; j ++)
-					{
+					for(j = 0; j < 3; j ++) {
 						index = face->vertex_indices[j];
 
 						face->tex_vertex_data[j * 2 + 0] =
@@ -273,8 +250,6 @@ G3DObject *glb_load_object(G3DContext *context, const gchar *filename,
 		if(texcoords != NULL)
 			g_free(texcoords);
 	}
-
-	fclose(f);
 
 	return pobject;
 }

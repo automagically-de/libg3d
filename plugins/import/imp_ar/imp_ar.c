@@ -35,15 +35,16 @@
 #include "imp_ar_dof.h"
 #include "imp_ar_carini.h"
 
-GSList *ar_read_directory(FILE *f);
+static GSList *ar_read_directory(G3DStream *stream);
+static G3DObject *ar_load_subfile(G3DContext *context, G3DModel *model,
+	G3DStream *stream, const gchar *subfile);
 
 /*****************************************************************************/
 /* plugin interface                                                          */
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer plugin_data)
 {
-	FILE *f;
 	GSList *dir, *item;
 	GHashTable *carini;
 	G3DMaterial *material;
@@ -58,41 +59,29 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 	material->name = g_strdup("default material");
 	model->materials = g_slist_append(model->materials, material);
 
-	if(g_strcasecmp(filename + (strlen(filename) - 4), ".dof") == 0)
-	{
+	if(g_strcasecmp(stream->uri + (strlen(stream->uri) - 4), ".dof") == 0) {
 		/* single DOF file */
-		ar_dof_load(context, model, filename);
-	}
-	else
-	{
+		ar_dof_load(context, model, stream);
+	} else {
 		/* compressed AR archive */
-		f = fopen(filename, "rb");
-		if(f == NULL)
-		{
-			g_printerr("AR: failed to read '%s'\n", filename);
-			return FALSE;
-		}
-
 		carini = ar_carini_load();
 
 		/* load directory */
-		dir = ar_read_directory(f);
+		dir = ar_read_directory(stream);
 
 		/* decompress files */
 		for(item = dir; item != NULL; item = item->next)
-			ar_decompress_to_file(f, (ArDirEntry *)item->data);
+			ar_decompress_to_file(stream, (ArDirEntry *)item->data);
 
 		/* load body */
 		mname = g_hash_table_lookup(carini, "body.model.file");
-		if(mname != NULL)
-			ar_dof_load(context, model, mname);
-
+		ar_load_subfile(context, model, stream, mname);
 		/* steering wheel */
 		mname = g_hash_table_lookup(carini, "steer.model.file");
 		if(mname != NULL)
 		{
 			printf("D: steering wheel (%s)\n", mname);
-			object = ar_dof_load(context, model, mname);
+			object = ar_load_subfile(context, model, stream, mname);
 			ar_carini_get_position(carini, "steer", &x, &y, &z);
 			object->transformation = g_new0(G3DTransformation, 1);
 			g3d_matrix_identity(object->transformation->matrix);
@@ -104,7 +93,7 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		if(mname != NULL)
 		{
 			printf("D: loading wheel 0 (%s)\n", mname);
-			object = ar_dof_load(context, model, mname);
+			object = ar_load_subfile(context, model, stream, mname);
 			x = ar_carini_get_float(carini, "susp0~susp_front.x");
 			y = ar_carini_get_float(carini, "susp_front.y") -
 				ar_carini_get_float(carini, "wheel_front.radius");
@@ -115,8 +104,6 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 		}
 
 		ar_carini_free(carini);
-
-		fclose(f);
 	}
 
 	return TRUE;
@@ -135,7 +122,7 @@ gchar **plugin_extensions(void)
 
 /*****************************************************************************/
 
-GSList *ar_read_directory(FILE *f)
+static GSList *ar_read_directory(G3DStream *stream)
 {
 	ArDirEntry *dirent;
 	GSList *list = NULL;
@@ -143,26 +130,25 @@ GSList *ar_read_directory(FILE *f)
 	gint32 nbytes;
 	gchar buffer[128];
 
-	fseek(f, -4, SEEK_END);
-	fsize = ftell(f);
-	dpos = g3d_read_int32_le(f);
+	g3d_stream_seek(stream, -4, G_SEEK_END);
+	fsize = g3d_stream_tell(stream);
+	dpos = g3d_stream_read_int32_le(stream);
 
 	/* start of directory */
-	fseek(f, dpos, SEEK_SET);
+	g3d_stream_seek(stream, dpos, G_SEEK_SET);
 	nbytes = fsize - dpos;
 #if DEBUG > 0
 	printf("D: AR: directory @ 0x%08x, %d bytes\n", dpos, nbytes);
 #endif
 
-	while(nbytes > 0)
-	{
+	while(nbytes > 0) {
 		dirent = g_new0(ArDirEntry, 1);
 		list = g_slist_append(list, dirent);
 
-		nbytes -= g3d_read_cstr(f, buffer, 127);
+		nbytes -= g3d_stream_read_cstr(stream, buffer, 127);
 		dirent->name = g_strdup(buffer);
-		dirent->offset = g3d_read_int32_le(f);
-		dirent->size = g3d_read_int32_le(f);
+		dirent->offset = g3d_stream_read_int32_le(stream);
+		dirent->size = g3d_stream_read_int32_le(stream);
 		nbytes -= 8;
 
 #if DEBUG > 0
@@ -174,4 +160,22 @@ GSList *ar_read_directory(FILE *f)
 	return list;
 }
 
+static G3DObject *ar_load_subfile(G3DContext *context, G3DModel *model,
+	G3DStream *stream, const gchar *subfile)
+{
+	G3DStream *substream;
+	G3DObject *o;
+
+	if(subfile == NULL)
+		return NULL;
+
+	substream = g3d_stream_open_file(subfile, "rb");
+	if(substream == NULL)
+		return NULL;
+
+	o = ar_dof_load(context, model, substream);
+	g3d_stream_close(substream);
+
+	return o;
+}
 

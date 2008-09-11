@@ -21,88 +21,85 @@
 */
 
 #include <g3d/types.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 #include <g3d/texture.h>
 #include <g3d/material.h>
 #include <g3d/iff.h>
 
-gchar *ar_dof_read_string(FILE *f, gint32 *dlen)
+gchar *ar_dof_read_string(G3DStream *stream, gint32 *dlen)
 {
 	gint32 len;
 	gchar *text;
 
-	len = g3d_read_int16_le(f);
+	len = g3d_stream_read_int16_le(stream);
 	*dlen -= 2;
 
 	text = g_new0(gchar, len + 1);
-	fread(text, 1, len, f);
+	g3d_stream_read(stream, text, len);
 	*dlen -= len;
 
 	return text;
 }
 
-G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
+G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model,
+	G3DStream *stream)
 {
 	G3DMaterial *material;
 	gint32 id, len, dlen, i, ntex, trans = 0, blend = 0;
 	gchar *tmp;
 
-	id = g3d_read_int32_be(f);
+	id = g3d_stream_read_int32_be(stream);
 	if(id != G3D_IFF_MKID('M','A','T','0'))
 		return NULL;
 
 	material = g3d_material_new();
 
-	dlen = g3d_read_int32_le(f);
-	do
-	{
-		id = g3d_read_int32_be(f);
+	dlen = g3d_stream_read_int32_le(stream);
+	do {
+		id = g3d_stream_read_int32_be(stream);
 		if(id != G3D_IFF_MKID('M','E','N','D'))
-			len = g3d_read_int32_le(f);
+			len = g3d_stream_read_int32_le(stream);
 
-		switch(id)
-		{
+		switch(id) {
 			case G3D_IFF_MKID('M','E','N','D'):
 				break;
 
 			case G3D_IFF_MKID('M','H','D','R'):
-				material->name = ar_dof_read_string(f, &dlen);
-				tmp = ar_dof_read_string(f, &dlen);
+				material->name = ar_dof_read_string(stream, &dlen);
+				tmp = ar_dof_read_string(stream, &dlen);
 				g_free(tmp);
 				break;
 
 			case G3D_IFF_MKID('M','C','O','L'):
 				/* ambient */
-				material->r = g3d_read_float_le(f);
-				material->g = g3d_read_float_le(f);
-				material->b = g3d_read_float_le(f);
-				material->a = g3d_read_float_le(f);
+				material->r = g3d_stream_read_float_le(stream);
+				material->g = g3d_stream_read_float_le(stream);
+				material->b = g3d_stream_read_float_le(stream);
+				material->a = g3d_stream_read_float_le(stream);
 				dlen -= 16;
 				/* diffuse */
-				fseek(f, 16, SEEK_CUR);
+				g3d_stream_skip(stream, 16);
 				dlen -= 16;
 				/* specular */
-				material->specular[0] = g3d_read_float_le(f);
-				material->specular[1] = g3d_read_float_le(f);
-				material->specular[2] = g3d_read_float_le(f);
-				material->specular[3] = g3d_read_float_le(f);
+				material->specular[0] = g3d_stream_read_float_le(stream);
+				material->specular[1] = g3d_stream_read_float_le(stream);
+				material->specular[2] = g3d_stream_read_float_le(stream);
+				material->specular[3] = g3d_stream_read_float_le(stream);
 				dlen -= 16;
 				/* emission */
-				fseek(f, 16, SEEK_CUR);
+				g3d_stream_skip(stream, 16);
 				dlen -= 16;
 				/* shininess */
-				material->shininess = g3d_read_float_le(f);
+				material->shininess = g3d_stream_read_float_le(stream);
 				dlen -= 4;
 				break;
 
 			case G3D_IFF_MKID('M','T','E','X'):
-				ntex = g3d_read_int32_le(f);
+				ntex = g3d_stream_read_int32_le(stream);
 				dlen -= 4;
-				for(i = 0; i < ntex; i ++)
-				{
-					tmp = ar_dof_read_string(f, &dlen);
-					if(i == 0)
-					{
+				for(i = 0; i < ntex; i ++) {
+					tmp = ar_dof_read_string(stream, &dlen);
+					if(i == 0) {
 						material->tex_image =
 							g3d_texture_load_cached(context, model, tmp);
 						if(material->tex_image)
@@ -114,9 +111,9 @@ G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
 
 			case G3D_IFF_MKID('M','T','R','A'):
 				/* transparency */
-				trans = g3d_read_int32_le(f);
+				trans = g3d_stream_read_int32_le(stream);
 				/* blend mode */
-				blend = g3d_read_int32_le(f);
+				blend = g3d_stream_read_int32_le(stream);
 
 				printf("D: MTRA: %s: trans: 0x%04x, blend: 0x%04x\n",
 					(material->name ? material->name : "unnamed"),
@@ -127,42 +124,41 @@ G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
 
 			case G3D_IFF_MKID('M','C','F','L'):
 				/* creation flags */
-				g3d_read_int32_le(f);
+				g3d_stream_read_int32_le(stream);
 				dlen -= 4;
 				break;
 
 			case G3D_IFF_MKID('M','U','V','W'):
 				/* u offset */
-				g3d_read_int32_le(f);
+				g3d_stream_read_int32_le(stream);
 				/* v offset */
-				g3d_read_int32_le(f);
+				g3d_stream_read_int32_le(stream);
 				dlen -= 8;
 
 				/* u tiling */
-				g3d_read_int32_le(f);
+				g3d_stream_read_int32_le(stream);
 				/* v tiling */
-				g3d_read_int32_le(f);
+				g3d_stream_read_int32_le(stream);
 				dlen -= 8;
 
 				/* angle */
-				g3d_read_float_le(f);
+				g3d_stream_read_float_le(stream);
 				/* blur */
-				g3d_read_float_le(f);
+				g3d_stream_read_float_le(stream);
 				/* blur offset */
-				g3d_read_int32_le(f);
+				g3d_stream_read_int32_le(stream);
 				dlen -= 12;
 				break;
 
 			default:
-				fseek(f, len, SEEK_CUR);
+				g3d_stream_skip(stream, len);
 				dlen -= len;
 				break;
 		}
 	}
 	while((dlen > 0) && (id != G3D_IFF_MKID('M','E','N','D')));
 
-	if(material->tex_image != NULL)
-	{
+	if(material->tex_image != NULL) {
 		if(blend == 1)
 			material->tex_image->tex_env = G3D_TEXENV_BLEND;
 		else
@@ -172,7 +168,8 @@ G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model, FILE *f)
 	return material;
 }
 
-G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
+G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model,
+	G3DStream *stream)
 {
 	G3DObject *object, *pobj;
 	G3DFace *face;
@@ -181,17 +178,17 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 	gint32 id, len, dlen, nverts, ntver, nnorm, nind, i, j, index;
 	gfloat *tex_vertices = NULL, *normals = NULL;
 
-	id = g3d_read_int32_be(f);
-	dlen = g3d_read_int32_le(f);
+	id = g3d_stream_read_int32_be(stream);
+	dlen = g3d_stream_read_int32_le(stream);
 
-	if(id != G3D_IFF_MKID('G','O','B','1'))
-	{
-		fseek(f, dlen, SEEK_CUR);
+	if(id != G3D_IFF_MKID('G','O','B','1')) {
+		g3d_stream_skip(stream, dlen);
 		return NULL;
 	}
 
 	object = g_new0(G3DObject, 1);
-	object->name = g_strdup_printf("object @ 0x%08x", (guint32)ftell(f));
+	object->name = g_strdup_printf("object @ 0x%08x",
+		(guint32)g3d_stream_tell(stream));
 
 	/* parent object for material references */
 	pobj = (G3DObject *)g_slist_nth_data(model->objects, 0);
@@ -199,14 +196,12 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 	/* default material */
 	material = (G3DMaterial *)g_slist_nth_data(model->materials, 0);
 
-	do
-	{
-		id = g3d_read_int32_be(f);
+	do {
+		id = g3d_stream_read_int32_be(stream);
 		if(id != G3D_IFF_MKID('G','E','N','D'))
-			len = g3d_read_int32_le(f);
+			len = g3d_stream_read_int32_le(stream);
 
-		switch(id)
-		{
+		switch(id) {
 			case G3D_IFF_MKID('G','E','N','D'):
 				/* end of object */
 				break;
@@ -214,14 +209,14 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 			case G3D_IFF_MKID('G','H','D','R'):
 				/* object header */
 				/* flags */
-				i = g3d_read_int32_le(f);
+				i = g3d_stream_read_int32_le(stream);
 				printf("D: GHDR: flags = 0x%04X\n", i);
 				/* paint flags */
-				i = g3d_read_int32_le(f);
+				i = g3d_stream_read_int32_le(stream);
 				printf("D: GHDR: paint flags = 0x%04X\n", i);
 
 				/* material ref */
-				i = g3d_read_int32_le(f);
+				i = g3d_stream_read_int32_le(stream);
 				material = g_slist_nth_data(pobj->materials, i);
 				if(material == NULL)
 					material = (G3DMaterial *)g_slist_nth_data(
@@ -232,22 +227,20 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 
 			case G3D_IFF_MKID('V','E','R','T'):
 				/* vertices */
-				nverts = g3d_read_int32_le(f);
+				nverts = g3d_stream_read_int32_le(stream);
 
 #if DEBUG > 2
 				printf("D: %d vertices\n", nverts);
 #endif
 
 				dlen -= 4;
-				if(nverts > 0)
-				{
+				if(nverts > 0) {
 					object->vertex_count = nverts;
 					object->vertex_data = g_new0(gfloat, nverts * 3);
-					for(i = 0; i < nverts; i ++)
-					{
-						object->vertex_data[i * 3 + 0] = g3d_read_float_le(f);
-						object->vertex_data[i * 3 + 1] = g3d_read_float_le(f);
-						object->vertex_data[i * 3 + 2] = g3d_read_float_le(f);
+					for(i = 0; i < nverts; i ++) {
+						for(j = 0; j < 3; j ++)
+							object->vertex_data[i * 3 + j] =
+								g3d_stream_read_float_le(stream);
 						dlen -= 12;
 					}
 				}
@@ -255,59 +248,57 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 
 			case G3D_IFF_MKID('N', 'O','R','M'):
 				/* normals */
-				nnorm = g3d_read_int32_le(f);
+				nnorm = g3d_stream_read_int32_le(stream);
 				normals = g_new0(gfloat, nnorm * 3);
 				dlen -= 4;
-				for(i = 0; i < nnorm; i ++)
-				{
-					normals[i * 3 + 0] = g3d_read_float_le(f);
-					normals[i * 3 + 1] = g3d_read_float_le(f);
-					normals[i * 3 + 2] = g3d_read_float_le(f);
+				for(i = 0; i < nnorm; i ++) {
+					for(j = 0; j < 3; j ++)
+						normals[i * 3 + j] = g3d_stream_read_float_le(stream);
 					dlen -= 12;
 				}
 				break;
 
 			case G3D_IFF_MKID('T', 'V','E','R'):
 				/* texture vertices */
-				ntver = g3d_read_int32_le(f);
+				ntver = g3d_stream_read_int32_le(stream);
 				tex_vertices = g_new0(gfloat, ntver * 2);
 				dlen -= 4;
 
 #if DEBUG > 2
 				printf("D: %d texture vertices @ 0x%08x\n", ntver,
-					(guint32)ftell(f) - 12);
+					(guint32)g3d_stream_tell(stream) - 12);
 #endif
 
-				for(i = 0; (i < ntver) && (len > 0); i ++)
-				{
-					tex_vertices[i * 2 + 0] = g3d_read_float_le(f);
-					tex_vertices[i * 2 + 1] = 1.0 - g3d_read_float_le(f);
+				for(i = 0; (i < ntver) && (len > 0); i ++) {
+					tex_vertices[i * 2 + 0] = g3d_stream_read_float_le(stream);
+					tex_vertices[i * 2 + 1] =
+						1.0 - g3d_stream_read_float_le(stream);
 					dlen -= 8;
 				}
 				break;
 
 			case G3D_IFF_MKID('B','R','S','T'):
 				/* bursts */
-				i = g3d_read_int32_le(f);
+				i = g3d_stream_read_int32_le(stream);
 				dlen -= 4;
-				fseek(f, i * 4, SEEK_CUR); /* burstStart */
-				fseek(f, i * 4, SEEK_CUR); /* burstCount */
-				fseek(f, i * 4, SEEK_CUR); /* burstMtlID */
-				fseek(f, i * 4, SEEK_CUR); /* burstVperP */
+				g3d_stream_skip(stream, i * 4); /* burstStart */
+				g3d_stream_skip(stream, i * 4); /* burstCount */
+				g3d_stream_skip(stream, i * 4); /* burstMtlID */
+				g3d_stream_skip(stream, i * 4); /* burstVperP */
 				dlen -= (4 * 4 * i);
 				break;
 
 			case G3D_IFF_MKID('V','C','O','L'):
 				/* vertex colors */
-				i = g3d_read_int32_le(f);
+				i = g3d_stream_read_int32_le(stream);
 				dlen -= 4;
-				fseek(f, i * 4 * 3, SEEK_CUR);
+				g3d_stream_skip(stream, i * 4 * 3);
 				dlen -= (i * 4 * 3);
 				break;
 
 			case G3D_IFF_MKID('I','N','D','I'):
 				/* indices */
-				nind = g3d_read_int32_le(f);
+				nind = g3d_stream_read_int32_le(stream);
 				dlen -= 4;
 				len -= 4;
 
@@ -315,16 +306,15 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 				printf("D: %d indices in %d bytes\n", nind, len);
 #endif
 
-				for(i = 0; i < nind; i += 3)
-				{
+				for(i = 0; i < nind; i += 3) {
 					face = g_new0(G3DFace, 1);
 					face->material = material;
 					face->vertex_count = 3;
 					face->vertex_indices = g_new0(guint32, 3);
 
-					face->vertex_indices[0] = g3d_read_int16_le(f);
-					face->vertex_indices[1] = g3d_read_int16_le(f);
-					face->vertex_indices[2] = g3d_read_int16_le(f);
+					for(j = 0; j < 3; j ++)
+						face->vertex_indices[j] =
+							g3d_stream_read_int16_le(stream);
 					dlen -= 6;
 					len -= 6;
 
@@ -337,27 +327,23 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 				printf("D: skipping tag '%c%c%c%c @ 0x%08x'\n",
 					(id << 24) & 0xFF, (id << 16) & 0xFF,
 					(id << 8) & 0xFF, id & 0xFF,
-					(guint32)ftell(f));
+					(guint32)g3d_stream_tell(stream));
 #endif
-				fseek(f, len, SEEK_CUR);
+				g3d_stream_skip(stream, len);
 				dlen -= len;
 				break;
 		}
-	}
-	while((dlen > 0) && (id != G3D_IFF_MKID('G','E','N','D')));
+	} while((dlen > 0) && (id != G3D_IFF_MKID('G','E','N','D')));
 
 	/* fix faces with normals and texture vertices */
-	for(item = object->faces; item != NULL; item = item->next)
-	{
+	for(item = object->faces; item != NULL; item = item->next) {
 		face = (G3DFace *)item->data;
 
-		if(tex_vertices != NULL)
-		{
+		if(tex_vertices != NULL) {
 			face->tex_image = material->tex_image;
 			face->tex_vertex_count = 3;
 			face->tex_vertex_data = g_new0(gfloat, 3 * 2);
-			for(j = 0; j < 3; j ++)
-			{
+			for(j = 0; j < 3; j ++) {
 				index = face->vertex_indices[j];
 				face->tex_vertex_data[j * 2 + 0] = tex_vertices[index * 2 + 0];
 				face->tex_vertex_data[j * 2 + 1] = tex_vertices[index * 2 + 1];
@@ -366,11 +352,9 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 				face->flags |= G3D_FLAG_FAC_TEXMAP;
 		}
 
-		if(normals != NULL)
-		{
+		if(normals != NULL) {
 			face->normals = g_new0(gfloat, 3 * 3);
-			for(j = 0; j < 3; j ++)
-			{
+			for(j = 0; j < 3; j ++) {
 				index = face->vertex_indices[j];
 				face->normals[j * 3 + 0] = normals[index * 3 + 0];
 				face->normals[j * 3 + 1] = normals[index * 3 + 1];
@@ -391,54 +375,41 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model, FILE *f)
 }
 
 G3DObject *ar_dof_load(G3DContext *context, G3DModel *model,
-	const gchar *filename)
+	G3DStream *stream)
 {
-	FILE *f;
 	gint32 id, dlen, len, nmat, nobj, i;
 	G3DObject *object, *cobj;
 	G3DMaterial *material;
 
-	f = fopen(filename, "rb");
-	if(f == NULL)
-	{
-		g_warning("failed to read '%s'\n", filename);
-		return NULL;
-	}
-
 	/* file is little-endian, but read IDs as big-endian to use
 	 * G3D_IFF_MKID to compare */
 
-	id = g3d_read_int32_be(f);
-	if(id != G3D_IFF_MKID('D','O','F','1'))
-	{
-		g_warning("%s is not a DOF1 file\n", filename);
-		fclose(f);
+	id = g3d_stream_read_int32_be(stream);
+	if(id != G3D_IFF_MKID('D','O','F','1')) {
+		g_warning("%s is not a DOF1 file\n", stream->uri);
 		return NULL;
 	}
-	dlen = g3d_read_int32_le(f);
+	dlen = g3d_stream_read_int32_le(stream);
 
 	object = g_new0(G3DObject, 1);
-	object->name = g_strdup(filename);
+	object->name = g_strdup(stream->uri);
 	model->objects = g_slist_append(model->objects, object);
 
-	do
-	{
-		id = g3d_read_int32_be(f);
+	do {
+		id = g3d_stream_read_int32_be(stream);
 		if(id != G3D_IFF_MKID('E','D','O','F'))
-			len = g3d_read_int32_le(f);
+			len = g3d_stream_read_int32_le(stream);
 		dlen -= 8;
 
-		switch(id)
-		{
+		switch(id) {
 			case G3D_IFF_MKID('E','D','O','F'):
 				/* end of DOF */
 				break;
 
 			case G3D_IFF_MKID('M','A','T','S'):
-				nmat = g3d_read_int32_le(f);
-				for(i = 0; i < nmat; i ++)
-				{
-					material = ar_dof_load_mat(context, model, f);
+				nmat = g3d_stream_read_int32_le(stream);
+				for(i = 0; i < nmat; i ++) {
+					material = ar_dof_load_mat(context, model, stream);
 					if(material)
 						object->materials = g_slist_append(object->materials,
 							material);
@@ -447,10 +418,9 @@ G3DObject *ar_dof_load(G3DContext *context, G3DModel *model,
 				break;
 
 			case G3D_IFF_MKID('G','E','O','B'):
-				nobj = g3d_read_int32_le(f);
-				for(i = 0; i < nobj; i ++)
-				{
-					cobj = ar_dof_load_obj(context, model, f);
+				nobj = g3d_stream_read_int32_le(stream);
+				for(i = 0; i < nobj; i ++) {
+					cobj = ar_dof_load_obj(context, model, stream);
 					if(cobj)
 						object->objects =
 							g_slist_append(object->objects, cobj);
@@ -462,13 +432,14 @@ G3DObject *ar_dof_load(G3DContext *context, G3DModel *model,
 				g_print("DOF: unknown ID '%c%c%c%c' @ 0x%08x\n",
 					(id >> 24) & 0xFF, (id >> 16) & 0xFF,
 					(id >> 8) & 0xFF, id  & 0xFF,
-					(guint32)ftell(f) - 8);
-				fseek(f, len, SEEK_CUR);
+					(guint32)g3d_stream_tell(stream) - 8);
+				g3d_stream_skip(stream, len);
 				dlen -= len;
 				break;
 		}
-	}
-	while((dlen > 0) && (id != G3D_IFF_MKID('E','D','O','F')) && (!feof(f)));
+	} while((dlen > 0) &&
+		(id != G3D_IFF_MKID('E','D','O','F')) &&
+		(!g3d_stream_eof(stream)));
 
 	return object;
 }

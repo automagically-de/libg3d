@@ -23,6 +23,8 @@
 #ifndef _IMP_AR_DECOMPRESS_H
 #define _IMP_AR_DECOMPRESS_H
 
-gboolean ar_decompress_to_file(FILE *f, ArDirEntry *dirent);
+#include <g3d/stream.h>
+
+gboolean ar_decompress_to_file(G3DStream *stream, ArDirEntry *dirent);
 
 #endif /* _IMP_AR_DECOMPRESS_H */

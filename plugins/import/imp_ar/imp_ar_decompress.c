@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
-#include <g3d/read.h>
+#include <g3d/stream.h>
 
 #include "imp_ar.h"
 
@@ -105,7 +105,7 @@ guint8 *ar_decompress_chunk(guint8 *src, guint16 srcsize, guint16 *dstsize)
 	return dst;
 }
 
-gboolean ar_decompress_to_file(FILE *f, ArDirEntry *dirent)
+gboolean ar_decompress_to_file(G3DStream *stream, ArDirEntry *dirent)
 {
 	FILE *o;
 	gchar cmd;
@@ -114,44 +114,38 @@ gboolean ar_decompress_to_file(FILE *f, ArDirEntry *dirent)
 	guint8 *src, *dst;
 
 	o = fopen(dirent->name, "wb");
-	if(o == NULL)
-	{
+	if(o == NULL) {
 		g_printerr("failed to write to '%s'\n", dirent->name);
 		return FALSE;
 	}
 
 	/* seek to file start */
-	fseek(f, dirent->offset, SEEK_SET);
+	g3d_stream_seek(stream, dirent->offset, G_SEEK_SET);
 
 	/* skip tags */
-	do
-	{
-		cmd = g3d_read_int8(f);
-		if(cmd != 'D')
-		{
-			size = g3d_read_int32_le(f);
-			fseek(f, size, SEEK_CUR);
+	do {
+		cmd = g3d_stream_read_int8(stream);
+		if(cmd != 'D') {
+			size = g3d_stream_read_int32_le(stream);
+			g3d_stream_skip(stream, size);
 		}
-	}
-	while(cmd != 'D');
+	} while(cmd != 'D');
 
 #if DEBUG > 2
 	printf("D: starting decompression part\n");
 #endif
 
 	/* decompress stuff */
-	while(1)
-	{
-		srcsize = g3d_read_int16_le(f);
+	while(1) {
+		srcsize = g3d_stream_read_int16_le(stream);
 		if(srcsize == 0)
 			break;
 
 		src = g_new0(guint8, srcsize);
-		fread(src, 1, srcsize, f);
+		g3d_stream_read(stream, src, srcsize);
 		dst = ar_decompress_chunk(src, srcsize, &dstsize);
 
-		if(dstsize > 0)
-		{
+		if(dstsize > 0) {
 			fwrite(dst, 1, dstsize, o);
 			g_free(dst);
 		}

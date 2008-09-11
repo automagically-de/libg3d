@@ -23,10 +23,11 @@
 #ifndef _IMP_AR_DOF_H
 #define _IMP_AR_DOF_H
 
-#include <g3d/types.h>
 #include <glib.h>
+#include <g3d/types.h>
+#include <g3d/stream.h>
 
 G3DObject *ar_dof_load(G3DContext *context, G3DModel *model,
-	const gchar *filename);
+	G3DStream *stream);
 
 #endif

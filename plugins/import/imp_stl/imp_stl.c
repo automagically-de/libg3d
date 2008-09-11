@@ -2,6 +2,7 @@
     libg3d - 3D object loading library
 
     Copyright (C) 2006  Oliver Dippel <o.dippel@gmx.de>
+	              2008  Markus Dahms <mad@automagically.de>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -24,175 +25,48 @@
 #include <locale.h>
 
 #include <g3d/types.h>
-#include <g3d/plugins.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 
 /*
- Infos for the STL(A)-Format: http://www.csit.fsu.edu/~burkardt/data/stla/stla.html
- Infos for the STL(B)-Format: http://www.csit.fsu.edu/~burkardt/data/stlb/stlb.html
+	Infos for the STL(A)-Format:
+	http://www.csit.fsu.edu/~burkardt/data/stla/stla.html
+	Infos for the STL(B)-Format:
+	http://www.csit.fsu.edu/~burkardt/data/stlb/stlb.html
 */
 
 #define STL_ASCII  0
 #define STL_BINARY 1
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+static gboolean stl_load_binary(G3DContext *context, G3DModel *model,
+	G3DStream *stream);
+static gboolean stl_load_text(G3DContext *context, G3DModel *model,
+	G3DStream *stream);
+
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	FILE *f;
-	gfloat x;
-	gfloat y;
-	gfloat z;
 	gchar line[1024];
-	guint32 index = 0;
-	G3DObject *object;
-	G3DMaterial *material;
-	G3DFace *face;
-	guint32 n = 0;
-	guint32 num_faces = 0;
-	gchar name[81];
-	gchar type;
-	if(context != NULL) {
-		/* Check Filetype (ASCII or BINARY) */
-		if((f = fopen(filename, "r")) == NULL) {
-			g_warning("STL: failed to open '%s'", filename);
-			return FALSE;
-		}
-		type = STL_BINARY;
-		while(!feof(f)) {
-			fgets(line, 1023, f);
-			if (strstr(line, "solid")) {
-				setlocale(LC_NUMERIC, "C");
-				type = STL_ASCII;
-				break;
-			}
-		}
-		fclose(f);
-		if (type == STL_BINARY) {
-#if DEBUG > 0
-			printf("STL: format is BINARY\n");
-#endif
-			if((f = fopen(filename, "rb")) == NULL) {
-				g_warning("STLb: failed to open '%s'", filename);
-				return FALSE;
-			}
-			fread(name, 80, sizeof(gchar), f);
-			name[80] = 0;
-			fread(&num_faces, 1, sizeof(guint32), f);
-			object = g_new0(G3DObject, 1);
-			object->name = g_strdup("STL-Model");
-			model->objects = g_slist_append(model->objects, object);
-			material = g3d_material_new();
-			material->name = g_strdup("default material");
-			material->r = 0.2;
-			material->g = 1.0;
-			material->b = 0.1;
-			material->a = 1.0;
-			object->materials = g_slist_append(object->materials, material);
-			object->vertex_count = num_faces * 3;
-#if DEBUG > 0
-			printf("STL: BINARY: vertex_count: %i\n", object->vertex_count);
-#endif
-			object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
-			for (n = 0; n < num_faces; n++) {
-				face = g_new0(G3DFace, 1);
-				face->material = material;
-				face->vertex_count = 3;
-				face->vertex_indices = g_new0(guint32, face->vertex_count);
-				face->vertex_indices[0] = index + 0;
-				face->vertex_indices[1] = index + 1;
-				face->vertex_indices[2] = index + 2;
-				object->faces = g_slist_prepend(object->faces, face);
-				/* Normals */
-				fread(&x, 1, sizeof(gfloat), f);
-				fread(&y, 1, sizeof(gfloat), f);
-				fread(&z, 1, sizeof(gfloat), f);
-				/* 1. Polygon */
-				fread(&x, 1, sizeof(gfloat), f);
-				fread(&y, 1, sizeof(gfloat), f);
-				fread(&z, 1, sizeof(gfloat), f);
-				object->vertex_data[index * 3 + 0] = x;
-				object->vertex_data[index * 3 + 1] = y;
-				object->vertex_data[index * 3 + 2] = z;
-				index++;
-				/* 2. Polygon */
-				fread(&x, 1, sizeof(gfloat), f);
-				fread(&y, 1, sizeof(gfloat), f);
-				fread(&z, 1, sizeof(gfloat), f);
-				object->vertex_data[index * 3 + 0] = x;
-				object->vertex_data[index * 3 + 1] = y;
-				object->vertex_data[index * 3 + 2] = z;
-				index++;
-				/* 3. Polygon */
-				fread(&x, 1, sizeof(gfloat), f);
-				fread(&y, 1, sizeof(gfloat), f);
-				fread(&z, 1, sizeof(gfloat), f);
-				object->vertex_data[index * 3 + 0] = x;
-				object->vertex_data[index * 3 + 1] = y;
-				object->vertex_data[index * 3 + 2] = z;
-				index++;
-				/* 2 Byte Dummy read */
-				fread(name, 2, sizeof(gchar), f);
-			}
-			fclose(f);
-		} else {
-#if DEBUG > 0
-			printf("STL: format is ASCII\n");
-#endif
-			if((f = fopen(filename, "r")) == NULL) {
-				g_warning("STLa: failed to open '%s'", filename);
-				return FALSE;
-			}
-			object = g_new0(G3DObject, 1);
-			object->name = g_strdup("STL-Model");
-			model->objects = g_slist_append(model->objects, object);
-			material = g3d_material_new();
-			material->name = g_strdup("default material");
-			material->r = 0.2;
-			material->g = 1.0;
-			material->b = 0.1;
-			material->a = 1.0;
-			object->materials = g_slist_append(object->materials, material);
-			object->vertex_count = 0;
-			while(!feof(f)) {
-				line[0] = 0;
-				fgets(line, 1023, f);
-				if (strstr(line, "solid ")) {
-					free(object->name);
-					object->name = g_strdup(strstr(line, "solid ") + 6);
-				} else if (strstr(line, "vertex")) {
-					object->vertex_count++;
-				}
-			}
-#if DEBUG > 0
-			printf("STL: ASCII: vertex_count: %i\n", object->vertex_count);
-#endif
-			fseek(f, 0, SEEK_SET);
-			object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
-			index = 0;
-			while(!feof(f)) {
-				line[0] = 0;
-				fgets(line, 1023, f);
-				if (strstr(line, "facet ")) {
-					face = g_new0(G3DFace, 1);
-					face->material = material;
-					face->vertex_count = 3;
-					face->vertex_indices = g_new0(guint32, face->vertex_count);
-					face->vertex_indices[0] = index + 0;
-					face->vertex_indices[1] = index + 1;
-					face->vertex_indices[2] = index + 2;
-					object->faces = g_slist_prepend(object->faces, face);
-				} else if (strstr(line, "vertex")) {
-					sscanf (strstr(line, "vertex") + 6, "%f %f %f", &x, &y, &z);
-					object->vertex_data[index * 3 + 0] = x;
-					object->vertex_data[index * 3 + 1] = y;
-					object->vertex_data[index * 3 + 2] = z;
-					index++;
-				}
-			}
-			fclose(f);
+	guint32 type;
+
+	/* Check Filetype (ASCII or BINARY) */
+	type = STL_BINARY;
+	while(!g3d_stream_eof(stream)) {
+		if(!g3d_stream_read_line(stream, line, 1023))
+			break;
+		if(strstr(line, "solid")) {
+			setlocale(LC_NUMERIC, "C");
+			type = STL_ASCII;
+			break;
 		}
 	}
-	return TRUE;
+	/* rewind */
+	g3d_stream_seek(stream, 0, G_SEEK_SET);
+
+	if (type == STL_BINARY)
+		return stl_load_binary(context, model, stream);
+	else
+		return stl_load_text(context, model, stream);
 }
 
 gchar *plugin_description(G3DContext *context)
@@ -206,3 +80,119 @@ gchar **plugin_extensions(G3DContext *context)
 {
 	return g_strsplit("stl:stla:stlb", ":", 0);
 }
+
+/*****************************************************************************/
+
+static gboolean stl_load_binary(G3DContext *context, G3DModel *model,
+	G3DStream *stream)
+{
+	G3DObject *object;
+	G3DMaterial *material;
+	G3DFace *face;
+	gchar name[81];
+	guint32 num_faces, index = 0;
+	gint32 n, i, j;
+
+#if DEBUG > 0
+	g_debug("STL: format is BINARY");
+#endif
+
+	g3d_stream_read(stream, name, 80);
+	name[80] = 0;
+	num_faces = g3d_stream_read_int32_le(stream);
+
+	object = g_new0(G3DObject, 1);
+	object->name = g_strdup("STL-Model");
+	model->objects = g_slist_append(model->objects, object);
+
+	material = g3d_material_new();
+	material->name = g_strdup("default material");
+	object->materials = g_slist_append(object->materials, material);
+
+	object->vertex_count = num_faces * 3;
+#if DEBUG > 2
+	g_debug("STL: BINARY: vertex_count: %i", object->vertex_count);
+#endif
+	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+	for(n = 0; n < num_faces; n ++) {
+		face = g_new0(G3DFace, 1);
+		face->material = material;
+		face->vertex_count = 3;
+		face->vertex_indices = g_new0(guint32, face->vertex_count);
+		face->vertex_indices[0] = index + 0;
+		face->vertex_indices[1] = index + 1;
+		face->vertex_indices[2] = index + 2;
+		object->faces = g_slist_prepend(object->faces, face);
+		/* normal */
+		for(j = 0; j < 3; j ++)
+			g3d_stream_read_float_le(stream);
+		/* triangle */
+		for(i = 0; i < 3; i ++) {
+			for(j = 0; j < 3; j ++)
+				object->vertex_data[index * 3 + j] =
+					g3d_stream_read_float_le(stream);
+			index ++;
+		}
+		/* 2 Byte Dummy read */
+		g3d_stream_read_int16_le(stream);
+	}
+	return TRUE;
+}
+
+static gboolean stl_load_text(G3DContext *context, G3DModel *model,
+	G3DStream *stream)
+{
+	G3DObject *object;
+	G3DMaterial *material;
+	G3DFace *face;
+	gchar line[1024];
+	guint32 index = 0;
+	gfloat x, y, z;
+
+#if DEBUG > 0
+	g_debug("STL: format is ASCII");
+#endif
+
+	object = g_new0(G3DObject, 1);
+	object->name = g_strdup("STL-Model");
+	model->objects = g_slist_append(model->objects, object);
+	material = g3d_material_new();
+	material->name = g_strdup("default material");
+	object->materials = g_slist_append(object->materials, material);
+	object->vertex_count = 0;
+	while(!g3d_stream_eof(stream)) {
+		line[0] = 0;
+		if(!g3d_stream_read_line(stream, line, 1023))
+			break;
+		g_strstrip(line);
+		if(strncmp(line, "solid", 5) == 0) {
+			g_free(object->name);
+			object->name = g_strdup(line + 6);
+		} else if(strncmp(line, "vertex", 6) == 0) {
+			object->vertex_count ++;
+			object->vertex_data = g_realloc(object->vertex_data,
+				object->vertex_count * 3 * sizeof(gfloat));
+			if(sscanf(line + 7, "%f %f %f", &x, &y, &z) == 3) {
+				object->vertex_data[(object->vertex_count - 1) * 3 + 0] = x;
+				object->vertex_data[(object->vertex_count - 1) * 3 + 1] = y;
+				object->vertex_data[(object->vertex_count - 1) * 3 + 2] = z;
+			} else {
+#if DEBUG > 0
+				g_debug("imp_stl: parse error in vertex line: %s", line);
+#endif
+			}
+		} else if(strncmp(line, "facet", 5) == 0) {
+			face = g_new0(G3DFace, 1);
+			face->material = material;
+			face->vertex_count = 3;
+			face->vertex_indices = g_new0(guint32, face->vertex_count);
+			face->vertex_indices[0] = index + 0;
+			face->vertex_indices[1] = index + 1;
+			face->vertex_indices[2] = index + 2;
+			object->faces = g_slist_prepend(object->faces, face);
+			index += 3;
+		}
+	}
+	return TRUE;
+}
+

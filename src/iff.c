@@ -195,7 +195,7 @@ gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
 	if(global->stream)
 		g3d_iff_read_chunk(global->stream, &chunk_id, &chunk_len, 0);
 	else
-#ifndef G_DISABLE_DEPRECATED
+#ifndef G3D_DISABLE_DEPRECATED
 		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, 0);
 #else
 		return NULL;
@@ -248,7 +248,9 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 	guint32 chunk_id, chunk_len, chunk_mod, chunk_type;
 	gchar *tid;
 	gpointer level_object;
+#ifndef G3D_DISABLE_DEPRECATED
 	long int fpos;
+#endif
 
 	level_object = NULL;
 

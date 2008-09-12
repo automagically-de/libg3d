@@ -27,6 +27,7 @@
 #include <glib.h>
 
 #include <g3d/types.h>
+#include <g3d/stream.h>
 #include <g3d/material.h>
 
 #include "imp_vrml_v1.h"
@@ -34,42 +35,31 @@
 #define VRML_FT_VRML      0x01
 #define VRML_FT_INVENTOR  0x02
 
-gboolean plugin_load_model(G3DContext *context, const gchar *filename,
+#define MAX_LINE_SIZE     2048
+
+gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	FILE *f;
 	yyscan_t scanner;
+	YY_BUFFER_STATE bufstate;
 	G3DMaterial *material;
-	gchar buffer[128];
-	guint32 ver_maj, ver_min, filetype;
+	gchar line[MAX_LINE_SIZE + 1], *buffer, *bufp;
+	guint32 ver_maj, ver_min, filetype, buflen;
 
-	f = fopen(filename, "r");
-	if(f == NULL)
-	{
-		g_warning("failed to read '%s'", filename);
-		return FALSE;
-	}
-
-	memset(buffer, 0, 128);
-	fgets(buffer, 127, f);
-	if(strncmp(buffer, "#VRML", 5) == 0)
-	{
+	memset(line, 0, MAX_LINE_SIZE);
+	g3d_stream_read_line(stream, line, MAX_LINE_SIZE);
+	if(strncmp(line, "#VRML", 5) == 0)
 		filetype = VRML_FT_VRML;
-	}
-	else if(strncmp(buffer, "#Inventor", 9) == 0)
-	{
+	else if(strncmp(line, "#Inventor", 9) == 0)
 		filetype = VRML_FT_INVENTOR;
-	}
-	else
-	{
-		g_warning("file '%s' is not a VRML file", filename);
-		fclose(f);
+	else {
+		g_warning("file '%s' is not a VRML file", stream->uri);
 		return FALSE;
 	}
 
 	/* FIXME: more than one space between VRML and Vx.x? */
-	ver_maj = buffer[7] - '0';
-	ver_min = buffer[9] - '0';
+	ver_maj = line[7] - '0';
+	ver_min = line[9] - '0';
 
 #if DEBUG > 0
 	g_print("VRML: version %d.%d\n", ver_maj, ver_min);
@@ -77,53 +67,53 @@ gboolean plugin_load_model(G3DContext *context, const gchar *filename,
 
 	setlocale(LC_NUMERIC, "C");
 
-	if((filetype == VRML_FT_INVENTOR) || (ver_maj == 1))
-	{
+	if((filetype == VRML_FT_INVENTOR) || (ver_maj == 1)) {
 		/* Inventor / VRML 1.x */
-
+		/* read complete file to buffer */
+		buflen = g3d_stream_size(stream) + 1;
+		buffer = g_new0(gchar, buflen);
+		bufp = buffer;
+		memset(buffer, 0, buflen);
+		memset(line, 0, MAX_LINE_SIZE);
+		while(!g3d_stream_eof(stream) &&
+			g3d_stream_read_line(stream, line, MAX_LINE_SIZE)) {
+			memcpy(bufp, line, strlen(line));
+			bufp += strlen(line);
+		}
 		material = g3d_material_new();
 		material->name = g_strdup("fallback material");
 		model->materials = g_slist_append(model->materials, material);
 
 		vrml_v1_yylex_init(&scanner);
-		vrml_v1_yyset_in(f, scanner);
 		vrml_v1_yyset_extra(model, scanner);
-		vrml_v1_yylex(scanner);
+		bufstate = vrml_v1_yy_scan_string(buffer, scanner);
+		if(bufstate) {
+			vrml_v1_yylex(scanner);
+			vrml_v1_yy_delete_buffer(bufstate, scanner);
+		}
 		vrml_v1_yylex_destroy(scanner);
-	}
-	else if(ver_maj == 2)
-	{
+		g_free(buffer);
+	} else if(ver_maj == 2) {
 		g_warning("VRML 2 is not yet supported");
-		fclose(f);
+		return FALSE;
+	} else {
+		g_warning("unknown VRML version %d.%d", ver_maj, ver_min);
 		return FALSE;
 	}
-	else
-	{
-		g_warning("unknown VRML version %d.%d", ver_maj, ver_min);
-	}
 
-	fclose(f);
 	return TRUE;
 }
 
-char *plugin_description(void)
+gchar *plugin_description(void)
 {
 	return g_strdup("import plugin for VRML 1.x & SGI inventor files\n");
 }
 
-char **plugin_extensions(void)
+gchar **plugin_extensions(void)
 {
 	return g_strsplit("vrml:iv", ":", 0);
 }
 
-/* evil hack [tm] */
-
+/* FIXME */
 extern int yywrap(yyscan_t yyscanner);
-
-int vrml_v1_yywrap(yyscan_t yyscanner)
-{
-	return yywrap(yyscanner);
-}
-
-/* VRML specific */
-
+int vrml_v1_yywrap(yyscan_t yyscanner) { return yywrap(yyscanner); }

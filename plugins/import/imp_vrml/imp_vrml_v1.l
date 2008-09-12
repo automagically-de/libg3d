@@ -59,8 +59,8 @@
 	#include <g3d/vector.h>
 
 	#if DEBUG > 0
-	#	define vrml_dump_hier(level, section) g_print("VRML: %.*s[%s]\n", \
-			level * 3, "               ", section)
+	#	define vrml_dump_hier(level, section) g_debug("\\%.*s[%s]", \
+			level, "               ", section)
 	#else
 	#	define vrml_dump_hier(level, section) /* */
 	#endif

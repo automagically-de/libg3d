@@ -755,8 +755,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <g3d/material.h>
 #include <g3d/vector.h>
 #if DEBUG > 0
-#	define vrml_dump_hier(level, section) g_print("VRML: %.*s[%s]\n", \
-level * 3, "               ", section)
+#	define vrml_dump_hier(level, section) g_debug("\\%.*s[%s]", \
+level, "               ", section)
 #else
 #	define vrml_dump_hier(level, section) /* */
 #endif

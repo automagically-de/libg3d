@@ -26,7 +26,7 @@
 
 #include "imp_lwo_callbacks.h"
 
-static g3d_iff_chunk_info lwo_chunks[] = {
+static G3DIffChunkInfo lwo_chunks[] = {
 	{ "AAST", "antialiasing strength",       0, NULL },
 	{ "ADTR", "additive transparency",       0, NULL },
 	{ "ALPH", "alpha mode",                  0, NULL },

@@ -56,8 +56,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	LwoObject *obj;
 	G3DMaterial *material;
 	guint32 id, len;
-	g3d_iff_gdata *global;
-	g3d_iff_ldata *local;
+	G3DIffGlobal *global;
+	G3DIffLocal *local;
 
 	if(!g3d_iff_check(stream, &id, &len))
 		return FALSE;
@@ -70,7 +70,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	obj = g_new0(LwoObject, 1);
 
-	global = g_new0(g3d_iff_gdata, 1);
+	global = g_new0(G3DIffGlobal, 1);
 	global->stream = stream;
 	global->context = context;
 	global->model = model;
@@ -78,7 +78,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		global->flags |= LWO_FLAG_LWO2;
 	global->user_data = obj;
 
-	local = g_new0(g3d_iff_ldata, 1);
+	local = g_new0(G3DIffLocal, 1);
 	local->id = id;
 	local->nb = len;
 

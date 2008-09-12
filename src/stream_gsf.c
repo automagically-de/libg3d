@@ -96,7 +96,7 @@ static gint g3d_stream_gsf_close(gpointer data)
 
 static GsfInput *stream_gsf_chdir(GsfInput *input, gchar *dirname)
 {
-	GsfInput *parent = input, *newinput;
+	GsfInput *parent = input, *newinput = NULL;
 	gchar **dirs, **dir;
 
 	dirs = g_strsplit(dirname, "/", 0);

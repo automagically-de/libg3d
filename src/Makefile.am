@@ -25,7 +25,7 @@ libg3d_la_CFLAGS = \
 	@GLIB_CFLAGS@
 
 libg3d_la_LDFLAGS = \
-	-version-number "$(subst .,:,@VERSION@)"
+	-version-number @LIBVERSION@
 
 libg3d_la_LIBADD = \
 	@GLIB_LIBS@ \

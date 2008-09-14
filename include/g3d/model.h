@@ -42,9 +42,35 @@ G_BEGIN_DECLS
  */
 G3DModel *g3d_model_new(void);
 
+/**
+ * G3D_MODEL_SCALE:
+ *
+ * The model should be scaled to a maximum extension of +/- 10.0.
+ */
 #define G3D_MODEL_SCALE           (1 << 0)
+/**
+ * G3D_MODEL_CENTER:
+ *
+ * The model should be centered around the (0,0,0).
+ */
 #define G3D_MODEL_CENTER          (1 << 1)
+/**
+ * G3D_MODEL_OPTIMIZE:
+ *
+ * The model material/object/face lists should be serialized to some private
+ * arrays (deprecated).
+ */
 #define G3D_MODEL_OPTIMIZE        (1 << 2)
+/**
+ * G3D_MODEL_NOCHECK:
+ *
+ * The common checks should be disabled. The checks include:
+ * <itemizedlist>
+ * <listitem>faces have at least 3 indices</listitem>
+ * <listitem>face indices are <= number of vertices</listitem>
+ * <listitem>material of faces is not NULL</listitem>
+ * </itemizedlist>
+ */
 #define G3D_MODEL_NOCHECK         (1 << 3)
 
 /**

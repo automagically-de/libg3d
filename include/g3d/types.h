@@ -43,6 +43,11 @@ G_BEGIN_DECLS
  * G3DImage
  *****************************************************************************/
 
+/**
+ * G3D_FLAG_IMG_GREYSCALE:
+ *
+ * The image just uses the red channel for grey value
+ */
 #define G3D_FLAG_IMG_GREYSCALE       (1L << 1)
 
 /**
@@ -96,6 +101,12 @@ typedef struct {
  * G3DMaterial
  *****************************************************************************/
 
+/**
+ * G3D_FLAG_MAT_TWOSIDE:
+ *
+ * Faces using this material should be rendered two-sided as the direction
+ * is unknown.
+ */
 #define G3D_FLAG_MAT_TWOSIDE    (1L << 0)
 
 /**
@@ -295,7 +306,6 @@ typedef gboolean (* G3DUpdateProgressBarFunc)(gfloat percentage,
  *
  * Internal stuff for libg3d.
  */
-
 typedef struct {
 	/*< private >*/
 	GSList *plugins;

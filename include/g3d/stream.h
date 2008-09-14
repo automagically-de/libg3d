@@ -43,14 +43,82 @@ enum {
 	G3D_STREAM_WRITABLE = 0x02
 };
 
+/**
+ * G3DStreamReadFunc:
+ * @ptr: buffer to read bytes into
+ * @size: number of bytes to read
+ * @data: opaque stream data
+ *
+ * Callback function for g3d_stream_read().
+ *
+ * Returns: number of bytes actually read.
+ */
 typedef gsize (* G3DStreamReadFunc)(gpointer ptr, gsize size, gpointer data);
+
+/**
+ * G3DStreamReadLineFunc:
+ * @buf: buffer to read bytes into
+ * @size: maximum size of buffer
+ * @data: opaque stream data
+ *
+ * Callback function for g3d_stream_read_line().
+ *
+ * Returns: The line buffer or NULL in case of an error.
+ */
 typedef gchar *(* G3DStreamReadLineFunc)(gchar *buf, gsize size,
 	gpointer data);
+
+/**
+ * G3DStreamSeekFunc:
+ * @data: opaque stream data
+ * @offset: seek offset
+ * @whence: seek type
+ *
+ * Callback function for g3d_stream_seek().
+ *
+ * Returns: 0 on success, -1 else.
+ */
 typedef gint (*G3DStreamSeekFunc)(gpointer data, goffset offset,
 	GSeekType whence);
+
+/**
+ * G3DStreamTellFunc:
+ * @data: opaque stream data
+ *
+ * Callback function for g3d_stream_tell().
+ *
+ * Returns: current stream position.
+ */
 typedef goffset (*G3DStreamTellFunc)(gpointer data);
+
+/**
+ * G3DStreamSizeFunc:
+ * @data: opaque stream data
+ *
+ * Callback function for g3d_stream_size().
+ *
+ * Returns: size of stream.
+ */
 typedef goffset (*G3DStreamSizeFunc)(gpointer data);
+
+/**
+ * G3DStreamEofFunc:
+ * @data: opaque stream data
+ *
+ * Callback function for g3d_stream_eof().
+ *
+ * Returns: TRUE on stream end-of-file, FALSE else.
+ */
 typedef gboolean (*G3DStreamEofFunc)(gpointer data);
+
+/**
+ * G3DStreamCloseFunc:
+ * @data: opaque stream data
+ *
+ * Callback function for g3d_stream_close().
+ *
+ * Returns: 0 on success, -1 else.
+ */
 typedef gint (*G3DStreamCloseFunc)(gpointer data);
 
 /**

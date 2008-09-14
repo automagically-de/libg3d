@@ -84,18 +84,15 @@ g3d_texture_merge_alpha
 
 <SECTION>
 <FILE>plugins</FILE>
-G3D_PLUGIN_UNKNOWN
-G3D_PLUGIN_IMPORT
-G3D_PLUGIN_IMAGE
-PluginInitFunc
-PluginCleanupFunc
-PluginLoadModelFunc
-PluginLoadModelFromStreamFunc
-PluginLoadImageFunc
-PluginLoadImageStreamFunc
-PluginGetDescFunc
-PluginGetExtFunc
-
+G3DPluginType
+G3DPluginInitFunc
+G3DPluginCleanupFunc
+G3DPluginLoadModelFunc
+G3DPluginLoadModelFromStreamFunc
+G3DPluginLoadImageFunc
+G3DPluginLoadImageStreamFunc
+G3DPluginGetDescFunc
+G3DPluginGetExtFunc
 G3DPlugin
 
 g3d_plugins_init
@@ -115,6 +112,7 @@ G3DStream
 
 g3d_stream_open_file
 g3d_stream_open_structured_file
+g3d_stream_open_structured_file_from_stream
 g3d_stream_open_zip
 g3d_stream_open_zip_from_stream
 g3d_stream_from_buffer

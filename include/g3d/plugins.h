@@ -25,7 +25,7 @@
 
 /**
  * SECTION:plugins
- * @short_description: Plugin interface
+ * @short_description: G3DPlugin interface
  * @see_also: #G3DPlugin
  * @include: g3d/plugins.h
  *
@@ -39,29 +39,114 @@
 
 G_BEGIN_DECLS
 
-#define G3D_PLUGIN_UNKNOWN   0x00
-#define G3D_PLUGIN_IMPORT    0x01
-#define G3D_PLUGIN_IMAGE     0x02
+/**
+ * G3DPluginType:
+ * @G3D_PLUGIN_UNKNOWN: unknown plugin type
+ * @G3D_PLUGIN_IMPORT: model import plugin
+ * @G3D_PLUGIN_IMAGE: image loading plugin
+ *
+ * Type of plugin.
+ */
+typedef enum {
+	G3D_PLUGIN_UNKNOWN = 0x00,
+	G3D_PLUGIN_IMPORT,
+	G3D_PLUGIN_IMAGE
+} G3DPluginType;
 
-typedef gpointer (* PluginInitFunc)(G3DContext *context);
+/**
+ * G3DPluginInitFunc:
+ * @context: the context
+ *
+ * Prototype for plugin_init().
+ *
+ * Returns: opaque plugin data.
+ */
+typedef gpointer (* G3DPluginInitFunc)(G3DContext *context);
 
-typedef void (* PluginCleanupFunc)(gpointer user_data);
+/**
+ * G3DPluginCleanupFunc:
+ * @user_data: opaque plugin data
+ *
+ * Prototype for plugin_cleanup().
+ */
+typedef void (* G3DPluginCleanupFunc)(gpointer user_data);
 
-typedef gboolean (* PluginLoadModelFunc)(G3DContext *context,
+/**
+ * G3DPluginLoadModelFunc:
+ * @context: the context
+ * @filename: file name of model
+ * @model: the model structure to fill
+ * @user_data: opaque plugin data
+ *
+ * Prototype for plugin_load_model().
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
+typedef gboolean (* G3DPluginLoadModelFunc)(G3DContext *context,
 	const gchar *filename, G3DModel *model, gpointer user_data);
 
-typedef gboolean (* PluginLoadModelFromStreamFunc)(G3DContext *context,
+/**
+ * G3DPluginLoadModelFromStreamFunc:
+ * @context: the context
+ * @stream: the stream to load from
+ * @model: the model structure to fill
+ * @user_data: opaque plugin data
+ *
+ * Prototype for plugin_load_model_from_stream().
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
+typedef gboolean (* G3DPluginLoadModelFromStreamFunc)(G3DContext *context,
 	G3DStream *stream, G3DModel *model, gpointer user_data);
 
-typedef gboolean (* PluginLoadImageFunc)(G3DContext *context,
+/**
+ * G3DPluginLoadImageFunc:
+ * @context: the context
+ * @filename: file name of image
+ * @image: image structure to fill
+ * @user_data: opaque plugin data
+ *
+ * Prototype for plugin_load_image().
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
+typedef gboolean (* G3DPluginLoadImageFunc)(G3DContext *context,
 	const gchar *filename, G3DImage *image, gpointer user_data);
 
-typedef gboolean (* PluginLoadImageStreamFunc)(G3DContext *context,
+/**
+ * G3DPluginLoadImageStreamFunc:
+ * @context: the context
+ * @stream: the stream to load from
+ * @image: image structure to fill
+ * @user_data: opaque plugin data
+ *
+ * Prototype for plugin_load_image_from_stream().
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
+typedef gboolean (* G3DPluginLoadImageStreamFunc)(G3DContext *context,
 	G3DStream *stream, G3DImage *image, gpointer user_data);
 
-typedef gchar *(* PluginGetDescFunc)(G3DContext *context);
+/**
+ * G3DPluginGetDescFunc:
+ * @context: the context
+ *
+ * Prototype for plugin_description().
+ *
+ * Returns: a newly-allocated string containing the description of the plugin.
+ */
+typedef gchar *(* G3DPluginGetDescFunc)(G3DContext *context);
 
-typedef gchar **(* PluginGetExtFunc)(G3DContext *context);
+/**
+ * G3DPluginGetExtFunc:
+ * @context: the context
+ *
+ * Prototype for plugin_extensions().
+ *
+ * Returns: NULL-terminated list of file extensions supported by this plugin.
+ * Free with g_strfreev().
+ */
+typedef gchar **(* G3DPluginGetExtFunc)(G3DContext *context);
 
 /**
  * G3DPlugin:
@@ -72,17 +157,17 @@ struct _G3DPlugin {
 	/*< private >*/
 	gchar *name;
 	gchar *path;
-	guint32 type;
+	G3DPluginType type;
 	gchar **extensions;
 
-	PluginInitFunc init_func;
-	PluginCleanupFunc cleanup_func;
-	PluginLoadModelFunc loadmodel_func;
-	PluginLoadModelFromStreamFunc loadmodelstream_func;
-	PluginLoadImageFunc loadimage_func;
-	PluginLoadImageStreamFunc loadimagestream_func;
-	PluginGetDescFunc desc_func;
-	PluginGetExtFunc ext_func;
+	G3DPluginInitFunc init_func;
+	G3DPluginCleanupFunc cleanup_func;
+	G3DPluginLoadModelFunc loadmodel_func;
+	G3DPluginLoadModelFromStreamFunc loadmodelstream_func;
+	G3DPluginLoadImageFunc loadimage_func;
+	G3DPluginLoadImageStreamFunc loadimagestream_func;
+	G3DPluginGetDescFunc desc_func;
+	G3DPluginGetExtFunc ext_func;
 
 	gpointer user_data;
 
@@ -108,18 +193,67 @@ gboolean g3d_plugins_init(G3DContext *context);
  */
 void g3d_plugins_cleanup(G3DContext *context);
 
+/**
+ * g3d_plugins_load_model:
+ * @context: a valid context
+ * @filename: file name of model to load
+ * @model: model structure to fill
+ *
+ * Try to load a model from file using import plugins.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 gboolean g3d_plugins_load_model(G3DContext *context, const gchar *filename,
 	G3DModel *model);
 
+/**
+ * g3d_plugins_load_model_from_stream:
+ * @context: a valid context
+ * @stream: stream to load model from
+ * @model: model structure to fill
+ *
+ * Try to load a model from stream using import plugins.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 gboolean g3d_plugins_load_model_from_stream(G3DContext *context,
 	G3DStream *stream, G3DModel *model);
 
+/**
+ * g3d_plugins_load_image:
+ * @context: a valid context
+ * @filename: file name of image to load
+ * @image: image structure to fill
+ *
+ * Try to load an image from file using import plugins.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 gboolean g3d_plugins_load_image(G3DContext *context, const gchar *filename,
 	G3DImage *image);
 
+/**
+ * g3d_plugins_load_image_from_stream:
+ * @context: a valid context
+ * @stream: stream to load image from
+ * @image: image structure to fill
+ *
+ * Try to load an image from stream using import plugins.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
 gboolean g3d_plugins_load_image_from_stream(G3DContext *context,
 	G3DStream *stream, G3DImage *image);
 
+/**
+ * g3d_plugins_get_image_extensions:
+ * @context: a valid context
+ *
+ * Get the supported image type extensions.
+ *
+ * Returns: NULL-terminated list of image file extensions supported by this
+ * plugin. Free with g_strfreev().
+ */
 gchar **g3d_plugins_get_image_extensions(G3DContext *context);
 
 G_END_DECLS

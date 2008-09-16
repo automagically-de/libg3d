@@ -86,7 +86,11 @@ AC_ARG_ENABLE(experimental,
 	experimental=0)
 AM_CONDITIONAL([EXPERIMENTAL], test "x$experimental" = "x1")
 
-AM_CONDITIONAL([HAVE_CXX], test -n "$CXX")
+AC_ARG_ENABLE(cxxtest,
+	[[  --enable-cxxtest        enable C++ test]],
+	[if test "x$enableval" = "xyes" ; then cxxtest=1 else cxxtest=0; fi],
+	cxxtest=0)
+AM_CONDITIONAL([HAVE_CXX], test "x$cxxtest" = "x1")
 
 AC_ARG_ENABLE(profile,
 	[[  --enable-profile        enable gprof profiling]],

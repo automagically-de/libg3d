@@ -27,6 +27,9 @@
  * SECTION:iff
  * @short_description: IFF file helper functions
  * @include: g3d/iff.h
+ *
+ * These are helper functions to read data from the Interchange File Format
+ * (IFF).
  */
 
 /* FIXME: still needed for FILE until all plugins are converted
@@ -102,9 +105,29 @@
 G_BEGIN_DECLS
 
 #ifndef G3D_DISABLE_DEPRECATED
+/**
+ * g3d_iff_gdata:
+ *
+ * IFF global data (deprecated).
+ */
 #define g3d_iff_gdata G3DIffGlobal
+/**
+ * g3d_iff_ldata:
+ *
+ * IFF local data (deprecated).
+ */
 #define g3d_iff_ldata G3DIffLocal
+/**
+ * g3d_iff_chunk_callback:
+ *
+ * IFF chunk callback (deprecated).
+ */
 #define g3d_iff_chunk_callback G3DIffChunkCallback
+/**
+ * g3d_iff_chunk_info:
+ *
+ * IFF chunk description (deprecated).
+ */
 #define g3d_iff_chunk_info G3DIffChunkInfo
 #endif
 

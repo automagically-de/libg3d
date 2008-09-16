@@ -1,7 +1,10 @@
 noinst_PROGRAMS = \
 	test_lib \
-	test_buf \
-	test_cxx
+	test_buf
+
+if HAVE_CXX
+noinst_PROGRAMS += test_cxx
+endif
 
 AM_CFLAGS = \
 	-Wall -ansi -pedantic \

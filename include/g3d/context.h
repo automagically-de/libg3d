@@ -30,6 +30,9 @@
  * @short_description: Libg3d initialization and configuration
  * @see_also: #G3DContext
  * @include: g3d/g3d.h
+ *
+ * All state information is saved in the context. It also serves as an
+ * interface to the application.
  */
 
 G_BEGIN_DECLS
@@ -108,6 +111,9 @@ void g3d_context_set_set_bgcolor_func(G3DContext *context,
  * g3d_context_set_update_interface_func:
  * @context: a valid context
  * @func: the callback function
+ * @user_data: user-defined opaque pointer
+ *
+ * Registers a callback function for updating the interface.
  */
 void g3d_context_set_update_interface_func(G3DContext *context,
 	G3DUpdateInterfaceFunc func, gpointer user_data);

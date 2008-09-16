@@ -28,6 +28,9 @@
  * @short_description: I/O abstraction layer for plugins
  * @see_also: #G3DStream
  * @include: g3d/stream.h
+ *
+ * A stream is an abstraction for data input. It enables plugins to read
+ * data from a file, a memory buffer, a container file or some other medium.
  */
 
 #include <glib.h>
@@ -244,7 +247,7 @@ gfloat g3d_stream_read_float_le(G3DStream *stream);
 gdouble g3d_stream_read_double_be(G3DStream *stream);
 
 /**
- * g3d_stream_read_double_be:
+ * g3d_stream_read_double_le:
  * @stream: the stream to read from
  *
  * Read a 8 byte little-endian double-precision floating point number from

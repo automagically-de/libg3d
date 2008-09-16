@@ -27,6 +27,9 @@
  * SECTION:material
  * @short_description: Material generation and manipulation
  * @include: g3d/material.h
+ *
+ * A material contains all color, shading and texture information for a
+ * #G3DFace.
  */
 
 #include <g3d/types.h>

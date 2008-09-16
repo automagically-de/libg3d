@@ -27,6 +27,9 @@
  * SECTION:model
  * @short_description: Model manipulation functions
  * @include: g3d/g3d.h
+ *
+ * A model is a group of objects. All information loaded from a file by libg3d
+ * is found in this model.
  */
 
 #include <g3d/types.h>

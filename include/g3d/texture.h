@@ -27,6 +27,9 @@
  * SECTION:texture
  * @short_description: Texture loading and manipulation
  * @include: g3d/texture.h
+ *
+ * A texture is an image used in materials. Here are some helper functions,
+ * mostly for cached loading of a #G3DImage.
  */
 
 #include <g3d/types.h>

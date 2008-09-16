@@ -10,16 +10,16 @@ SCANGOBJ_OPTIONS =
 
 SCAN_OPTIONS = 
 
-MKDB_OPTIONS = --sgml-mode --output-format=xml
+MKDB_OPTIONS = --ignore-files="${MKDB_IGNORE}" --sgml-mode --output-format=xml
 
 MKTMPL_OPTIONS =
 
 FIXXREF_OPTIONS =
 
 CFILE_GLOB =
-HFILE_GLOB =
+HFILE_GLOB = $(top_srcdir)/include/g3d/*.h
 
-IGNORE_HFILES =
+IGNORE_HFILES = config.h config.h
 
 HTML_IMAGES =
 

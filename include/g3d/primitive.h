@@ -27,6 +27,9 @@
  * SECTION:primitive
  * @short_description: 3D primitive generation functions
  * @include: g3d/primitive.h
+ *
+ * Primitives are objects containing basic 3D geometrical structures. A
+ * variety of them can be created using these functions.
  */
 
 #include <g3d/types.h>

@@ -27,6 +27,8 @@
  * SECTION:face
  * @short_description: Face manipulation
  * @include: g3d/face.h
+ *
+ * A face is plane bordered by at least 3 vertices.
  */
 
 #include <g3d/types.h>

@@ -27,6 +27,10 @@
  * SECTION:object
  * @short_description: Object manipulation
  * @include: g3d/object.h
+ *
+ * Objects are parts of a model. In most file formats vertices and faces are
+ * grouped in some way into objects. Objects can be hierarchical, so what a
+ * model contains is basically an object tree.
  */
 
 #include <g3d/types.h>

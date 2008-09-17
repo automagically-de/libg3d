@@ -2,13 +2,28 @@
 AC_INIT(configure.in)
 AC_CONFIG_AUX_DIR(config)
 
-VERSION=0.0.7
-LIBVERSION=0:0:7
+# versioning stuff
+m4_define([g3d_major_version], [0])
+m4_define([g3d_minor_version], [0])
+m4_define([g3d_micro_version], [7])
+m4_define([g3d_interface_age], [7])
+m4_define([g3d_version],
+	[g3d_major_version.g3d_minor_version.g3d_micro_version])
+m4_define([g3d_binary_age],
+	[m4_eval(100 * g3d_minor_version + g3d_micro_version)])
+VERSION=g3d_version
+
+m4_define([lt_current],
+	[m4_eval(100 * g3d_minor_version + g3d_micro_version - g3d_interface_age)])
+m4_define([lt_revision], [g3d_interface_age])
+m4_define([lt_age], [m4_eval(g3d_binary_age - g3d_interface_age)])
+LTVERSION="lt_current:lt_revision:lt_age"
+
 PACKAGE=libg3d
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
 AC_SUBST(VERSION)
-AC_SUBST(LIBVERSION)
+AC_SUBST(LTVERSION)
 
 AC_CONFIG_HEADERS(include/g3d/config.h)
 

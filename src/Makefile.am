@@ -25,7 +25,7 @@ libg3d_la_CFLAGS = \
 	@GLIB_CFLAGS@
 
 libg3d_la_LDFLAGS = \
-	-version-number @LIBVERSION@
+	-version-info @LTVERSION@
 
 libg3d_la_LIBADD = \
 	@GLIB_LIBS@ \

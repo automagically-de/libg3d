@@ -15,7 +15,7 @@ libg3d_la_SOURCES = \
 	vector.c \
 	matrix.c
 
-INCLUDES = -I$(top_builddir)/include
+INCLUDES = -I$(top_srcdir)/include -I$(top_builddir)/include
 
 libg3d_la_CFLAGS = \
 	-Wall -ansi -pedantic \

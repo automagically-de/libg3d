@@ -13,7 +13,7 @@ AM_CFLAGS = \
 	@GLIB_CFLAGS@ @LIBXML2_CFLAGS@ \
 	@LIBGSF_CFLAGS@
 
-INCLUDES = -I$(top_builddir)/include
+INCLUDES = -I$(top_srcdir)/include
 
 AM_LDFLAGS = \
 	-module \

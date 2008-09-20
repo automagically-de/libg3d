@@ -1,7 +1,6 @@
 g3dincludedir = $(includedir)/g3d
 
 g3dinclude_HEADERS = \
-	config.h \
 	debug.h \
 	g3d.h \
 	types.h \

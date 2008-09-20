@@ -23,7 +23,6 @@
 #ifndef __G3D_G3D_H__
 #define __G3D_G3D_H__
 
-#include <g3d/config.h>
 #include <g3d/context.h>
 #include <g3d/model.h>
 #include <g3d/object.h>

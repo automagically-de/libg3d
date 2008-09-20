@@ -34,7 +34,6 @@
  */
 
 #include <glib.h>
-#include <g3d/config.h>
 #include <g3d/types.h>
 
 G_BEGIN_DECLS

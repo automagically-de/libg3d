@@ -31,8 +31,6 @@
 
 #include <glib.h>
 
-#include <g3d/config.h>
-
 #ifdef USE_LIBMAGIC
 #include <magic.h>
 #endif

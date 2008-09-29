@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include <g3d/g3d.h>
 #include <g3d/plugins.h>
@@ -19,10 +20,18 @@ typedef struct {
 	GSList *no_vertices;
 } PluginStats;
 
+typedef struct {
+	G3DContext *context;
+	gboolean use_color;
+	FILE *ftree;
+} Config;
+
 static gboolean quit = FALSE;
 
-static gboolean dir_stat(G3DContext *context, const char *dirname);
-static gboolean file_stat(G3DContext *context, const char *filename,
+static void show_help(void);
+static Config *get_config(gint *argc, gchar ***argv);
+static gboolean dir_stat(Config *config, const char *dirname);
+static gboolean file_stat(Config *config, const char *filename,
 	gboolean detailed, FileStats *stats, gchar **plugin_used);
 
 static void sighandler(int signal)
@@ -45,8 +54,13 @@ static void _g_print(const gchar *str)
 static void log_handler(const gchar *log_domain, GLogLevelFlags log_level,
 	const gchar *message, gpointer user_data)
 {
+	Config *config = user_data;
+
 	if(message[0] == '\\') {
-		printf(ANSI_GREEN "%s\n" ANSI_RESET, message + 1);
+		if(config->use_color)
+			fprintf(config->ftree, ANSI_GREEN "%s\n" ANSI_RESET, message + 1);
+		else
+			fprintf(config->ftree, "%s\n", message + 1);
 	} else if(message[0] == '|') {
 		printf("%s\n", message + 1);
 	} else {
@@ -56,31 +70,82 @@ static void log_handler(const gchar *log_domain, GLogLevelFlags log_level,
 
 int main(int argc, char **argv)
 {
-	G3DContext *context;
-
-	if(argc < 2) {
-		g_printerr("usage: %s (<file>|<directory>)\n", argv[0]);
-		return EXIT_FAILURE;
-	}
+	Config *config;
 
 	signal(SIGINT, sighandler);
 	signal(SIGQUIT, sighandler);
 
+	config = get_config(&argc, &argv);
+
+	if(argc < 1) {
+		show_help();
+		exit(EXIT_FAILURE);
+	}
+
 	g_set_print_handler(_g_print);
 	g_set_printerr_handler(_g_print);
-	g_log_set_handler("LibG3D", G_LOG_LEVEL_MASK, log_handler, NULL);
+	g_log_set_handler("LibG3D", G_LOG_LEVEL_MASK, log_handler, config);
 
-	context = g3d_context_new();
+	config->context = g3d_context_new();
 
-	if(g_file_test(argv[1], G_FILE_TEST_IS_DIR)) {
-		return dir_stat(context, argv[1]);
+	if(g_file_test(argv[0], G_FILE_TEST_IS_DIR)) {
+		return dir_stat(config, argv[0]);
 	}
 	else {
-		return file_stat(context, argv[1], TRUE, NULL, NULL);
+		return file_stat(config, argv[0], TRUE, NULL, NULL);
 	}
 }
 
-static gboolean dir_stat_1(G3DContext *context, const char *dirname,
+static Config *get_config(gint *argc, gchar ***argv)
+{
+	Config *config;
+	guint32 skip = 1; /* skip program name by default */
+	gint32 i;
+	gchar *opt;
+
+	config = g_new0(Config, 1);
+	config->use_color = TRUE;
+	config->ftree = stdout;
+
+	for(i = 1; i < *argc; i ++) {
+		if(strncmp((*argv)[i], "--", 2) != 0)
+			break;
+		skip ++;
+		opt = (*argv)[i] + 2;
+		if(strcmp(opt, "help") == 0) {
+			show_help();
+			exit(EXIT_FAILURE);
+		} else if(strcmp(opt, "nocolor") == 0) {
+			config->use_color = FALSE;
+		} else if(strncmp(opt, "tree=", 5) == 0) {
+			config->use_color = FALSE;
+			config->ftree = fopen(opt + 5, "w");
+			if(config->ftree == NULL) {
+				perror("error opening tree output file");
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+
+	*argc -= skip;
+	*argv = &((*argv)[skip]);
+
+	return config;
+}
+
+static void show_help(void)
+{
+	fprintf(stderr,
+		"usage: g3d-stat [<option> ...] (file|directory)\n"
+		"\n"
+		"options:\n"
+		"	--help             show this message\n"
+		"	--nocolor          disable ANSI color output\n"
+		"	--tree=<filename>  redirect tree output to file <filename>\n"
+		);
+}
+
+static gboolean dir_stat_1(Config *config, const char *dirname,
 	GHashTable *plugins)
 {
 	GDir *dir;
@@ -98,12 +163,12 @@ static gboolean dir_stat_1(G3DContext *context, const char *dirname,
 		if(quit)
 			return FALSE;
 		if(g_file_test(filename, G_FILE_TEST_IS_DIR))
-			dir_stat_1(context, filename, plugins);
+			dir_stat_1(config, filename, plugins);
 		else {
 			fstats = g_new0(FileStats, 1);
 			plugin_used = NULL;
 			fprintf(stderr, "*** DEBUG: %s\n", filename);
-			retval = file_stat(context, filename, FALSE, fstats, &plugin_used);
+			retval = file_stat(config, filename, FALSE, fstats, &plugin_used);
 			if(plugin_used) {
 				pstats = g_hash_table_lookup(plugins, plugin_used);
 				if(pstats)
@@ -159,13 +224,13 @@ static void output_plugin_stats(gpointer key, gpointer value, gpointer data)
 		printf("    %s\n", (gchar *)item->data);
 }
 
-static gboolean dir_stat(G3DContext *context, const char *dirname)
+static gboolean dir_stat(Config *config, const char *dirname)
 {
 	GHashTable *plugins;
 
 	plugins = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
-	dir_stat_1(context, dirname, plugins);
+	dir_stat_1(config, dirname, plugins);
 
 	/* output statistics */
 	g_hash_table_foreach(plugins, output_plugin_stats, NULL);
@@ -213,12 +278,12 @@ static gboolean objects_stat(GSList *objects, gboolean detailed,
 	return TRUE;
 }
 
-static gboolean file_stat(G3DContext *context, const char *filename,
+static gboolean file_stat(Config *config, const char *filename,
 	gboolean detailed, FileStats *stats, gchar **plugin_used)
 {
 	G3DModel *model;
 
-	model = g3d_model_load(context, filename);
+	model = g3d_model_load(config->context, filename);
 	if(model == NULL) {
 		return FALSE;
 	}

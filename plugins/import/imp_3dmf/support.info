@@ -1,0 +1,30 @@
+# supported file types (extensions)
+filetypes: 3mf, 3dmf, b3d
+# libmagic detector
+magic: [5]
+# G3DStream support
+stream: [5]
+# Works without seeking
+seekfree: [0]
+# Container format
+container: [3] ASCII files not supported
+# Object grouping
+grouping: [3] no hierarchy yet
+# Object transformation
+transformation: 
+# Vertex data
+vertex: [4]
+# Normal data
+normal: 
+# Face data
+face: [4]
+# Face colors
+color: [3]
+# Face transparency
+alpha: [3]
+# Texture images
+teximage: [0]
+# Texture coordinates (UV)
+texuv: [0]
+# Texture mapping parameters
+texmap: [0]

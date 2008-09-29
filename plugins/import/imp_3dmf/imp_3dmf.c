@@ -170,20 +170,23 @@ static X3dmfToc *x3dmf_read_toc(G3DStream *stream, X3dmfToc *prev_toc,
 	return toc;
 }
 
-static gboolean x3dmf_read_mesh(G3DStream *stream, G3DObject *object,
+static guint32 x3dmf_read_mesh(G3DStream *stream, G3DObject *object,
 	G3DContext *context)
 {
-	guint32 i, j, nconts, nfaces, nbytes = 0;
+	guint32 i, j, nconts, nfaces, nbytes = 0, ncverts, offv;
 	G3DFace *face;
 
-	object->vertex_count = g3d_stream_read_int32_be(stream);
-	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+	g_return_val_if_fail(object != NULL, FALSE);
+
+	offv = object->vertex_count;
+	object->vertex_count += g3d_stream_read_int32_be(stream);
+	object->vertex_data = g_realloc(object->vertex_data,
+		object->vertex_count * 3 * sizeof(gfloat));
 	nbytes += 4;
 
-	for(i = 0; i < object->vertex_count; i ++) {
-		object->vertex_data[i * 3 + 0] = g3d_stream_read_float_be(stream);
-		object->vertex_data[i * 3 + 1] = g3d_stream_read_float_be(stream);
-		object->vertex_data[i * 3 + 2] = g3d_stream_read_float_be(stream);
+	for(i = offv; i < object->vertex_count; i ++) {
+		for(j = 0; j < 3; j ++)
+			object->vertex_data[i * 3 + j] = g3d_stream_read_float_be(stream);
 		nbytes += 12;
 
 		g3d_context_update_interface(context);
@@ -193,6 +196,11 @@ static gboolean x3dmf_read_mesh(G3DStream *stream, G3DObject *object,
 	nconts = g3d_stream_read_int32_be(stream);
 	nbytes += 8;
 
+#if DEBUG > 0
+	g_debug("|%u verts, %u faces, %u conts", object->vertex_count,
+		nfaces, nconts);
+#endif
+
 	for(i = 0; i < nfaces; i ++) {
 		face = g_new0(G3DFace, 1);
 
@@ -201,14 +209,34 @@ static gboolean x3dmf_read_mesh(G3DStream *stream, G3DObject *object,
 		face->vertex_indices = g_new0(guint32, face->vertex_count);
 
 		for(j = 0; j < face->vertex_count; j ++) {
-			face->vertex_indices[j] = g3d_stream_read_int32_be(stream);
+			face->vertex_indices[j] = offv + g3d_stream_read_int32_be(stream);
 			nbytes += 4;
+			if(face->vertex_indices[j] >= object->vertex_count) {
+				g_warning("face index wrong: %u >= %u",
+					face->vertex_indices[j], object->vertex_count);
+				face->vertex_indices[j] = 0;
+			}
 		}
+
+#if DEBUG > 0
+		g_debug("|face %u: %u %u %u", i, face->vertex_indices[0],
+			face->vertex_indices[1], face->vertex_indices[2]);
+#endif
 
 		face->material = g_slist_nth_data(object->materials, 0);
 		object->faces = g_slist_prepend(object->faces, face);
 
 		g3d_context_update_interface(context);
+	}
+
+	/* contours */
+	for(i = 0; i < nconts; i ++) {
+		ncverts = g3d_stream_read_int32_be(stream);
+		nbytes += 4;
+		for(j = 0; j < ncverts; j ++) {
+			g3d_stream_read_int32_be(stream);
+			nbytes += 4;
+		}
 	}
 
 	return nbytes;
@@ -268,7 +296,8 @@ static guint32 x3dmf_read_tmsh(G3DStream *stream, G3DObject *object,
 	G3DContext *context)
 {
 	G3DFace *face;
-	guint32 nread = 0, nfaces, nverts, nedges, i;
+	guint32 nread = 0, nfaces, nverts, nedges;
+	gint32 i, j;
 
 	nfaces = g3d_stream_read_int32_be(stream); /* numTriangles */
 	nread += 4;
@@ -299,9 +328,20 @@ static guint32 x3dmf_read_tmsh(G3DStream *stream, G3DObject *object,
 
 		face->vertex_count = 3;
 		face->vertex_indices = g_new0(guint32, 3);
-		face->vertex_indices[0] = x3dmf_read_packed(stream, nfaces, &nread);
-		face->vertex_indices[1] = x3dmf_read_packed(stream, nfaces, &nread);
-		face->vertex_indices[2] = x3dmf_read_packed(stream, nfaces, &nread);
+		for(j = 0; j < 3; j ++) {
+			face->vertex_indices[j] =
+				x3dmf_read_packed(stream, nfaces, &nread);
+			if(face->vertex_indices[j] >= nverts) {
+				g_warning("face index error: %u >= %u",
+					face->vertex_indices[j], nverts);
+				face->vertex_indices[j] = 0;
+			}
+		}
+
+#if DEBUG > 3
+		g_debug("face %u (packed): %u %u %u", i, face->vertex_indices[0],
+			face->vertex_indices[1], face->vertex_indices[2]);
+#endif
 
 		face->material = g_slist_nth_data(object->materials, 0);
 		object->faces = g_slist_prepend(object->faces, face);
@@ -320,8 +360,7 @@ static guint32 x3dmf_read_tmsh(G3DStream *stream, G3DObject *object,
 	/* points */
 	object->vertex_count = nverts;
 	object->vertex_data = g_new0(gfloat, 3 * nverts);
-	for(i = 0; i < nverts; i ++)
-	{
+	for(i = 0; i < nverts; i ++) {
 		object->vertex_data[i * 3 + 0] = g3d_stream_read_float_be(stream);
 		object->vertex_data[i * 3 + 1] = g3d_stream_read_float_be(stream);
 		object->vertex_data[i * 3 + 2] = g3d_stream_read_float_be(stream);

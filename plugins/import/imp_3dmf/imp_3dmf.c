@@ -218,7 +218,7 @@ static guint32 x3dmf_read_mesh(G3DStream *stream, G3DObject *object,
 			}
 		}
 
-#if DEBUG > 0
+#if DEBUG > 3
 		g_debug("|face %u: %u %u %u", i, face->vertex_indices[0],
 			face->vertex_indices[1], face->vertex_indices[2]);
 #endif
@@ -473,6 +473,20 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				g3d_stream_skip(stream, len);
 				break;
 
+			case G3D_IFF_MKID('c', 'a', 'm', 'b'):
+				/* ambient coefficient */
+				g3d_stream_skip(stream, len);
+				break;
+
+			case G3D_IFF_MKID('c', 'm', 'p', 'l'):
+				/* camera placement */
+			case G3D_IFF_MKID('c', 'm', 'r', 'g'):
+				/* camera range */
+			case G3D_IFF_MKID('c', 'm', 'v', 'p'):
+				/* camera viewport */
+				g3d_stream_skip(stream, len);
+				break;
+
 			case G3D_IFF_MKID('c', 'n', 't', 'r'):
 				/* container */
 #if DEBUG > 0
@@ -493,8 +507,20 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				/* interactive renderer */
 				break;
 
+			case G3D_IFF_MKID('d', 'r', 'c', 't'):
+				/* directional light */
+				g3d_stream_skip(stream, len);
+				break;
+
 			case G3D_IFF_MKID('e', 'n', 'd', 'g'):
 				/* end group */
+				break;
+
+			case G3D_IFF_MKID('i', 'm', 'c', 'c'):
+				/* image clear color */
+			case G3D_IFF_MKID('i', 'm', 'd', 'm'):
+				/* image dimensions */
+				g3d_stream_skip(stream, len);
 				break;
 
 			case G3D_IFF_MKID('k', 'd', 'i', 'f'):
@@ -595,6 +621,11 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				g3d_stream_skip(stream, 12);
 				break;
 
+			case G3D_IFF_MKID('p', 'n', 't', 'l'):
+				/* point light */
+				g3d_stream_skip(stream, len);
+				break;
+
 			case G3D_IFF_MKID('r', 'f', 'r', 'n'):
 				/* reference */
 				x3dmf_read_rfrn(stream, model, toc, context);
@@ -660,6 +691,11 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 
 			case G3D_IFF_MKID('v', 'a', 's', 'l'):
 				/* vertex attribute set list */
+				g3d_stream_skip(stream, len);
+				break;
+
+			case G3D_IFF_MKID('v', 'w', 'h', 'n'):
+				/* view hints */
 				g3d_stream_skip(stream, len);
 				break;
 

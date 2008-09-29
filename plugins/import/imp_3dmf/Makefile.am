@@ -19,5 +19,6 @@ LIBADD = \
 
 LIBTOOL += --quiet
 
-imp_3dmf_la_SOURCES = imp_3dmf.c
+imp_3dmf_la_SOURCES = imp_3dmf.c imp_3dmf_chunks.h \
+	imp_3dmf_callbacks.c imp_3dmf_callbacks.h
 

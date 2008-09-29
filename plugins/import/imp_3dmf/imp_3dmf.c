@@ -31,6 +31,8 @@
 #include <g3d/material.h>
 #include <g3d/iff.h>
 
+#include "imp_3dmf_chunks.h"
+
 #define X3DMF_CHUNK_CHAR(id, shift) \
 	((((id) >> (shift)) & 0xFF) == 0) ? \
 	' ' : ((id) >> (shift)) & 0xFF
@@ -112,9 +114,19 @@ gchar **plugin_extensions(void)
 	return g_strsplit("b3d:3mf:3dmf", ":", 0);
 }
 
-/*
+/******************************************************************************
  * 3DMF specific
  */
+
+static X3dmfChunkDesc *x3dmf_get_chunk_info(guint32 id)
+{
+	gint32 i;
+
+	for(i = 0; x3dmf_chunks[i].id != 0; i ++)
+		if(x3dmf_chunks[i].id == id)
+			return &(x3dmf_chunks[i]);
+	return NULL;
+}
 
 static X3dmfToc *x3dmf_read_toc(G3DStream *stream, X3dmfToc *prev_toc,
 	G3DContext *context)
@@ -317,7 +329,7 @@ static guint32 x3dmf_read_tmsh(G3DStream *stream, G3DObject *object,
 	g3d_stream_read_int32_be(stream); /* numVertexAttributeTypes */
 	nread += 4;
 
-#if DEBUG > 0
+#if DEBUG > 3
 	g_print("3DMF: [tmsh] %d faces, %d edges, %d vertices\n",
 		nfaces, nedges, nverts);
 #endif
@@ -434,6 +446,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 	G3DContext *context)
 {
 	G3DMaterial *material = NULL;
+	X3dmfChunkDesc *chunkdesc;
 	guint32 len, id, chk, i;
 	gfloat matrix[16];
 	static gchar padding[] = "                                           ";
@@ -450,43 +463,19 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 		if(id == 0)
 			return FALSE;
 
+		chunkdesc = x3dmf_get_chunk_info(id);
+
 #if DEBUG > 0
-		g_debug("\\%s[%c%c%c%c]: %d bytes",
+		g_debug("\\%s[%c%c%c%c]: %s (%d bytes)",
 			padding + strlen(padding) - level,
 			X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 			X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
+			chunkdesc ? chunkdesc->description : "unknown chunk",
 			len);
 #endif
 		length -= len;
 
 		switch(id) {
-			case G3D_IFF_MKID('a', 'm', 'b', 'n'):
-				/* ambient light */
-				break;
-
-			case G3D_IFF_MKID('a', 't', 't', 'r'):
-				/* attribute set */
-				break;
-
-			case G3D_IFF_MKID('b', 'g', 'n', 'g'):
-				/* begin group */
-				g3d_stream_skip(stream, len);
-				break;
-
-			case G3D_IFF_MKID('c', 'a', 'm', 'b'):
-				/* ambient coefficient */
-				g3d_stream_skip(stream, len);
-				break;
-
-			case G3D_IFF_MKID('c', 'm', 'p', 'l'):
-				/* camera placement */
-			case G3D_IFF_MKID('c', 'm', 'r', 'g'):
-				/* camera range */
-			case G3D_IFF_MKID('c', 'm', 'v', 'p'):
-				/* camera viewport */
-				g3d_stream_skip(stream, len);
-				break;
-
 			case G3D_IFF_MKID('c', 'n', 't', 'r'):
 				/* container */
 #if DEBUG > 0
@@ -496,31 +485,6 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 #endif
 				x3dmf_read_container(stream, len, model, object, level + 1,
 					toc, context);
-				break;
-
-			case G3D_IFF_MKID('c', 's', 'p', 'c'):
-				/* specular control */
-				g3d_stream_read_float_be(stream);
-				break;
-
-			case G3D_IFF_MKID('c', 't', 'w', 'n'):
-				/* interactive renderer */
-				break;
-
-			case G3D_IFF_MKID('d', 'r', 'c', 't'):
-				/* directional light */
-				g3d_stream_skip(stream, len);
-				break;
-
-			case G3D_IFF_MKID('e', 'n', 'd', 'g'):
-				/* end group */
-				break;
-
-			case G3D_IFF_MKID('i', 'm', 'c', 'c'):
-				/* image clear color */
-			case G3D_IFF_MKID('i', 'm', 'd', 'm'):
-				/* image dimensions */
-				g3d_stream_skip(stream, len);
 				break;
 
 			case G3D_IFF_MKID('k', 'd', 'i', 'f'):
@@ -570,19 +534,6 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				}
 				break;
 
-			case G3D_IFF_MKID('l', 'g', 'h', 't'):
-				/* light data */
-
-				/* isOn */
-				g3d_stream_read_int32_be(stream);
-				/* intensity */
-				g3d_stream_read_int32_be(stream);
-				/* color */
-				g3d_stream_read_float_be(stream);
-				g3d_stream_read_float_be(stream);
-				g3d_stream_read_float_be(stream);
-				break;
-
 			case G3D_IFF_MKID('m', 'e', 's', 'h'):
 				/* mesh */
 				if(object == NULL)
@@ -616,16 +567,6 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 #endif
 				break;
 
-			case G3D_IFF_MKID('n', 'r', 'm', 'l'):
-				/* normal */
-				g3d_stream_skip(stream, 12);
-				break;
-
-			case G3D_IFF_MKID('p', 'n', 't', 'l'):
-				/* point light */
-				g3d_stream_skip(stream, len);
-				break;
-
 			case G3D_IFF_MKID('r', 'f', 'r', 'n'):
 				/* reference */
 				x3dmf_read_rfrn(stream, model, toc, context);
@@ -653,11 +594,6 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				}
 				break;
 
-			case G3D_IFF_MKID('t', 'o', 'c', ' '):
-				/* TOC, should be already handled */
-				g3d_stream_skip(stream, len);
-				break;
-
 			case G3D_IFF_MKID('t', 'r', 'n', 's'):
 				/* translate */
 				if(object) {
@@ -680,99 +616,22 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				}
 				break;
 
-			case G3D_IFF_MKID('v', 'a', 'n', 'a'):
-				/* view angle aspect camera */
-
-				/* fieldOfView */
-				g3d_stream_read_float_be(stream);
-				/* aspectRatioXtoY */
-				g3d_stream_read_float_be(stream);
-				break;
-
-			case G3D_IFF_MKID('v', 'a', 's', 'l'):
-				/* vertex attribute set list */
-				g3d_stream_skip(stream, len);
-				break;
-
-			case G3D_IFF_MKID('v', 'w', 'h', 'n'):
-				/* view hints */
-				g3d_stream_skip(stream, len);
-				break;
-
-			case G3D_IFF_MKID(0xFF, 0xFF, 0xFF, 0xE7):
-				/* unknown */
-				g3d_stream_skip(stream, len);
-#if DEBUG > 0
-				g_print("3DMF: 0xFFFFFFE7 (unknown)\n");
-#endif
-				break;
-
-			case G3D_IFF_MKID(0xFF, 0xFF, 0xFF, 0xE9):
-				/* unknown */
-				g3d_stream_skip(stream, len);
-#if DEBUG > 0
-				g_print("3DMF: 0xFFFFFFE9 (unknown)\n");
-#endif
-				break;
-
-			case G3D_IFF_MKID(0xFF, 0xFF, 0xFF, 0xEA):
-				/* unknown */
-				g3d_stream_skip(stream, len);
-#if DEBUG > 0
-				g_print("3DMF: 0xFFFFFFEA (unknown)\n");
-#endif
-				break;
-
-			case G3D_IFF_MKID(0xFF, 0xFF, 0xFF, 0xEB):
-				/* unknown */
-				g3d_stream_skip(stream, len);
-#if DEBUG > 0
-				g_print("3DMF: 0xFFFFFFEB (unknown)\n");
-#endif
-				break;
-
-			case G3D_IFF_MKID(0xFF, 0xFF, 0xFF, 0xEC):
-				/* unknown */
-				g3d_stream_skip(stream, len);
-#if DEBUG > 0
-				g_print("3DMF: 0xFFFFFFEC (unknown)\n");
-#endif
-				break;
-
-			case G3D_IFF_MKID(0xFF, 0xFF, 0xFF, 0xEF):
-				/* end of container? */
-				g3d_stream_skip(stream, len);
-#if DEBUG > 0
-				g_print("3DMF: 0xFFFFFFEF (end of container?)\n");
-#endif
-				return TRUE;
-				break;
-
-			case G3D_IFF_MKID(0xFF, 0xFF, 0xFF, 0xF4):
-				/* unknown */
-				g3d_stream_skip(stream, len);
-#if DEBUG > 0
-				g_print("3DMF: 0xFFFFFFF4 (unknown)\n");
-#endif
-				break;
-
-			case G3D_IFF_MKID(0xFF, 0xFF, 0xFF, 0xFD):
-				/* unknown */
-				g3d_stream_skip(stream, len);
-#if DEBUG > 0
-				g_print("3DMF: 0xFFFFFFFD (unknown)\n");
-#endif
-				break;
-
 			default:
+				if(chunkdesc) {
+					g3d_stream_skip(stream, len);
+				} else {
 #if DEBUG > 0
-				g_print("3DMF: Container: unknown chunk '%c%c%c%c' @ 0x%08x "
+				g_print("3DMF: Container: unknown chunk '%c%c%c%c'/"
+					"0x%02X%02X%02X%02X @ 0x%08x "
 					"(%d bytes)\n",
+					X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
+					X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
 					X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 					X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
 					(guint32)g3d_stream_tell(stream) - 8, len);
 #endif
-				g3d_stream_skip(stream, len);
+					g3d_stream_skip(stream, len);
+				}
 				break;
 		}
 	}

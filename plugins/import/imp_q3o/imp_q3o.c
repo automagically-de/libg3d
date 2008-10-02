@@ -567,14 +567,12 @@ static gboolean q3o_read_scene(G3DStream *stream, G3DContext *context)
 	return FALSE;
 }
 
-static int q3o_read_eof(G3DStream *stream)
+static gboolean q3o_read_eof(G3DStream *stream)
 {
-	gchar buffer[8];
+	gchar buffer[7];
 
-	g3d_stream_seek(stream, -1, G_SEEK_CUR);
-
-	if(g3d_stream_read(stream, buffer, 8) == 8) {
-		if(strncmp(buffer, "quick3Ds", 8) == 0) return TRUE;
+	if(g3d_stream_read(stream, buffer, 7) == 7) {
+		if(strncmp(buffer, "uick3Ds", 7) == 0) return TRUE;
 		g_warning("Q3O: did not get expected EOF marker");
 	} else {
 		g_warning("Q3O: premature end of file\n");

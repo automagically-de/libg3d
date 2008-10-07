@@ -45,7 +45,7 @@ G3DMaterial *ar_dof_load_mat(G3DContext *context, G3DModel *model,
 	G3DStream *stream)
 {
 	G3DMaterial *material;
-	gint32 id, len, dlen, i, ntex, trans = 0, blend = 0;
+	gint32 id, len = 0, dlen, i, ntex, trans = 0, blend = 0;
 	gchar *tmp;
 
 	id = g3d_stream_read_int32_be(stream);
@@ -175,7 +175,7 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model,
 	G3DFace *face;
 	G3DMaterial *material;
 	GSList *item;
-	gint32 id, len, dlen, nverts, ntver, nnorm, nind, i, j, index;
+	gint32 id, len = 0, dlen, nverts, ntver, nnorm, nind, i, j, index;
 	gfloat *tex_vertices = NULL, *normals = NULL;
 
 	id = g3d_stream_read_int32_be(stream);
@@ -377,7 +377,7 @@ G3DObject *ar_dof_load_obj(G3DContext *context, G3DModel *model,
 G3DObject *ar_dof_load(G3DContext *context, G3DModel *model,
 	G3DStream *stream)
 {
-	gint32 id, dlen, len, nmat, nobj, i;
+	gint32 id, dlen, len = 0, nmat, nobj, i;
 	G3DObject *object, *cobj;
 	G3DMaterial *material;
 

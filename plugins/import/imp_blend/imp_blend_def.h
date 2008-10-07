@@ -11,7 +11,7 @@
 #define MKID(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 
 static inline gchar blend_from_id(guint32 id, guint8 pos) {
-	gchar c = ((id >> (pos * 8)) & 0xFF);
+	guint8 c = ((id >> (pos * 8)) & 0xFF);
 	return ((c < 0x20) || (c > 0x7F)) ? '_' : c;
 }
 

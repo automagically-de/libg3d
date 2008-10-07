@@ -27,7 +27,9 @@
 #include <g3d/stream.h>
 #include <g3d/texture.h>
 
+#ifdef G3D_DEBUG_DUMP_IMAGE
 static gboolean dump_ppm(G3DImage *image, const gchar *filename);
+#endif
 
 G3DImage *g3d_texture_load(G3DContext *context, const gchar *filename)
 {
@@ -127,7 +129,9 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 	const gchar *filename)
 {
 	G3DImage *image;
+#ifdef G3D_DEBUG_DUMP_IMAGE
 	gchar *basename, *ppmname;
+#endif
 
 	/* create hash table if it does not exist yet */
 	if(model->tex_images == NULL)
@@ -149,7 +153,7 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 			image);
 	}
 
-#if 0
+#ifdef G3D_DEBUG_DUMP_IMAGE
 	if(image)
 	{
 		basename = g_path_get_basename(filename);
@@ -236,6 +240,7 @@ gboolean g3d_texture_flip_y(G3DImage *texture)
 	return TRUE;
 }
 
+#ifdef G3D_DEBUG_DUMP_IMAGE
 static gboolean dump_ppm(G3DImage *image, const gchar *filename)
 {
 	FILE *f;
@@ -261,6 +266,7 @@ static gboolean dump_ppm(G3DImage *image, const gchar *filename)
 	fclose(f);
 	return TRUE;
 }
+#endif
 
 G3DImage *g3d_texture_merge_alpha(G3DImage *image, G3DImage *aimage)
 {

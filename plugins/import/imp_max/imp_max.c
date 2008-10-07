@@ -20,6 +20,10 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#ifdef HAVE_CONFIG_H
+#	include <g3d/config.h>
+#endif
+
 #include <string.h>
 
 #include <g3d/types.h>

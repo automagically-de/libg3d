@@ -130,6 +130,7 @@ AC_OUTPUT(
 	Makefile
 	doc/Makefile
 	doc/api/Makefile
+	doc/support_matrix/Makefile
 	include/Makefile
 	include/g3d/Makefile
 	m4/Makefile

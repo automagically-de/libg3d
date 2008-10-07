@@ -1,0 +1,30 @@
+# supported file types (extensions)
+filetypes: acf
+# libmagic detector
+magic: [0] binary with no magic
+# G3DStream support
+stream: [5]
+# Works without seeking
+seekfree: [1] seeking may be removed
+# Container format
+container: [3] just struct serialization, different for every version
+# Object grouping
+grouping: 
+# Object transformation
+transformation: 
+# Vertex data
+vertex: 
+# Normal data
+normal: 
+# Face data
+face: 
+# Face colors
+color: 
+# Face transparency
+alpha: 
+# Texture images
+teximage: 
+# Texture coordinates (UV)
+texuv: 
+# Texture mapping parameters
+texmap: 

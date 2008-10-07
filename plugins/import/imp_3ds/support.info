@@ -1,0 +1,30 @@
+# supported file types (extensions)
+filetypes: 3ds, prj
+# libmagic detector
+magic: 
+# G3DStream support
+stream: [0]
+# Works without seeking
+seekfree: 
+# Container format
+container: [5]
+# Object grouping
+grouping: 
+# Object transformation
+transformation: [3]
+# Vertex data
+vertex: [5]
+# Normal data
+normal: [4]
+# Face data
+face: [5]
+# Face colors
+color: [4]
+# Face transparency
+alpha: [4]
+# Texture images
+teximage: [5]
+# Texture coordinates (UV)
+texuv: [4]
+# Texture mapping parameters
+texmap: [3]

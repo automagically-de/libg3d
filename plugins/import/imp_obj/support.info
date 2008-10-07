@@ -1,0 +1,30 @@
+# supported file types (extensions)
+filetypes: obj
+# libmagic detector
+magic: [0] text format w/o magic
+# G3DStream support
+stream: [5]
+# Works without seeking
+seekfree: [5]
+# Container format
+container: [5]
+# Object grouping
+grouping: [0] not yet implemented
+# Object transformation
+transformation: 
+# Vertex data
+vertex: [4]
+# Normal data
+normal: 
+# Face data
+face: [4]
+# Face colors
+color: [3]
+# Face transparency
+alpha: 
+# Texture images
+teximage: 
+# Texture coordinates (UV)
+texuv: 
+# Texture mapping parameters
+texmap: 

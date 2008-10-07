@@ -1,0 +1,30 @@
+# supported file types (extensions)
+filetypes: lw, lwb, lwo
+# libmagic detector
+magic: [5]
+# G3DStream support
+stream: [4]
+# Works without seeking
+seekfree: 
+# Container format
+container: [4]
+# Object grouping
+grouping: 
+# Object transformation
+transformation: 
+# Vertex data
+vertex: [4]
+# Normal data
+normal: 
+# Face data
+face: [4] fails: f15compl.lw
+# Face colors
+color: [4] some fail: wrong color indices
+# Face transparency
+alpha: 
+# Texture images
+teximage: 
+# Texture coordinates (UV)
+texuv: [3]
+# Texture mapping parameters
+texmap: 

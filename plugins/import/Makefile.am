@@ -6,6 +6,7 @@ SUBDIRS = \
 	imp_ar \
 	imp_ase \
 	imp_blend \
+	imp_c4d \
 	imp_cob \
 	imp_dae \
 	imp_dxf \

@@ -35,10 +35,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 {
 	gchar magic[5];
 
-	g3d_stream_read(stream, magic, 1, 4);
+	g3d_stream_read(stream, magic, 4);
 	magic[4] = '\0';
 	if(strncmp(magic + 1, "C4D", 3) == 0) {
-		g3d_stream_read(stream, magic, 1, 4);
+		g3d_stream_read(stream, magic, 4);
 		if(strncmp(magic, "C4D6", 4) == 0)
 			return c4d_load_v6(context, stream, model);
 		else {
@@ -194,7 +194,7 @@ static gboolean c4d_handle_opcode(guint8 opcode, G3DStream *stream,
 			x1 = g3d_stream_read_int32_be(stream);
 			*n_bytes += 4 + x1;
 			data = g_new0(guint8, x1);
-			g3d_stream_read(stream, data, 1, x1);
+			g3d_stream_read(stream, data, x1);
 #if DEBUG > C4D_DEBUG_OPCODE
 			g_debug("\\%s80: %d bytes of data", padding, x1);
 #endif

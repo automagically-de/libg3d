@@ -216,9 +216,11 @@ static void osm_add_node(G3DObject *object, OSMNodeTransList *translist,
 	object->vertex_count ++;
 	object->vertex_data = g_realloc(object->vertex_data,
 		object->vertex_count * sizeof(gdouble) * 3);
-	object->vertex_data[(object->vertex_count - 1) * 3 + 0] = lat;
+	object->vertex_data[(object->vertex_count - 1) * 3 + 0] =
+		(lat * G_PI / 180) * cos(lon * G_PI / 180) * 180 / G_PI;
 	object->vertex_data[(object->vertex_count - 1) * 3 + 1] = 0.0;
-	object->vertex_data[(object->vertex_count - 1) * 3 + 2] = lon;
+	object->vertex_data[(object->vertex_count - 1) * 3 + 2] =
+		(lat * G_PI / 180) * sin(lon * G_PI / 180) * 180 / G_PI;
 }
 
 static void osm_add_street(G3DObject *object, OSMNodeTransList *translist,

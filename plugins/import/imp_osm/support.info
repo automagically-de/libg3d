@@ -1,25 +1,25 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: osm
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [5]
 # Container format
-container: 
+container: [5]
 # Object grouping
 grouping: 
 # Object transformation
 transformation: 
 # Vertex data
-vertex: 
+vertex: [4]
 # Normal data
 normal: 
 # Face data
 face: 
 # Face colors
-color: 
+color: [3] self-defined
 # Face transparency
 alpha: 
 # Texture images

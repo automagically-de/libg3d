@@ -1,13 +1,13 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: kmz
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [2] has to be real file
 # Works without seeking
-seekfree: 
+seekfree: [0]
 # Container format
-container: 
+container: [5]
 # Object grouping
 grouping: 
 # Object transformation

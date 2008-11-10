@@ -22,6 +22,10 @@
 
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#	include <g3d/config.h>
+#endif
+
 #include <g3d/types.h>
 #include <g3d/material.h>
 #include <g3d/matrix.h>

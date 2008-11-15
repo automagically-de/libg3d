@@ -1,13 +1,13 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: blend
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
 seekfree: 
 # Container format
-container: 
+container: [1]
 # Object grouping
 grouping: 
 # Object transformation

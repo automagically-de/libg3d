@@ -1,13 +1,13 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: dxf
 # libmagic detector
-magic: 
+magic: [3]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [3] not yet, should be possible
 # Container format
-container: 
+container: [5]
 # Object grouping
 grouping: 
 # Object transformation

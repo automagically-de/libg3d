@@ -1,13 +1,13 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: c4d
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
 seekfree: 
 # Container format
-container: 
+container: [3] basic support for v5, v6
 # Object grouping
 grouping: 
 # Object transformation

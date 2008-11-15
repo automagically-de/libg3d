@@ -1,13 +1,13 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: dat, mpd, ldr
 # libmagic detector
-magic: 
+magic: [3] partly, .dat has no real magic
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [5]
 # Container format
-container: 
+container: [5]
 # Object grouping
 grouping: 
 # Object transformation

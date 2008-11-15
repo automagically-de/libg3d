@@ -1,13 +1,13 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: (many image file types)
 # libmagic detector
-magic: 
+magic: [0] no static list possible
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [5]
 # Container format
-container: 
+container: [5] handled by image plugins
 # Object grouping
 grouping: 
 # Object transformation
@@ -19,7 +19,7 @@ normal:
 # Face data
 face: 
 # Face colors
-color: 
+color: [0] no external color information possible yet
 # Face transparency
 alpha: 
 # Texture images

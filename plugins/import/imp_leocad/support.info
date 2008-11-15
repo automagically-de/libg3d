@@ -1,13 +1,13 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: lcd
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [0] some data at end of file has to be read first
 # Container format
-container: 
+container: [4] some versions may be unsupported
 # Object grouping
 grouping: 
 # Object transformation

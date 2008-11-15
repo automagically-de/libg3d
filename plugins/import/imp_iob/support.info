@@ -1,13 +1,13 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: iob
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [5]
 # Container format
-container: 
+container: [5]
 # Object grouping
 grouping: 
 # Object transformation

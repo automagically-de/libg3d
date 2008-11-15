@@ -281,6 +281,9 @@ gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 	if(imgstream != NULL) {
 		material->tex_image = g3d_texture_load_from_stream(global->context,
 			global->model, imgstream);
+		if(material->tex_image) {
+			material->tex_image->tex_env = G3D_TEXENV_REPLACE;
+		}
 		g3d_stream_close(imgstream);
 		return TRUE;
 	}

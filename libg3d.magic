@@ -12,8 +12,15 @@
 # ASE
 0             string       *3DSMAX_ASCIIEXPORT     ase
 
+# Blender
+0             string       BLENDER                 blend
+
 # Caligari Truespace
 0             string       Caligari                cob
+
+# Cinema 4D
+0             string       C4D                     c4d
+1             string       C50                     c4d
 
 # DXF (FIXME: some files are not detected)
 0             search/20    0\nSECTION              dxf
@@ -28,6 +35,10 @@
 
 0             string       FOR4
 >8            string       Maya                    maya
+
+# LDraw
+0             string       0\ FILE\                ldraw
+0             string       0\ Name\                ldraw
 
 # LeoCAD
 0             string       LeoCAD                  leocad
@@ -44,7 +55,8 @@
 
 # OpenFlight
 0             beshort      0x0001
->2            beshort      0x0144                  flt
+>16           belong       <15                     flt
+>16           belong       >1419                   flt
 
 # Quick3D
 0             string       quick3D                 q3o

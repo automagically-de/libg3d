@@ -22,5 +22,5 @@ AM_LDFLAGS = \
 LIBTOOL += --quiet
 
 imp_kmz_la_SOURCES = imp_kmz.c
-imp_kmz_la_LIBADD = @GLIB_LIBS@ @LIBGSF_LIBS@ @LIBXML2_LIBS@
-
+imp_kmz_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@ @LIBGSF_LIBS@ \
+                    @LIBXML2_LIBS@

@@ -14,11 +14,8 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-LIBADD = \
-	@GLIB_LIBS@
-
 LIBTOOL += --quiet
 
 imp_3ds_la_SOURCES = imp_3ds.c imp_3ds.h imp_3ds_chunks.h \
 	imp_3ds_callbacks.c imp_3ds_callbacks.h
-
+imp_3ds_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

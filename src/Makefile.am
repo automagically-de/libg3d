@@ -29,7 +29,8 @@ libg3d_la_LDFLAGS = \
 
 libg3d_la_LIBADD = \
 	@GLIB_LIBS@ \
-	@MAGIC_LIBS@
+	@MAGIC_LIBS@ \
+	@MATH_LIBS@
 
 if HAVE_LIBGSF
 libg3d_la_CFLAGS += @LIBGSF_CFLAGS@

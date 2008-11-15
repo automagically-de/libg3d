@@ -16,9 +16,6 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-LIBADD = \
-	@GLIB_LIBS@
-
 LIBTOOL += --quiet
 
 imp_acf_la_SOURCES = imp_acf.c imp_acf.h \
@@ -29,4 +26,4 @@ imp_acf_la_SOURCES = imp_acf.c imp_acf.h \
 	imp_acf_def_acf603.h imp_acf_def_acf625.h imp_acf_def_acf630.h \
 	imp_acf_def_acf640.h imp_acf_def_acf651.h \
 	imp_acf_def_acf700.h imp_acf_def_acf740.h
-
+imp_acf_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

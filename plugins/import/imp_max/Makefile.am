@@ -23,5 +23,4 @@ LIBTOOL += --quiet
 
 imp_max_la_SOURCES = imp_max.c \
 	imp_max_chunks.h imp_max_callbacks.c imp_max_callbacks.h
-imp_max_la_LIBADD = @GLIB_LIBS@ @LIBGSF_LIBS@
-
+imp_max_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@ @LIBGSF_LIBS@

@@ -16,9 +16,6 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-LIBADD = \
-	@GLIB_LIBS@
-
 LIBTOOL += --quiet
 
 imp_vrml2_la_SOURCES = imp_vrml2.c imp_vrml2.h \
@@ -26,4 +23,4 @@ imp_vrml2_la_SOURCES = imp_vrml2.c imp_vrml2.h \
 	imp_vrml_types.h \
 	imp_vrml2_types.c imp_vrml2_types.h \
 	imp_vrml2_nodes.h
-
+imp_vrml2_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

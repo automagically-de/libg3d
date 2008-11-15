@@ -14,10 +14,7 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-LIBADD = \
-	@GLIB_LIBS@
-
 LIBTOOL += --quiet
 
 imp_ac3d_la_SOURCES = imp_ac3d.c
-
+imp_ac3d_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

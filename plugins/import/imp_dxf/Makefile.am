@@ -17,9 +17,6 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-LIBADD = \
-	@GLIB_LIBS@
-
 imp_dxf_la_SOURCES = imp_dxf.c imp_dxf.h \
 	imp_dxf_section.c imp_dxf_section.h imp_dxf_vars.h
-
+imp_dxf_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

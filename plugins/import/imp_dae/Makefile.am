@@ -22,5 +22,4 @@ imp_dae_la_SOURCES = imp_dae.c \
 	imp_dae_xml.h imp_dae_xml.c \
 	imp_dae_library.h imp_dae_library.c \
 	imp_dae_cb.h imp_dae_cb.c imp_dae_chunks.h
-imp_dae_la_LIBADD = @GLIB_LIBS@ @LIBXML2_LIBS@
-
+imp_dae_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@ @LIBXML2_LIBS@

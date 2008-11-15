@@ -16,11 +16,8 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-LIBADD = \
-	@GLIB_LIBS@
-
 LIBTOOL += --quiet
 
 imp_ta_la_SOURCES = imp_ta.c imp_ta_3do_palette.h \
 	imp_ta_3do.c imp_ta_3do.h
-
+imp_ta_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

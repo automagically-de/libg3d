@@ -20,15 +20,14 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-LIBADD = \
-	@GLIB_LIBS@
-
 LIBTOOL += --quiet
 
 img_bmp_la_SOURCES = img_bmp.c
+img_bmp_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@
 img_sgi_la_SOURCES = img_sgi.c
+img_sgi_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@
 
 img_gdkpixbuf_la_CFLAGS = ${AM_CFLAGS} @GDKPIXBUF_CFLAGS@
 img_gdkpixbuf_la_SOURCES = img_gdkpixbuf.c
-img_gdkpixbuf_la_LIBADD = @GDKPIXBUF_LIBS@
-
+img_gdkpixbuf_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@ \
+                          @GDKPIXBUF_LIBS@

@@ -16,12 +16,9 @@ AM_LDFLAGS = \
 	-module \
 	@PLUGINS_LDFLAGS@
 
-LIBADD = \
-	@GLIB_LIBS@
-
 LIBTOOL += --quiet
 
 imp_skp_la_SOURCES = imp_skp.c imp_skp.h imp_skp_types.h \
 	imp_skp_chunks.h imp_skp_callbacks.h imp_skp_callbacks.c \
 	imp_skp_read.c imp_skp_read.h
-
+imp_skp_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

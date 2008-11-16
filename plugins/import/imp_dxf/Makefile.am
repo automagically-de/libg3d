@@ -14,7 +14,7 @@ AM_CFLAGS = \
 INCLUDES = -I$(top_srcdir)/include
 
 AM_LDFLAGS = \
-	-module \
+	-no-undefined -module \
 	@PLUGINS_LDFLAGS@
 
 imp_dxf_la_SOURCES = imp_dxf.c imp_dxf.h \

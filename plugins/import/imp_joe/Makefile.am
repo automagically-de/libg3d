@@ -11,7 +11,7 @@ AM_CFLAGS = \
 INCLUDES = -I$(top_srcdir)/include
 
 AM_LDFLAGS = \
-	-module \
+	-no-undefined -module \
 	@PLUGINS_LDFLAGS@
 
 LIBTOOL += --quiet

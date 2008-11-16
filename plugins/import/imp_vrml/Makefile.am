@@ -11,7 +11,7 @@ AM_CFLAGS = \
 INCLUDES = -I$(top_srcdir)/include
 
 AM_LDFLAGS = \
-	-module \
+	-no-undefined -module \
 	@PLUGINS_LDFLAGS@
 
 AM_LFLAGS = -o${LEX_OUTPUT_ROOT}.c --header-file=${LEX_OUTPUT_ROOT}.h -R

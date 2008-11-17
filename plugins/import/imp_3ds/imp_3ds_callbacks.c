@@ -65,6 +65,8 @@ gboolean x3ds_cb_0x0010(x3ds_global_data *global, x3ds_parent_data *parent)
 			break;
 
 		case 0xA010: /* ambient color */
+			break;
+
 		case 0xA020: /* diffuse color */
 			material = (G3DMaterial *)parent->object;
 			g_return_val_if_fail(material, FALSE);
@@ -110,8 +112,10 @@ gboolean x3ds_cb_0x0011(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	switch(parent->id)
 	{
+
 		case 0xA010: /* ambient color */
-			/* FIXME: breaks something? */
+			break;
+
 		case 0xA020: /* diffuse color */
 			material->r = (gfloat)r / 255.0;
 			material->g = (gfloat)g / 255.0;

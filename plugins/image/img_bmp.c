@@ -60,7 +60,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		image->depth, ncolplanes, compression);
 #endif
 
-	g3d_stream_seek(stream, offset, SEEK_SET);
+	g3d_stream_seek(stream, offset, G_SEEK_SET);
 
 #define ALL32BIT
 #ifndef ALL32BIT /* always 32bit for now.. */
@@ -85,8 +85,12 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 #endif
 					break;
 				case 24:
+#if 1
 					/* read BGR */
 					for(i = 2; i >= 0; i --)
+#else
+					for(i = 0; i < 3; i ++)
+#endif
 						image->pixeldata[(y * image->width + x) * 4 + i] =
 							g3d_stream_read_int8(stream);
 					image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
@@ -98,9 +102,11 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 #if DEBUG > 5
 		g_printerr("\n");
 #endif
+#if 1
 		/* padding */
 		for(i = x; i < ((image->width + 3) & ~(3)); i ++)
 			g3d_stream_read_int8(stream);
+#endif
 	} /* y */
 	image->depth = 32;
 #if DEBUG > 2

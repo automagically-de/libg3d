@@ -12,6 +12,8 @@ Changes since version 0.0.6:
 	* imp_skp: experimental SketchUp plugin, not usable
 	* imp_vrml2: experimental VRML 97 plugin w/o using flex, not usable
 	* general: the usual bug fixes and minor improvements
+	* general: endianess fixes, tested on 64-bit big endian target
+	* build: no more weak linking, now works on Cygwin
 
 Changes since version 0.0.5:
 	* plugins: try to detect file type with libmagic if available

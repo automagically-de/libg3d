@@ -39,6 +39,12 @@ typedef struct {
 	gfloat *tex_vertex_data;         /* 2 x n * gfloat */
 } FltVertexPalette;
 
+typedef struct {
+	guint32 size;
+	G3DImage **textures;
+	gint32 *offsets;
+} FltTexturePalette;
+
 #define FLT_FLAG_BROKEN_VERTEX_LIST (1 << 0)
 
 #define FLT_FLAG_NO_COLOR           (1 << 2)
@@ -51,6 +57,7 @@ typedef struct {
 	guint32 level;
 	GQueue *oqueue;
 	FltVertexPalette *vertex_palette;
+	FltTexturePalette *texture_palette;
 	guint32 fversion;                /* format version */
 	guint32 flags;
 } FltGlobalData;

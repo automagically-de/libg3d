@@ -98,6 +98,11 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		g_free(gd->vertex_palette->vertex_materials);
 		g_free(gd->vertex_palette);
 	}
+	if(gd->texture_palette) {
+		g_free(gd->texture_palette->offsets);
+		g_free(gd->texture_palette->textures);
+		g_free(gd->texture_palette);
+	}
 	g_free(gd);
 
 	return TRUE;

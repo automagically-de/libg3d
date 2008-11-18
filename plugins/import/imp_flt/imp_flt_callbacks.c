@@ -25,6 +25,7 @@
 
 #include <g3d/stream.h>
 #include <g3d/material.h>
+#include <g3d/texture.h>
 #include <g3d/model.h>
 
 #include "imp_flt.h"
@@ -186,11 +187,21 @@ gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld)
 	g3d_stream_read_int8(gd->stream);
 	ld->nb --;
 	/* detail texture pattern */
-	g3d_stream_read_int16_be(gd->stream);
+	index = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
+	if(index != -1)
+		if(gd->texture_palette && (index < gd->texture_palette->size))
+			face->tex_image = gd->texture_palette->textures[index];
 	/* texture pattern */
-	g3d_stream_read_int16_be(gd->stream);
+	index = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
+	if((face->tex_image == NULL) && (index != -1))
+		if(gd->texture_palette && (index < gd->texture_palette->size))
+			face->tex_image = gd->texture_palette->textures[index];
+
+	if(face->tex_image)
+		face->tex_image->tex_env = G3D_TEXENV_REPLACE;
+
 	/* material index */
 	index = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
@@ -312,11 +323,35 @@ gboolean flt_cb_0032(FltGlobalData *gd, FltLocalData *ld)
 gboolean flt_cb_0064(FltGlobalData *gd, FltLocalData *ld)
 {
 	gchar fname[201];
+	gint32 max, index, offx, offy;
 
 	g3d_stream_read(gd->stream, fname, 200);
 	ld->nb -= 200;
 
-	g_debug("FLT: 0064: %s", fname);
+	index = g3d_stream_read_int32_be(gd->stream);
+	offx = g3d_stream_read_int32_be(gd->stream);
+	offy = g3d_stream_read_int32_be(gd->stream);
+	ld->nb -= 12;
+
+	if(gd->texture_palette == NULL)
+		gd->texture_palette = g_new0(FltTexturePalette, 1);
+
+	max = MAX(index + 1, gd->texture_palette->size);
+	gd->texture_palette->size = max;
+	gd->texture_palette->offsets = g_realloc(gd->texture_palette->offsets,
+		max * 2 * sizeof(gint32));
+	gd->texture_palette->textures = g_realloc(gd->texture_palette->textures,
+		max * sizeof(G3DImage *));
+	gd->texture_palette->offsets[index * 2 + 0] = offx;
+	gd->texture_palette->offsets[index * 2 + 1] = offy;
+
+#if DEBUG > 2
+	g_debug("FLT: 0064: %s (index %d @ %d, %d)", fname, index, offx, offy);
+#endif
+
+	gd->texture_palette->textures[index] =
+		g3d_texture_load_cached(gd->context, gd->model, fname);
+
 	return TRUE;
 }
 
@@ -419,7 +454,8 @@ static gboolean flt_handle_vertex_color(FltGlobalData *gd, FltLocalData *ld,
 		}
 	} else {
 		/* color index */
-		material = flt_material_by_index(gd, g3d_stream_read_int32_be(gd->stream));
+		material = flt_material_by_index(gd,
+			g3d_stream_read_int32_be(gd->stream));
 		ld->nb -= 4;
 	}
 	gd->vertex_palette->vertex_materials[gd->vertex_palette->n_entries - 1] =
@@ -663,7 +699,8 @@ gboolean flt_cb_0072(FltGlobalData *gd, FltLocalData *ld)
 			if(face->tex_vertex_data == NULL) {
 				face->tex_vertex_data = g_new0(gfloat, n * 2);
 				face->tex_vertex_count = n;
-				/* face->flags |= G3D_FLAG_FAC_TEXMAP; */
+				if(face->tex_image)
+					face->flags |= G3D_FLAG_FAC_TEXMAP;
 			}
 			for(j = 0; j < 2; j ++)
 				face->tex_vertex_data[i * 2 + j] =

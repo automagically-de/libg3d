@@ -260,10 +260,6 @@ gboolean flt_cb_0005(FltGlobalData *gd, FltLocalData *ld)
 	/* texture mapping index */
 	index = g3d_stream_read_int16_be(gd->stream);
 	ld->nb -= 2;
-	if(index != -1) {
-		g_debug("FLT: 0005: texture mapping index %d", index);
-	}
-
 
 	return TRUE;
 }
@@ -712,6 +708,64 @@ gboolean flt_cb_0072(FltGlobalData *gd, FltLocalData *ld)
 	return TRUE;
 }
 
+/* mesh */
+gboolean flt_cb_0084(FltGlobalData *gd, FltLocalData *ld)
+{
+	G3DObject *object;
+	gchar *namebuf[8];
+	gint32 index;
+
+	object = (G3DObject *)g_queue_peek_head(gd->oqueue);
+	g_return_val_if_fail(object != NULL, FALSE);
+
+	/* ASCII ID */
+	g3d_stream_read(gd->stream, namebuf, 8);
+	namebuf[7] = '\0';
+	ld->nb -= 8;
+
+	/* reserved */
+	g3d_stream_read_int32_be(gd->stream);
+	ld->nb -= 4;
+	/* IR color code */
+	g3d_stream_read_int32_be(gd->stream);
+	ld->nb -= 4;
+	/* priority */
+	g3d_stream_read_int16_be(gd->stream);
+	ld->nb -= 2;
+	/* draw type */
+	g3d_stream_read_int8(gd->stream);
+	ld->nb --;
+	/* texture white */
+	g3d_stream_read_int8(gd->stream);
+	ld->nb --;
+	/* color name index */
+	g3d_stream_read_int16_be(gd->stream);
+	ld->nb -= 2;
+	/* alternate color name index */
+	g3d_stream_read_int16_be(gd->stream);
+	ld->nb -= 2;
+	/* reserved */
+	g3d_stream_read_int8(gd->stream);
+	ld->nb --;
+	/* template (billboard) */
+	g3d_stream_read_int8(gd->stream);
+	ld->nb --;
+	/* detail texture pattern */
+	index = g3d_stream_read_int16_be(gd->stream);
+	ld->nb -= 2;
+	if(index > -1)
+		if(gd->texture_palette && (index < gd->texture_palette->size))
+			object->tex_image = gd->texture_palette->textures[index];
+	/* texture pattern */
+	index = g3d_stream_read_int16_be(gd->stream);
+	ld->nb -= 2;
+	if((index > -1) && (object->tex_image == NULL))
+		if(gd->texture_palette && (index < gd->texture_palette->size))
+			object->tex_image = gd->texture_palette->textures[index];
+
+	return TRUE;
+}
+
 /* local vertex pool */
 gboolean flt_cb_0085(FltGlobalData *gd, FltLocalData *ld)
 {
@@ -730,88 +784,82 @@ gboolean flt_cb_0085(FltGlobalData *gd, FltLocalData *ld)
 
 	object->vertex_count = nverts;
 	object->vertex_data = g_new0(gfloat, nverts * 3);
+	object->tex_vertex_count = nverts;
+	object->tex_vertex_data = g_new0(gfloat, nverts * 2);
 
-	for(i = 0; i < nverts; i ++)
-	{
-		if(attrmask & (1 << 31)) /* has position */
-		{
-			object->vertex_data[i * 3 + 0] = g3d_stream_read_double_be(gd->stream);
-			object->vertex_data[i * 3 + 1] = g3d_stream_read_double_be(gd->stream);
-			object->vertex_data[i * 3 + 2] = g3d_stream_read_double_be(gd->stream);
+	for(i = 0; i < nverts; i ++) {
+		if(attrmask & (1 << 31)) { /* has position */
+			object->vertex_data[i * 3 + 0] =
+				g3d_stream_read_double_be(gd->stream);
+			object->vertex_data[i * 3 + 1] =
+				g3d_stream_read_double_be(gd->stream);
+			object->vertex_data[i * 3 + 2] =
+				g3d_stream_read_double_be(gd->stream);
 			ld->nb -= 24;
 		}
 
-		if(attrmask & (1 << 30)) /* has color index */
-		{
+		if(attrmask & (1 << 30)) { /* has color index */
 			g3d_stream_read_int32_be(gd->stream);
 			ld->nb -= 4;
 		}
 
-		if(attrmask & (1 << 29)) /* has RGBA color */
-		{
+		if(attrmask & (1 << 29)) { /* has RGBA color */
 			g3d_stream_read_int32_be(gd->stream);
 			ld->nb -= 4;
 		}
 
-		if(attrmask & (1 << 28)) /* has normal */
-		{
+		if(attrmask & (1 << 28)) { /* has normal */
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 12;
 		}
 
-		if(attrmask & (1 << 27)) /* has base UV */
-		{
+		if(attrmask & (1 << 27)) { /* has base UV */
+			object->tex_vertex_data[i * 2 + 0] =
+				g3d_stream_read_float_be(gd->stream);
+			object->tex_vertex_data[i * 2 + 1] =
+				g3d_stream_read_float_be(gd->stream);
+			ld->nb -= 8;
+		}
+
+		if(attrmask & (1 << 26)) { /* has UV layer 1 */
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
-		if(attrmask & (1 << 26)) /* has UV layer 1 */
-		{
+		if(attrmask & (1 << 25)) { /* has UV layer 2 */
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
-		if(attrmask & (1 << 25)) /* has UV layer 2 */
-		{
+		if(attrmask & (1 << 24)) { /* has UV layer 3 */
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
-		if(attrmask & (1 << 24)) /* has UV layer 3 */
-		{
+		if(attrmask & (1 << 23)) { /* has UV layer 4 */
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
-		if(attrmask & (1 << 23)) /* has UV layer 4 */
-		{
+		if(attrmask & (1 << 22)) { /* has UV layer 5 */
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
-		if(attrmask & (1 << 22)) /* has UV layer 5 */
-		{
+		if(attrmask & (1 << 21)) { /* has UV layer 6 */
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
 		}
 
-		if(attrmask & (1 << 21)) /* has UV layer 6 */
-		{
-			g3d_stream_read_float_be(gd->stream);
-			g3d_stream_read_float_be(gd->stream);
-			ld->nb -= 8;
-		}
-
-		if(attrmask & (1 << 20)) /* has UV layer 7 */
-		{
+		if(attrmask & (1 << 20)) { /* has UV layer 7 */
 			g3d_stream_read_float_be(gd->stream);
 			g3d_stream_read_float_be(gd->stream);
 			ld->nb -= 8;
@@ -837,18 +885,17 @@ gboolean flt_cb_0086(FltGlobalData *gd, FltLocalData *ld)
 	nverts = g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 8;
 
-	printf("FLT: 0086: type: %d, index size: %d, %d vertices\n",
-		type, isize, nverts);
-
-	switch(type)
-	{
+	switch(type) {
 		case 1: /* triangle strip */
+			g_debug("0086: triangle strip");
 			break;
 
 		case 2: /* triangle fan */
+			g_debug("0086: triangle fan");
 			break;
 
 		case 3: /* quadriteral strip */
+			g_debug("0086: quadriteral strip");
 			break;
 
 		case 4: /* indexed polygon */
@@ -857,10 +904,23 @@ gboolean flt_cb_0086(FltGlobalData *gd, FltLocalData *ld)
 				0);
 			face->vertex_count = nverts;
 			face->vertex_indices = g_new0(guint32, nverts);
-			for(i = 0; i < nverts; i ++)
-			{
+			for(i = 0; i < nverts; i ++) {
 				face->vertex_indices[i] = flt_read_typed_index(
 					gd->stream, isize, &(ld->nb));
+			}
+			face->tex_image = object->tex_image;
+			if(face->tex_image != NULL) {
+				face->tex_vertex_count = nverts;
+				face->tex_vertex_data = g_new0(gfloat, nverts * 2);
+				for(i = 0; i < nverts; i ++) {
+					face->tex_vertex_data[i * 2 + 0] =
+						object->tex_vertex_data[
+							face->vertex_indices[i] * 2 + 0];
+					face->tex_vertex_data[i * 2 + 1] =
+						object->tex_vertex_data[
+							face->vertex_indices[i] * 2 + 1];
+				}
+				face->flags |= G3D_FLAG_FAC_TEXMAP;
 			}
 			object->faces = g_slist_append(object->faces, face);
 			break;

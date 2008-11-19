@@ -86,7 +86,7 @@ static FltOpcode flt_opcodes[] = {
 	{   81, "rotate and/or scale to point",        0, NULL },
 	{   82, "put",                                 0, NULL },
 	{   83, "eyepoint and trackplane palette",     0, NULL },
-	{   84, "mesh",                                0, NULL },
+	{   84, "mesh",                                0, flt_cb_0084 },
 	{   85, "local vertex pool",                   0, flt_cb_0085 },
 	{   86, "mesh primitive",                      0, flt_cb_0086 },
 	{   87, "road segment",                        0, NULL },

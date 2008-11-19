@@ -6,6 +6,8 @@ magic: [5]
 stream: [5]
 # Works without seeking
 seekfree: [0] some data at end of file has to be read first
+# Progress bar updates
+progress: 
 # Container format
 container: [4] some versions may be unsupported
 # Object grouping

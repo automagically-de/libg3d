@@ -6,6 +6,8 @@ magic: [0] text format w/o magic
 stream: [5]
 # Works without seeking
 seekfree: [5]
+# Progress bar updates
+progress: 
 # Container format
 container: [5]
 # Object grouping

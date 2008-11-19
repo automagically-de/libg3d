@@ -6,6 +6,8 @@ magic: [3] only for .joe files
 stream: [5]
 # Works without seeking
 seekfree: [5]
+# Progress bar updates
+progress: 
 # Container format
 container: 
 # Object grouping

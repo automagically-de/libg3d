@@ -6,6 +6,8 @@ magic: [5]
 stream: [2] has to be real file
 # Works without seeking
 seekfree: [0]
+# Progress bar updates
+progress: 
 # Container format
 container: [5]
 # Object grouping

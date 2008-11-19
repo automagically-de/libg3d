@@ -6,6 +6,8 @@ magic: [0] binary with no magic
 stream: [5]
 # Works without seeking
 seekfree: [1] seeking may be removed
+# Progress bar updates
+progress: 
 # Container format
 container: [3] just struct serialization, different for every version
 # Object grouping

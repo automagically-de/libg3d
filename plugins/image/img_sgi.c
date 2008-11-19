@@ -174,6 +174,6 @@ gchar *plugin_description(G3DContext *context)
 
 gchar **plugin_extensions(G3DContext *context)
 {
-	return g_strsplit("rgb:sgi", ":", 0);
+	return g_strsplit("rgb:rgba:sgi", ":", 0);
 }
 

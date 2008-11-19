@@ -315,6 +315,22 @@ gboolean flt_cb_0032(FltGlobalData *gd, FltLocalData *ld)
 	return TRUE;
 }
 
+/* long ID */
+gboolean flt_cb_0033(FltGlobalData *gd, FltLocalData *ld)
+{
+	G3DObject *object = ld->g3dobj;
+
+	g_return_val_if_fail(object != NULL, FALSE);
+
+	g_free(object->name);
+	object->name = g_new0(gchar, ld->nb);
+	g3d_stream_read(gd->stream, object->name, ld->nb);
+	object->name[ld->nb - 1] = '\0';
+	ld->nb = 0;
+
+	return TRUE;
+}
+
 /* texture palette */
 gboolean flt_cb_0064(FltGlobalData *gd, FltLocalData *ld)
 {
@@ -779,8 +795,6 @@ gboolean flt_cb_0085(FltGlobalData *gd, FltLocalData *ld)
 	nverts = g3d_stream_read_int32_be(gd->stream);
 	attrmask = g3d_stream_read_int32_be(gd->stream);
 	ld->nb -= 8;
-
-	printf("FLT: 0085: %d vertices, attrmask: 0x%08x\n", nverts, attrmask);
 
 	object->vertex_count = nverts;
 	object->vertex_data = g_new0(gfloat, nverts * 3);

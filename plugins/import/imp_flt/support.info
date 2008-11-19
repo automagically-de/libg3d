@@ -13,18 +13,18 @@ grouping:
 # Object transformation
 transformation: 
 # Vertex data
-vertex: 
+vertex: [4]
 # Normal data
 normal: 
 # Face data
-face: 
+face: [4]
 # Face colors
-color: 
+color: [3]
 # Face transparency
 alpha: 
 # Texture images
-teximage: 
+teximage: [3]
 # Texture coordinates (UV)
-texuv: 
+texuv: [4]
 # Texture mapping parameters
 texmap: 

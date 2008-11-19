@@ -53,7 +53,7 @@ static FltOpcode flt_opcodes[] = {
 
 	{   31, "comment",                             0, NULL },
 	{   32, "color palette",                       0, flt_cb_0032 },
-	{   33, "long ID",                             0, NULL },
+	{   33, "long ID",                             0, flt_cb_0033 },
 
 	{   49, "matrix",                              0, NULL },
 	{   50, "vector",                              0, NULL },

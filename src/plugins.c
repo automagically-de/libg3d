@@ -67,7 +67,7 @@ static gboolean plugins_loaddirectory(G3DContext *context,
 	if(!plugindir)
 		return FALSE;
 
-	dirnames = g_strsplit(dirname, "/", 0);
+	dirnames = g_strsplit(dirname, G_DIR_SEPARATOR_S, 0);
 	dir = last = dirnames;
 
 	while(*dir != NULL)
@@ -93,7 +93,8 @@ static gboolean plugins_loaddirectory(G3DContext *context,
 			plugin->path = g_strdup(dirname);
 			plugin->type = type;
 
-			path = g_strdup_printf("%s/%s", dirname, filename);
+			path = g_strdup_printf("%s%c%s", dirname, G_DIR_SEPARATOR,
+				filename);
 
 			plugin->module = g_module_open(path, 0);
 			if(plugin->module == NULL) {
@@ -234,8 +235,13 @@ gboolean g3d_plugins_init(G3DContext *context)
 	context->exts_import = g_hash_table_new(g_str_hash, g_str_equal);
 	context->exts_image = g_hash_table_new(g_str_hash, g_str_equal);
 
+#ifdef G_OS_WIN32
+	plugins_loaddirectory(context, "plugins\\image");
+	plugins_loaddirectory(context, "plugins\\import");
+#else
 	plugins_loaddirectory(context, PLUGIN_DIR "/image");
 	plugins_loaddirectory(context, PLUGIN_DIR "/import");
+#endif
 
 #ifdef USE_LIBMAGIC
 	plugins_magic_init(context);

@@ -86,7 +86,11 @@ static gboolean plugins_loaddirectory(G3DContext *context,
 	g_strfreev(dirnames);
 
 	while((filename = g_dir_read_name(plugindir)) != NULL) {
+#ifdef G_OS_WIN32
+		if(g_strcasecmp(filename + strlen(filename) - 4, ".dll") == 0) {
+#else
 		if(g_strcasecmp(filename + strlen(filename) - 3, ".la") == 0) {
+#endif
 			plugin = g_new0(G3DPlugin, 1);
 
 			plugin->name = g_strdup(filename);

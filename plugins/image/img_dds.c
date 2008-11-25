@@ -120,8 +120,8 @@ static gboolean decode_dxt1(G3DImage *image, G3DStream *stream)
 	gfloat r, g, b, r1, r2, g1, g2, b1, b2;
 	guint8 line, v2;
 
-	for(y = 0; y < image->height / 4; y ++) {
-		for(x = 0; x < image->width / 4; x ++) {
+	for(y = 0; y < image->height; y += 4) {
+		for(x = 0; x < image->width; x += 4) {
 			decode_rgb565(g3d_stream_read_int16_le(stream), &r1, &g1, &b1);
 			decode_rgb565(g3d_stream_read_int16_le(stream), &r2, &g2, &b2);
 			for(j = 0; j < 4; j ++) {
@@ -132,10 +132,11 @@ static gboolean decode_dxt1(G3DImage *image, G3DStream *stream)
 					r = r1 + ((r2 - r1) / 3.0) * v2;
 					g = g1 + ((g2 - g1) / 3.0) * v2;
 					b = b1 + ((b2 - b1) / 3.0) * v2;
-					index = (y * 4 + j) * image->width + (x * 4 + i);
-					image->pixeldata[index * 4 + 0] = r * 255;
-					image->pixeldata[index * 4 + 1] = g * 255;
-					image->pixeldata[index * 4 + 2] = b * 255;
+					index = ((image->height - 4) - y + j) *
+						image->width + x + i;
+					image->pixeldata[index * 4 + 0] = r * 255.0;
+					image->pixeldata[index * 4 + 1] = g * 255.0;
+					image->pixeldata[index * 4 + 2] = b * 255.0;
 					image->pixeldata[index * 4 + 3] = 0xFF;
 				}
 			}

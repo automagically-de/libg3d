@@ -1,6 +1,9 @@
 pluginimpdir = $(pkglibdir)/plugins/import
 
+if OS_WIN32
+else
 pluginimp_LTLIBRARIES = imp_vrml.la
+endif
 
 AM_CFLAGS = \
 	-Wall -ansi -pedantic \

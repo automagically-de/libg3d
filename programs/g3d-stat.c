@@ -94,7 +94,9 @@ int main(int argc, char **argv)
 	Config *config;
 
 	signal(SIGINT, sighandler);
+#ifdef SIGQUIT
 	signal(SIGQUIT, sighandler);
+#endif
 
 	config = get_config(&argc, &argv);
 

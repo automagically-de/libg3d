@@ -33,6 +33,9 @@
 
 #define MD2_SKINNAMELEN 64
 
+static const char *textureExtensions[] = {
+	".pcx", ".bmp", ".jpg", ".tga", ".png", NULL };
+
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
@@ -41,11 +44,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	guint32 offskins, offtexs, offfaces, offframes, offglcmds, offend;
 	gfloat *texco = NULL, *normals;
 	gchar **skinnames = NULL;
-	int i;
+	gint i, j;
 	G3DObject *object;
 	G3DMaterial *material;
 	G3DImage *image = NULL;
-	static guint32 tex_id = 1;
 
 	idid = g3d_stream_read_int32_be(stream);
 	if(idid != G3D_IFF_MKID('I','D','P','2')) {
@@ -94,19 +96,75 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		for(i = 0; i < numskins; i ++) {
 			skinnames[i] = g_new0(gchar, MD2_SKINNAMELEN);
 			g3d_stream_read(stream, skinnames[i], MD2_SKINNAMELEN);
+
+			/* some md2 models have a dot as first character to tell the engine
+			 * load the texture from the dir where the model is located */
+			if(skinnames[i][0] == '.')
+				memmove(skinnames[i], skinnames[i] + 1, MD2_SKINNAMELEN - 1);
 #if DEBUG > 0
 			g_printerr("skin #%d: %s\n", i + 1, skinnames[i]);
 #endif
 		}
 
-		image = g3d_texture_load_cached(context, model, skinnames[0]);
+		/* not every skin has a texture assigned, the engines will search
+		 * a list of supported images to get the texture */
+		for(j = 0; j < numskins; j++) {
+			gchar skinname[MD2_SKINNAMELEN];
+			gchar *basename;
+
+			/* real filename */
+			if(g_file_test(skinnames[j], G_FILE_TEST_EXISTS))
+				image = g3d_texture_load_cached(context, model, skinnames[j]);
+			if(image)
+				break;
+			basename = g_path_get_basename(skinnames[j]);
+			if(g_file_test(basename, G_FILE_TEST_EXISTS))
+				image = g3d_texture_load_cached(context, model, skinnames[j]);
+			g_free(basename);
+			if(image)
+				break;
+
+			/* without extension */
+			for(i = 0; textureExtensions[i] != NULL; i ++) {
+				g_snprintf(skinname, sizeof(skinname), "%s%s", skinnames[j],
+					textureExtensions[i]);
+				if(g_file_test(skinname, G_FILE_TEST_EXISTS))
+					image = g3d_texture_load_cached(context, model, skinname);
+				if(image)
+					break;
+				basename = g_path_get_basename(skinname);
+				if(g_file_test(basename, G_FILE_TEST_EXISTS))
+					image = g3d_texture_load_cached(context, model, skinname);
+				g_free(basename);
+				if(image)
+					break;
+			}
+
+			/* replace extension */
+			for(i = 0; textureExtensions[i] != NULL; i ++) {
+				g_snprintf(skinname, sizeof(skinname), "%.*s%s",
+					strlen(skinnames[j]) - 4, skinnames[j],
+					textureExtensions[i]);
+				if(g_file_test(skinname, G_FILE_TEST_EXISTS))
+					image = g3d_texture_load_cached(context, model, skinname);
+				if(image)
+					break;
+				basename = g_path_get_basename(skinname);
+				if(g_file_test(basename, G_FILE_TEST_EXISTS))
+					image = g3d_texture_load_cached(context, model, skinname);
+				g_free(basename);
+				if(image)
+					break;
+			}
+			if(image)
+				break;
+		}
+
+		/* fallback skin name */
 		if(image == NULL)
 			image = g3d_texture_load_cached(context, model, "tris0.bmp");
-		if(image) {
-			image->tex_id = tex_id;
-			image->tex_env = G3D_TEXENV_DECAL;
-			tex_id ++;
-		}
+		if(image)
+			image->tex_env = G3D_TEXENV_REPLACE;
 	}
 
 	g3d_stream_seek(stream, offframes, G_SEEK_SET);

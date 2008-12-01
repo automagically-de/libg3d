@@ -156,6 +156,7 @@ AC_OUTPUT(
 	plugins/import/imp_c4d/Makefile
 	plugins/import/imp_cob/Makefile
 	plugins/import/imp_dae/Makefile
+	plugins/import/imp_dpm/Makefile
 	plugins/import/imp_dxf/Makefile
 	plugins/import/imp_flt/Makefile
 	plugins/import/imp_glb/Makefile

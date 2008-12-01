@@ -1,4 +1,4 @@
-/* $Id: imp_dpm.c 331 2008-12-01 11:50:51Z mmmaddd $ */
+/* $Id:$ */
 
 /*
     libg3d - 3D object loading library
@@ -18,6 +18,8 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+	plugin by Martin Gerhardy <martin.gerhardy@gmail.com>
 */
 
 #include <stdio.h>

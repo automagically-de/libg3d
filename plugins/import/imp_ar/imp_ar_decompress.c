@@ -115,7 +115,7 @@ gboolean ar_decompress_to_file(G3DStream *stream, ArDirEntry *dirent)
 
 	o = fopen(dirent->name, "wb");
 	if(o == NULL) {
-		g_printerr("failed to write to '%s'\n", dirent->name);
+		g_warning("failed to write to '%s'", dirent->name);
 		return FALSE;
 	}
 

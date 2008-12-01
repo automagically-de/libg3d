@@ -148,13 +148,13 @@ G3DObject *joe_load_object(G3DContext *context, const gchar *filename,
 
 	stream = g3d_stream_open_file(filename, "rb");
 	if(stream == NULL) {
-		g_printerr("JOE: failed to read '%s'\n", filename);
+		g_critical("JOE: failed to read '%s'", filename);
 		return NULL;
 	}
 
 	magic = g3d_stream_read_int32_be(stream);
 	if(magic != G3D_IFF_MKID('I','D','P','2')) {
-		g_printerr("JOE: wrong magic in '%s'\n", filename);
+		g_critical("JOE: wrong magic in '%s'", filename);
 		g3d_stream_close(stream);
 		return NULL;
 	}
@@ -315,7 +315,7 @@ GHashTable *joe_load_car(const gchar *filename)
 
 	stream = g3d_stream_open_file(filename, "r");
 	if(stream == NULL) {
-		g_printerr("JOE: failed to read '%s'\n", filename);
+		g_critical("JOE: failed to read '%s'", filename);
 		return NULL;
 	}
 
@@ -346,7 +346,7 @@ GHashTable *joe_load_car(const gchar *filename)
 				strcpy(value, ep + 1);
 				g_strstrip(value);
 #if DEBUG > 0
-				g_print("JOE: %s.%s = %s\n", section, varname, value);
+				g_debug("JOE: %s.%s = %s", section, varname, value);
 #endif
 				g_hash_table_insert(ht,
 					g_strdup_printf("%s.%s", section, varname),

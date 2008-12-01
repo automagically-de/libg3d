@@ -53,7 +53,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	nbytes = g3d_stream_read_int32_le(stream);
 	nbytes -= 6;
 #if DEBUG > 0
-	g_printerr("[%4.4X] 3DS file: main length: %d\n", magic, nbytes);
+	g_debug("\\[%4.4X] 3DS file: main length: %d", magic, nbytes);
 #endif
 
 	global.context = context;
@@ -69,11 +69,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	retval = x3ds_read_ctnr(&global, parent);
 
 	g_free(parent);
-
-#if DEBUG > 0
-	if(retval)
-		g_printerr("imp_3ds.c: %s successfully loaded\n", stream->uri);
-#endif
 
 	return retval;
 }
@@ -118,7 +113,7 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 				x3ds_chunks[i].callback ? 'f' : ' ',
 				x3ds_chunks[i].desc, chunk_len);
 			if (chunk_id==0) {
-				g_printerr("error: bad chunk id\n");
+				g_warning("error: bad chunk id");
 				return FALSE;
 			}
 
@@ -152,7 +147,7 @@ gboolean x3ds_read_ctnr(x3ds_global_data *global, x3ds_parent_data *parent)
 
 			g_free(subparent);
 		} else {
-			g_printerr("[3DS] unknown chunk type 0x%04X\n", chunk_id);
+			g_warning("[3DS] unknown chunk type 0x%04X", chunk_id);
 			g3d_stream_skip(global->stream, chunk_len);
 		}
 		parent->nb -= chunk_len;

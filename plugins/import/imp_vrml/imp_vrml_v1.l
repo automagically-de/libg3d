@@ -95,23 +95,20 @@
 	gfloat matrix[16];
 
 <INITIAL>^\s*\# {
-	#if DEBUG > 0
-	g_print("VRML: comment:");
-	#endif
 	BEGIN COMMENT;
 }
 
 <INITIAL>^\#VRML/\ V {
 	/* magic header */
 	#if DEBUG > 0
-	g_print("VRML: got header\n");
+	g_debug("VRML: got header");
 	#endif
 	BEGIN VRMLHEADER;
 }
 
 <VRMLHEADER>V[0-9.]+ {
 	#if DEBUG > 0
-	g_print("VRML: version %s\n", yytext + 1);
+	g_debug("VRML: version %s", yytext + 1);
 	#endif
 }
 
@@ -123,14 +120,11 @@
 
 <COMMENT>. {
 	#if DEBUG > 0
-	g_print("%s", yytext);
+	g_debug("COMMENT: %s", yytext);
 	#endif
 }
 
 <COMMENT>\n {
-	#if DEBUG > 0
-	g_print("\n");
-	#endif
 	BEGIN INITIAL;
 }
 
@@ -186,7 +180,7 @@ IndexedFaceSet/\ *\{ {
 
 -?[0-9]+[0-9e \.-]*/[,\]] {
 	#if DEBUG > 3
-	g_print("# (0x%04x) %s\n", otype, yytext);
+	g_debug("# (0x%04x) %s", otype, yytext);
 	#endif
 	if((otype & 0xFF00) == VRML_OTYPE_MAT)
 	{
@@ -206,14 +200,14 @@ IndexedFaceSet/\ *\{ {
 					&(material->r), &(material->g), &(material->b)) != 3)
 				{
 		#if DEBUG > 0
-					g_print("VRML1: failed to get ambient color");
+					g_debug("VRML1: failed to get ambient color");
 		#endif
 				}
 				break;
 
 			default:
 	#if DEBUG > 0
-				g_print("VRML: unhandled material property: 0x%02x (%s)\n",
+				g_debug("VRML: unhandled material property: 0x%02x (%s)",
 					otype, yytext);
 	#endif
 				break;
@@ -227,7 +221,7 @@ IndexedFaceSet/\ *\{ {
 			object->vertex_count * 3 * sizeof(gfloat));
 
 	#if DEBUG > 3
-		g_print("VRML: object vertex count: %d\n", object->vertex_count);
+		g_debug("VRML: object vertex count: %d", object->vertex_count);
 	#endif
 
 		if(sscanf(yytext, "%f%f%f",
@@ -244,7 +238,7 @@ IndexedFaceSet/\ *\{ {
 				(object->vertex_data[off * 3 + 1] == 0.0) ||
 				(object->vertex_data[off * 3 + 2] == 0.0))
 			{
-				g_print("VRML1: 0.0: %+2.2f %+2.2f %+2.2f (%s)\n",
+				g_debug("VRML1: 0.0: %+2.2f %+2.2f %+2.2f (%s)",
 					object->vertex_data[off * 3 + 0],
 					object->vertex_data[off * 3 + 1],
 					object->vertex_data[off * 3 + 2],
@@ -280,7 +274,7 @@ IndexedFaceSet/\ *\{ {
 			{
 				if(faceidxbuf[i] >= object->vertex_count)
 				{
-					g_print("VRML: Face: index %d >= vertex count (%d)\n",
+					g_debug("VRML: Face: index %d >= vertex count (%d)",
 						faceidxbuf[i], object->vertex_count);
 				}
 				else
@@ -297,7 +291,7 @@ IndexedFaceSet/\ *\{ {
 		{
 	#if DEBUG > 3
 			if(tmps32 == 0)
-				g_print("VRML1: faceidx 0: %s\n", yytext);
+				g_debug("VRML1: faceidx 0: %s", yytext);
 	#endif
 			faceidxbuf[faceidx] = tmps32;
 			faceidx ++;
@@ -307,20 +301,20 @@ IndexedFaceSet/\ *\{ {
 	{
 		i = atoi(yytext);
 	#if DEBUG > 3
-		g_print("VRML1: looking for object material #%d\n", i);
+		g_debug("VRML1: looking for object material #%d", i);
 	#endif
 		material = g_slist_nth_data(object->materials, i);
 		if(material)
 		{
 	#if DEBUG > 3
-			g_print("VRML1: got material to update\n");
+			g_debug("VRML1: got material to update");
 	#endif
 			face = g_slist_nth_data(object->faces, faceidx);
 			if(face)
 			{
 				face->material = material;
 	#if DEBUG > 1
-				g_print("VRML1: updating material of face #%d\n", faceidx);
+				g_debug("VRML1: updating material of face #%d", faceidx);
 	#endif
 			}
 		}
@@ -392,7 +386,7 @@ coordIndex/[[:space:]]*\[ {
 
 materialIndex/[[:space:]]*\[ {
 	#if DEBUG > 0
-	g_print("VRML1: materialIndex\n");
+	g_debug("VRML1: materialIndex");
 	#endif
 	/*if(otype == VRML_OTYPE_IDXFACESET)*/
 		otype = VRML_OTYPE_IDXFACESET_MATIDX;
@@ -423,7 +417,7 @@ matrix {
 
 \} {
 	#if DEBUG > 3
-	g_print("}\n");
+	g_debug("}");
 	#endif
 	level --;
 

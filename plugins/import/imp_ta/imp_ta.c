@@ -32,7 +32,7 @@ gpointer plugin_init(G3DContext *context)
 	guint32 i;
 
 #if DEBUG > 0
-	g_print("TA: initializing 3DO palette\n");
+	g_debug("TA: initializing 3DO palette");
 #endif
 
 	materials = g_new0(G3DMaterial, 256);

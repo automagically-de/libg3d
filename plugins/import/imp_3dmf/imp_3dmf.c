@@ -95,7 +95,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	}
 
 #if DEBUG > 0
-	g_print("3DMF: version %d.%d (0x%08x) TOC @ 0x%08x\n",
+	g_debug("3DMF: version %d.%d (0x%08x) TOC @ 0x%08x",
 		ver_maj, ver_min, flags, tocloc);
 #endif
 
@@ -167,7 +167,7 @@ static X3dmfToc *x3dmf_read_toc(G3DStream *stream, X3dmfToc *prev_toc,
 			toc->entries[noff + i].type = g3d_stream_read_int32_be(stream);
 		}
 #if DEBUG > 0
-		g_print("3DMF: TOC: %06d @ 0x%08x\n",
+		g_debug("3DMF: TOC: %06d @ 0x%08x",
 			toc->entries[noff + i].id,
 			toc->entries[noff + i].offset);
 #endif
@@ -330,7 +330,7 @@ static guint32 x3dmf_read_tmsh(G3DStream *stream, G3DObject *object,
 	nread += 4;
 
 #if DEBUG > 3
-	g_print("3DMF: [tmsh] %d faces, %d edges, %d vertices\n",
+	g_debug("3DMF: [tmsh] %d faces, %d edges, %d vertices",
 		nfaces, nedges, nverts);
 #endif
 
@@ -491,7 +491,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				/* diffuse color */
 				if(object) {
 #if DEBUG > 2
-					g_print("3DMF: kdif: got object\n");
+					g_debug("3DMF: kdif: got object");
 #endif
 					material = g_slist_nth_data(object->materials, 0);
 					material->r = g3d_stream_read_float_be(stream);
@@ -506,7 +506,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				/* specular color */
 				if(object) {
 #if DEBUG > 2
-					g_print("3DMF: kspc: got object\n");
+					g_debug("3DMF: kspc: got object");
 #endif
 					material = g_slist_nth_data(object->materials, 0);
 					material->specular[0] = g3d_stream_read_float_be(stream);
@@ -555,13 +555,13 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 					matrix[i] = g3d_stream_read_float_be(stream);
 				if(object) {
 #if DEBUG > 2
-					g_print("3DMF: mtrx: object is set\n");
+					g_debug("3DMF: mtrx: object is set");
 #endif
 					g3d_object_transform(object, matrix);
 				}
 #if DEBUG > 3
 				for(i = 0; i < 4; i ++)
-					g_print("3DMF: mtrx: %+1.2f %+1.2f %+1.2f %+1.2f\n",
+					g_debug("3DMF: mtrx: %+1.2f %+1.2f %+1.2f %+1.2f",
 						matrix[i * 4 + 0], matrix[i * 4 + 1],
 						matrix[i * 4 + 2], matrix[i * 4 + 3]);
 #endif
@@ -588,7 +588,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				g3d_object_transform(object, matrix);
 				if(chk != len) {
 #if DEBUG > 0
-					g_print("3DMF: tmsh: offset %d bytes\n", len - chk);
+					g_debug("3DMF: tmsh: offset %d bytes", len - chk);
 #endif
 					g3d_stream_skip(stream, len - chk);
 				}
@@ -610,7 +610,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 					g3d_object_transform(object, matrix);
 				} else {
 #if DEBUG > 0
-					g_print("3DMF: [trns] no object\n");
+					g_warning("3DMF: [trns] no object");
 #endif
 					g3d_stream_skip(stream, 12);
 				}
@@ -621,9 +621,9 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 					g3d_stream_skip(stream, len);
 				} else {
 #if DEBUG > 0
-				g_print("3DMF: Container: unknown chunk '%c%c%c%c'/"
+				g_warning("3DMF: Container: unknown chunk '%c%c%c%c'/"
 					"0x%02X%02X%02X%02X @ 0x%08x "
-					"(%d bytes)\n",
+					"(%d bytes)",
 					X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 					X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
 					X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),

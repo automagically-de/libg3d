@@ -79,7 +79,7 @@ gboolean ta_3do_read_children(G3DContext *context, G3DStream *stream,
 		object->name = g_strdup(buffer);
 		g3d_stream_seek(stream, off_save, G_SEEK_SET);
 #if DEBUG > 1
-		g_print("TA: object '%s'\n", object->name);
+		g_debug("TA: object '%s'", object->name);
 #endif
 
 		/* always 0 */
@@ -108,7 +108,7 @@ gboolean ta_3do_read_children(G3DContext *context, G3DStream *stream,
 			/* color index */
 			colidx = g3d_stream_read_int32_le(stream);
 #if DEBUG > 2
-			g_print("TA: color index: %d\n", colidx);
+			g_debug("TA: color index: %d", colidx);
 #endif
 			if(colidx > 255)
 			{
@@ -137,7 +137,7 @@ gboolean ta_3do_read_children(G3DContext *context, G3DStream *stream,
 			off_i = g3d_stream_read_int32_le(stream);
 			off_sav2 = g3d_stream_tell(stream);
 #if DEBUG > 2
-			g_print("TA: vertex index offset: 0x%08x\n", off_i);
+			g_debug("TA: vertex index offset: 0x%08x", off_i);
 #endif
 			g3d_stream_seek(stream, off_i, G_SEEK_SET);
 			for(j = 0; j < face->vertex_count; j ++)
@@ -161,7 +161,7 @@ gboolean ta_3do_read_children(G3DContext *context, G3DStream *stream,
 		off_chld = g3d_stream_read_int32_le(stream);
 
 #if DEBUG > 3
-		g_print("TA: child @ 0x%08x, sibling @ 0x%08x\n", off_chld, off_sibl);
+		g_debug("TA: child @ 0x%08x, sibling @ 0x%08x", off_chld, off_sibl);
 #endif
 
 		if(off_chld != 0)

@@ -325,7 +325,7 @@ gboolean lwo_cb_PTAG(G3DIffGlobal *global, G3DIffLocal *local)
 
 		if(tag > obj->ntags)
 		{
-			g_printerr("[LWO] tag %d not listed (%d tags)\n", tag, obj->ntags);
+			g_warning("[LWO] tag %d not listed (%d tags)", tag, obj->ntags);
 			continue;
 		}
 
@@ -345,7 +345,7 @@ gboolean lwo_cb_PTAG(G3DIffGlobal *global, G3DIffLocal *local)
 		if(material)
 			face->material = material;
 		else
-			g_printerr("[LWO] unknown material tag %s\n", obj->tags[tag]);
+			g_warning("[LWO] unknown material tag %s", obj->tags[tag]);
 	}
 
 	return TRUE;

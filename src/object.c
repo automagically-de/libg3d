@@ -258,7 +258,7 @@ gboolean g3d_object_merge(G3DObject *o1, G3DObject *o2)
 
 		if(face->vertex_count > 100)
 		{
-			g_printerr("face->vertex_count > 100: %d (%dth)",
+			g_warning("face->vertex_count > 100: %d (%dth)",
 				face->vertex_count, foff);
 		}
 

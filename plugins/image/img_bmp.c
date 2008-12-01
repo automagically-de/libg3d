@@ -36,7 +36,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	/* bitmap file always starts with 'BM' */
 	if(g3d_stream_read_int16_le(stream) != ('B' | ('M' << 8))) {
-		g_printerr("bitmap magic not found: image seems to be corrupt\n");
+		g_warning("bitmap magic not found: image seems to be corrupt\n");
 		return FALSE;
 	}
 
@@ -99,9 +99,6 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 					break;
 			}
 		} /* x */
-#if DEBUG > 5
-		g_printerr("\n");
-#endif
 #if 1
 		/* padding */
 		for(i = x; i < ((image->width + 3) & ~(3)); i ++)
@@ -110,7 +107,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	} /* y */
 	image->depth = 32;
 #if DEBUG > 2
-	g_printerr("bitmap successfully loaded\n");
+	g_debug("bitmap successfully loaded");
 #endif
 
 	return TRUE;

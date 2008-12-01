@@ -1140,9 +1140,6 @@ case 1:
 YY_RULE_SETUP
 #line 97 "imp_vrml_v1.l"
 {
-	#if DEBUG > 0
-	g_print("VRML: comment:");
-	#endif
 	BEGIN COMMENT;
 }
 	YY_BREAK
@@ -1151,54 +1148,51 @@ case 2:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 5;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 104 "imp_vrml_v1.l"
+#line 101 "imp_vrml_v1.l"
 {
 	/* magic header */
 	#if DEBUG > 0
-	g_print("VRML: got header\n");
+	g_debug("VRML: got header");
 	#endif
 	BEGIN VRMLHEADER;
 }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 112 "imp_vrml_v1.l"
+#line 109 "imp_vrml_v1.l"
 {
 	#if DEBUG > 0
-	g_print("VRML: version %s\n", yytext + 1);
+	g_debug("VRML: version %s", yytext + 1);
 	#endif
 }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 118 "imp_vrml_v1.l"
+#line 115 "imp_vrml_v1.l"
 /* */
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 120 "imp_vrml_v1.l"
+#line 117 "imp_vrml_v1.l"
 {
 	BEGIN INITIAL;
 }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 124 "imp_vrml_v1.l"
+#line 121 "imp_vrml_v1.l"
 {
 	#if DEBUG > 0
-	g_print("%s", yytext);
+	g_debug("COMMENT: %s", yytext);
 	#endif
 }
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 130 "imp_vrml_v1.l"
+#line 127 "imp_vrml_v1.l"
 {
-	#if DEBUG > 0
-	g_print("\n");
-	#endif
 	BEGIN INITIAL;
 }
 	YY_BREAK
@@ -1207,7 +1201,7 @@ case 8:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 9;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 137 "imp_vrml_v1.l"
+#line 131 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "Separator");
 	if((object == NULL) || (object->vertex_count == 0))
@@ -1226,7 +1220,7 @@ case 9:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 5;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 149 "imp_vrml_v1.l"
+#line 143 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "Group");
 }
@@ -1236,7 +1230,7 @@ case 10:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 8;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 153 "imp_vrml_v1.l"
+#line 147 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "Material");
 	if(object)
@@ -1254,7 +1248,7 @@ case 11:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 15;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 164 "imp_vrml_v1.l"
+#line 158 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "MatrixTransform");
 	otype = VRML_OTYPE_MTRANS;
@@ -1265,7 +1259,7 @@ case 12:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 11;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 169 "imp_vrml_v1.l"
+#line 163 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "Coordinate3");
 	if(!object)
@@ -1284,7 +1278,7 @@ case 13:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 14;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 182 "imp_vrml_v1.l"
+#line 176 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, "IndexedFaceSet");
 	otype = VRML_OTYPE_IDXFACESET;
@@ -1295,10 +1289,10 @@ case 14:
 yyg->yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 187 "imp_vrml_v1.l"
+#line 181 "imp_vrml_v1.l"
 {
 	#if DEBUG > 3
-	g_print("# (0x%04x) %s\n", otype, yytext);
+	g_debug("# (0x%04x) %s", otype, yytext);
 	#endif
 	if((otype & 0xFF00) == VRML_OTYPE_MAT)
 	{
@@ -1318,14 +1312,14 @@ YY_RULE_SETUP
 					&(material->r), &(material->g), &(material->b)) != 3)
 				{
 		#if DEBUG > 0
-					g_print("VRML1: failed to get ambient color");
+					g_debug("VRML1: failed to get ambient color");
 		#endif
 				}
 				break;
 
 			default:
 	#if DEBUG > 0
-				g_print("VRML: unhandled material property: 0x%02x (%s)\n",
+				g_debug("VRML: unhandled material property: 0x%02x (%s)",
 					otype, yytext);
 	#endif
 				break;
@@ -1339,7 +1333,7 @@ YY_RULE_SETUP
 			object->vertex_count * 3 * sizeof(gfloat));
 
 	#if DEBUG > 3
-		g_print("VRML: object vertex count: %d\n", object->vertex_count);
+		g_debug("VRML: object vertex count: %d", object->vertex_count);
 	#endif
 
 		if(sscanf(yytext, "%f%f%f",
@@ -1356,7 +1350,7 @@ YY_RULE_SETUP
 				(object->vertex_data[off * 3 + 1] == 0.0) ||
 				(object->vertex_data[off * 3 + 2] == 0.0))
 			{
-				g_print("VRML1: 0.0: %+2.2f %+2.2f %+2.2f (%s)\n",
+				g_debug("VRML1: 0.0: %+2.2f %+2.2f %+2.2f (%s)",
 					object->vertex_data[off * 3 + 0],
 					object->vertex_data[off * 3 + 1],
 					object->vertex_data[off * 3 + 2],
@@ -1392,7 +1386,7 @@ YY_RULE_SETUP
 			{
 				if(faceidxbuf[i] >= object->vertex_count)
 				{
-					g_print("VRML: Face: index %d >= vertex count (%d)\n",
+					g_debug("VRML: Face: index %d >= vertex count (%d)",
 						faceidxbuf[i], object->vertex_count);
 				}
 				else
@@ -1409,7 +1403,7 @@ YY_RULE_SETUP
 		{
 	#if DEBUG > 3
 			if(tmps32 == 0)
-				g_print("VRML1: faceidx 0: %s\n", yytext);
+				g_debug("VRML1: faceidx 0: %s", yytext);
 	#endif
 			faceidxbuf[faceidx] = tmps32;
 			faceidx ++;
@@ -1419,20 +1413,20 @@ YY_RULE_SETUP
 	{
 		i = atoi(yytext);
 	#if DEBUG > 3
-		g_print("VRML1: looking for object material #%d\n", i);
+		g_debug("VRML1: looking for object material #%d", i);
 	#endif
 		material = g_slist_nth_data(object->materials, i);
 		if(material)
 		{
 	#if DEBUG > 3
-			g_print("VRML1: got material to update\n");
+			g_debug("VRML1: got material to update");
 	#endif
 			face = g_slist_nth_data(object->faces, faceidx);
 			if(face)
 			{
 				face->material = material;
 	#if DEBUG > 1
-				g_print("VRML1: updating material of face #%d\n", faceidx);
+				g_debug("VRML1: updating material of face #%d", faceidx);
 	#endif
 			}
 		}
@@ -1443,7 +1437,7 @@ YY_RULE_SETUP
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 331 "imp_vrml_v1.l"
+#line 325 "imp_vrml_v1.l"
 {
 	if(otype == VRML_OTYPE_MTRANS_MATRIX)
 	{
@@ -1479,7 +1473,7 @@ case 16:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 12;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 360 "imp_vrml_v1.l"
+#line 354 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_AMBIENTCOLOR;
 }
@@ -1490,7 +1484,7 @@ case 17:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 12;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 364 "imp_vrml_v1.l"
+#line 358 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_DIFFUSECOLOR;
 }
@@ -1501,7 +1495,7 @@ case 18:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 13;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 368 "imp_vrml_v1.l"
+#line 362 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_SPECULARCOLOR;
 }
@@ -1512,7 +1506,7 @@ case 19:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 13;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 372 "imp_vrml_v1.l"
+#line 366 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_EMISSIVECOLOR;
 }
@@ -1523,7 +1517,7 @@ case 20:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 9;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 376 "imp_vrml_v1.l"
+#line 370 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_SHININESS;
 }
@@ -1534,7 +1528,7 @@ case 21:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 12;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 380 "imp_vrml_v1.l"
+#line 374 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_MAT_TRANSPARENCY;
 }
@@ -1545,7 +1539,7 @@ case 22:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 5;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 384 "imp_vrml_v1.l"
+#line 378 "imp_vrml_v1.l"
 {
 	otype = VRML_OTYPE_COORD3_POINT;
 }
@@ -1556,7 +1550,7 @@ case 23:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 10;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 388 "imp_vrml_v1.l"
+#line 382 "imp_vrml_v1.l"
 {
 	if(otype == VRML_OTYPE_IDXFACESET)
 		otype = VRML_OTYPE_IDXFACESET_COORDIDX;
@@ -1568,10 +1562,10 @@ case 24:
 yyg->yy_c_buf_p = yy_cp = yy_bp + 13;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 393 "imp_vrml_v1.l"
+#line 387 "imp_vrml_v1.l"
 {
 	#if DEBUG > 0
-	g_print("VRML1: materialIndex\n");
+	g_debug("VRML1: materialIndex");
 	#endif
 	/*if(otype == VRML_OTYPE_IDXFACESET)*/
 		otype = VRML_OTYPE_IDXFACESET_MATIDX;
@@ -1579,7 +1573,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 401 "imp_vrml_v1.l"
+#line 395 "imp_vrml_v1.l"
 {
 	if(otype == VRML_OTYPE_MTRANS)
 	{
@@ -1590,7 +1584,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 409 "imp_vrml_v1.l"
+#line 403 "imp_vrml_v1.l"
 {
 	/* set to parent object */
 	otype &= 0xFF00;
@@ -1600,24 +1594,24 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 416 "imp_vrml_v1.l"
+#line 410 "imp_vrml_v1.l"
 {
 	vrml_dump_hier(level, yytext);
 }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 420 "imp_vrml_v1.l"
+#line 414 "imp_vrml_v1.l"
 {
 	level ++;
 }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 424 "imp_vrml_v1.l"
+#line 418 "imp_vrml_v1.l"
 {
 	#if DEBUG > 3
-	g_print("}\n");
+	g_debug("}");
 	#endif
 	level --;
 
@@ -1635,29 +1629,29 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 442 "imp_vrml_v1.l"
+#line 436 "imp_vrml_v1.l"
 /* */
 	YY_BREAK
 case 31:
 /* rule 31 can match eol */
 YY_RULE_SETUP
-#line 443 "imp_vrml_v1.l"
+#line 437 "imp_vrml_v1.l"
 /* */
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(VRMLHEADER):
 case YY_STATE_EOF(COMMENT):
-#line 445 "imp_vrml_v1.l"
+#line 439 "imp_vrml_v1.l"
 {
 	yyterminate();
 }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 449 "imp_vrml_v1.l"
+#line 443 "imp_vrml_v1.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1661 "imp_vrml_v1.c"
+#line 1655 "imp_vrml_v1.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2787,7 +2781,7 @@ void vrml_v1_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 449 "imp_vrml_v1.l"
+#line 443 "imp_vrml_v1.l"
 
 
 

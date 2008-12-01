@@ -55,7 +55,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	file_is_be = (header[16] == 'H');
 
 #if DEBUG > 0
-	g_print("COB: file version %.*s, %s, %s endian\n",
+	g_debug("COB: file version %.*s, %s, %s endian\n",
 		6, header + 9,
 		file_is_ascii ? "ASCII" : "binary",
 		file_is_be ? "big" : "little" );
@@ -135,14 +135,10 @@ static G3DObject *cob_read_grou_bin(G3DStream *stream, guint32 len, gboolean is_
 {
 	G3DObject *object;
 
-#if DEBUG > 0
-	g_print("COB: Grou chunk @ 0x%08x\n", (guint32)g3d_stream_tell(stream));
-#endif
-
 	object = g_new0(G3DObject, 1);
 	object->name = cob_read_name_bin(stream, &len, is_be);
 #if DEBUG > 0
-	g_print("COB: Grou: name is '%s'\n", object->name);
+	g_debug("COB: Grou: name is '%s'", object->name);
 #endif
 
 	if(len > 0)
@@ -158,14 +154,10 @@ static G3DObject *cob_read_polh_bin(G3DStream *stream, guint32 len, gboolean is_
 	guint32 nfaces, i;
 	gfloat curpos[16];
 
-#if DEBUG > 0
-	g_print("COB: PolH chunk @ 0x%08x\n", (guint32)g3d_stream_tell(stream));
-#endif
-
 	object = g_new0(G3DObject, 1);
 	object->name = cob_read_name_bin(stream, &len, is_be);
 #if DEBUG > 0
-	g_print("COB: PolH: name is '%s'\n", object->name);
+	g_debug("COB: PolH: name is '%s'", object->name);
 #endif
 
 	/* local axes: 4 x 12 */
@@ -323,7 +315,7 @@ static int cob_read_mat1_bin(G3DStream *stream, guint32 len, gboolean is_be,
 	else
 	{
 #if DEBUG > 0
-		g_print("COB: Mat1: material #%d not used, ignoring...\n", matidx);
+		g_debug("COB: Mat1: material #%d not used, ignoring...", matidx);
 #endif
 	}
 
@@ -353,10 +345,10 @@ static int cob_read_unit_bin(G3DStream *stream, guint32 len, gboolean is_be)
 #if DEBUG > 0
 	if(uidx >= (sizeof(units) / sizeof(gchar *)))
 	{
-		g_print("COB: Unit: out of range (%d)\n", uidx);
+		g_warning("COB: Unit: out of range (%d)", uidx);
 		return FALSE;
 	}
-	g_print("COB: units are %s\n", units[uidx]);
+	g_debug("COB: units are %s", units[uidx]);
 #endif
 	return TRUE;
 }
@@ -411,8 +403,8 @@ static gboolean cob_read_file_bin(G3DStream *stream, G3DModel *model,
 
 			default:
 #if DEBUG > 0
-				g_print("COB: unknown chunk type: %c%c%c%c: 0x%08x (0x%08x),"
-					" %u bytes\n",
+				g_warning("COB: unknown chunk type: %c%c%c%c: 0x%08x (0x%08x),"
+					" %u bytes",
 					(type >> 24) & 0xFF, (type >> 16) & 0xFF,
 					(type >> 8) & 0xFF, type & 0xFF,
 					id, parent_id, len);

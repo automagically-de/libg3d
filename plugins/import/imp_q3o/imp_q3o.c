@@ -58,14 +58,14 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	ver_maj = g3d_stream_read_int8(stream);
 	ver_min = g3d_stream_read_int8(stream);
 #if DEBUG > 0
-	g_print("Q3O: version %c.%c\n", ver_maj, ver_min);
+	g_debug("Q3O: version %c.%c", ver_maj, ver_min);
 #endif
 
 	nmeshes = g3d_stream_read_int32_le(stream);
 	nmats = g3d_stream_read_int32_le(stream);
 	ntexs = g3d_stream_read_int32_le(stream);
 #if DEBUG > 0
-	g_print("Q3O: %d meshes, %d materials, %d textures\n",
+	g_debug("Q3O: %d meshes, %d materials, %d textures",
 		nmeshes, nmats, ntexs);
 #endif
 
@@ -77,7 +77,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	while((id = g3d_stream_read_int8(stream)) != 0) {
 #if DEBUG > 0
-		g_print("Q3O: chunk type 0x%02x @ 0x%08x\n", id,
+		g_debug("Q3O: chunk type 0x%02x @ 0x%08x", id,
 			(guint32)g3d_stream_tell(stream) - 1);
 #endif
 		switch(id) {
@@ -171,20 +171,20 @@ static G3DImage *q3o_get_texture_nth(G3DModel *model, guint32 n)
 		model->tex_images = g_hash_table_new(g_str_hash, g_str_equal);
 
 #if DEBUG > 5
-	g_print("Q3O: texture #%d wanted\n", n);
+	g_debug("Q3O: texture #%d wanted", n);
 #endif
 
 	sprintf(number, "%d", n);
 	image = g_hash_table_lookup(model->tex_images, number);
 	if(image) {
 #if DEBUG > 5
-		g_print("Q3O: texture #%d from hash table\n", n);
+		g_debug("Q3O: texture #%d from hash table", n);
 #endif
 		return image;
 	}
 
 #if DEBUG > 5
-	g_print("Q3O: texture #%d created\n", n);
+	g_debug("Q3O: texture #%d created", n);
 #endif
 
 	image = g_new0(G3DImage, 1);
@@ -219,7 +219,7 @@ static gboolean q3o_read_mesh(G3DStream *stream, G3DModel *model,
 	/* vertices */
 	object->vertex_count = g3d_stream_read_int32_le(stream);
 #if DEBUG > 3
-	g_print("Q3O: number of vertices: %d\n", object->vertex_count);
+	g_debug("Q3O: number of vertices: %d", object->vertex_count);
 #endif
 	object->vertex_data = g_new0(gfloat,object->vertex_count * 3);
 	for(i = 0; i < object->vertex_count; i ++)
@@ -234,7 +234,7 @@ static gboolean q3o_read_mesh(G3DStream *stream, G3DModel *model,
 	/* faces */
 	nfaces = g3d_stream_read_int32_le(stream);
 #if DEBUG > 3
-    g_print("Q3O: number of faces: %d\n", nfaces);
+    g_debug("Q3O: number of faces: %d", nfaces);
 #endif
 	faceshapes = g_new0(guint16, nfaces);
 	for(i = 0; i < nfaces; i ++)
@@ -291,7 +291,7 @@ static gboolean q3o_read_mesh(G3DStream *stream, G3DModel *model,
 	nnormals = g3d_stream_read_int32_le(stream);
 	normals = g_new0(gfloat, nnormals * 3);
 #if DEBUG > 3
-	g_print("Q3O: number of normals: %d\n", nnormals);
+	g_debug("Q3O: number of normals: %d", nnormals);
 #endif
 	for(i = 0; i < nnormals; i ++) {
 		normals[i * 3 + 0] = g3d_stream_read_float_le(stream);
@@ -327,7 +327,7 @@ static gboolean q3o_read_mesh(G3DStream *stream, G3DModel *model,
 	/* texture stuff */
 	ntexco = g3d_stream_read_int32_le(stream);
 #if DEBUG > 3
-	g_print("Q3O: number of texture coordinates: %d\n", ntexco);
+	g_debug("Q3O: number of texture coordinates: %d", ntexco);
 #endif
 	if(n_textures > 0)
 	{
@@ -403,7 +403,7 @@ static gboolean q3o_read_material(G3DStream *stream, G3DModel *model,
 	while((*bufp = g3d_stream_read_int8(stream)) != '\0') bufp ++;
 	material->name = g_strdup(buffer);
 #if DEBUG > 0
-	g_print("Q3O: material name: '%s'\n", buffer);
+	g_debug("Q3O: material name: '%s'", buffer);
 #endif
 
 	/* ambientColor */
@@ -429,7 +429,7 @@ static gboolean q3o_read_material(G3DStream *stream, G3DModel *model,
 	/* texture */
 	num = g3d_stream_read_int32_le(stream);
 #if DEBUG > 4
-	g_print("Q3O: material unknown uint32: %d\n", num);
+	g_debug("Q3O: material unknown uint32: %d", num);
 #endif
 	if((num != -1) && (num < n_textures))
 		material->tex_image = q3o_get_texture_nth(model, num);
@@ -455,7 +455,7 @@ static int q3o_read_texture(G3DStream *stream, G3DModel *model)
 	width = g3d_stream_read_int32_le(stream);
 	height = g3d_stream_read_int32_le(stream);
 #if DEBUG > 0
-	g_print("Q3O: texture #%d '%s': %dx%d\n", index, buffer, width, height);
+	g_debug("Q3O: texture #%d '%s': %dx%d", index, buffer, width, height);
 #endif
 
 	image = q3o_get_texture_nth(model, index);
@@ -547,7 +547,7 @@ static gboolean q3o_read_scene(G3DStream *stream, G3DContext *context)
 			bufp ++;
 
 #if DEBUG > 0
-		g_print("Q3O: scene: background image '%s' (%dx%d)\n",
+		g_debug("Q3O: scene: background image '%s' (%dx%d)",
 			buffer, bgw, bgh);
 #endif
 

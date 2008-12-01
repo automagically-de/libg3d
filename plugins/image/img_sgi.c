@@ -64,7 +64,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	if(strlen(name) > 0) {
 #if DEBUG > 0
-		g_print("SGI: image name: %s\n", name);
+		g_debug("SGI: image name: %s", name);
 #endif
 		image->name = g_strdup(name);
 	} else {
@@ -75,7 +75,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	g3d_stream_skip(stream, 404);
 
 #if DEBUG > 0
-	g_print("SGI: %dx%dx%d, %d bpc, colormap: 0x%02x\n",
+	g_debug("SGI: %dx%dx%d, %d bpc, colormap: 0x%02x",
 		image->width, image->height, planes, bpc, cmap);
 #endif
 	/* end of header */

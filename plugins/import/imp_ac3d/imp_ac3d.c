@@ -67,7 +67,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	if(g_ascii_strcasecmp(filename + strlen(filename) - 4, ".acc") == 0)
 	{
 #if DEBUG > 0
-		g_print("AC3D: .acc file\n");
+		g_debug("AC3D: .acc file");
 #endif
 		flags |= AC3D_FLAG_ACC;
 	}
@@ -75,7 +75,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	version = strtoul(buffer + 4, NULL, 16);
 
 #if DEBUG > 0
-	g_print("AC3D: version %d\n", version);
+	g_debug("AC3D: version %d", version);
 #endif
 
 	while(g3d_stream_read_line(stream, buffer, 2048))
@@ -121,7 +121,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		else
 		{
 #if DEBUG > 0
-			g_print("AC3D: unhandled line: %s\n", buffer);
+			g_warning("AC3D: unhandled line: %s", buffer);
 #endif
 		}
 	}
@@ -217,7 +217,7 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 			}
 
 #if DEBUG > 0
-			g_print("AC3D: \"%s\": %d sub-objects read\n",
+			g_debug("AC3D: \"%s\": %d sub-objects read",
 				object->name ? object->name : "unnamed",
 				objectcount - 1);
 #endif
@@ -508,7 +508,7 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 		else
 		{
 #if DEBUG > 0
-			g_print("AC3D: unhandled line %d: %s\n", *rowcnt, buffer);
+			g_warning("AC3D: unhandled line %d: %s", *rowcnt, buffer);
 #endif
 		}
 	}

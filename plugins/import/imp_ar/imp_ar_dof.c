@@ -429,7 +429,7 @@ G3DObject *ar_dof_load(G3DContext *context, G3DModel *model,
 				break;
 
 			default:
-				g_print("DOF: unknown ID '%c%c%c%c' @ 0x%08x\n",
+				g_warning("DOF: unknown ID '%c%c%c%c' @ 0x%08x",
 					(id >> 24) & 0xFF, (id >> 16) & 0xFF,
 					(id >> 8) & 0xFF, id  & 0xFF,
 					(guint32)g3d_stream_tell(stream) - 8);

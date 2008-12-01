@@ -56,23 +56,17 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
 
 #if DEBUG > 0
-	g_printerr("height field loader: image: %dx%dx%d\n",
+	g_debug("height field loader: image: %dx%dx%d",
 		image->width, image->height, image->depth);
 #endif
 
-	for(y = 0; y < image->height; y ++)
-	{
-#if DEBUG > 5
-		g_print("Heightfield: line: ");
-#endif
-		for(x=0; x<image->width; x++)
-		{
+	for(y = 0; y < image->height; y ++) {
+		for(x=0; x<image->width; x++) {
 			index = y*image->width + x;
 
 			object->vertex_data[index*3+0] = x;
 			object->vertex_data[index*3+1] = y;
-			switch(image->depth)
-			{
+			switch(image->depth) {
 				case 8:
 					object->vertex_data[index*3+2] = 0.0 +
 						(float)image->pixeldata[index] / 32.0;
@@ -90,14 +84,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 				default:
 					break;
 			}
-#if DEBUG > 5
-i			g_print(" (%.1f,%.1f,%.1f)",
-				object->vertex_data[index*3+0],
-				object->vertex_data[index*3+1],
-				object->vertex_data[index*3+2]);
-#endif
-			if((x < (image->width-1)) && (y < (image->height-1)))
-			{
+
+			if((x < (image->width-1)) && (y < (image->height-1))) {
 				G3DFace *face = g_new0(G3DFace, 1);
 
 				face->material = material;
@@ -118,12 +106,6 @@ i			g_print(" (%.1f,%.1f,%.1f)",
 				object->faces = g_slist_prepend(object->faces, face);
 			}
 		} /* for(x) */
-#if DEBUG > 4
-		g_printerr("loader: line %d ready\n", y+1);
-#endif
-#if DEBUG > 5
-		g_print("\n");
-#endif
 	} /* for(y) */
 
 	return TRUE;

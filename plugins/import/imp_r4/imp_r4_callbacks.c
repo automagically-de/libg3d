@@ -378,7 +378,7 @@ gboolean r4_cb_ROBJ(G3DIffGlobal *global, G3DIffLocal *local)
 	local->nb -= (len + 2);
 
 #if DEBUG > 2
-	g_printerr("[R4] ROBJ: %s\n", (gchar *)local->level_object);
+	g_debug("[R4] ROBJ: %s", (gchar *)local->level_object);
 #endif
 
 	return TRUE;

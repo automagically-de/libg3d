@@ -42,7 +42,7 @@ gboolean x3ds_cb_0x0002(x3ds_global_data *global, x3ds_parent_data *parent)
 	version = g3d_stream_read_int32_le(global->stream);
 	parent->nb -= 4;
 #if DEBUG > 0
-	g_printerr("[3DS] M3D version %d\n", version);
+	g_debug("[3DS] M3D version %d", version);
 #endif
 	return TRUE;
 }
@@ -88,7 +88,7 @@ gboolean x3ds_cb_0x0010(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		default:
 #if DEBUG > 0
-			g_printerr("[3DS] unhandled COLOR_F in 0x%04X\n", parent->id);
+			g_warning("[3DS] unhandled COLOR_F in 0x%04X", parent->id);
 #endif
 			break;
 	}
@@ -131,7 +131,7 @@ gboolean x3ds_cb_0x0011(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		default:
 #if DEBUG > 0
-			g_printerr("[3DS] unhandled COLOR_24 in 0x%04X\n", parent->id);
+			g_warning("[3DS] unhandled COLOR_24 in 0x%04X", parent->id);
 #endif
 			break;
 	}
@@ -183,7 +183,7 @@ gboolean x3ds_cb_0x0030(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		case 0xA210: /* opacity map */
 			/* TODO: do something here? */
-			g_printerr("[3DS] opacity percentage: %d%%\n", percent);
+			g_debug("[3DS] opacity percentage: %d%%\n", percent);
 			break;
 
 		case 0xA220: /* reflection map */
@@ -196,7 +196,7 @@ gboolean x3ds_cb_0x0030(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		default:
 #if DEBUG > 0
-			g_printerr("[3DS] unhandled INT_PERCENTAGE in 0x%04X\n",
+			g_warning("[3DS] unhandled INT_PERCENTAGE in 0x%04X",
 				parent->id);
 #endif
 			break;
@@ -229,7 +229,7 @@ gboolean x3ds_cb_0x0031(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		default:
 #if DEBUG > 0
-			g_printerr("[3DS] unhandled FLOAT_PERCENTAGE in 0x%04X\n",
+			g_warning("[3DS] unhandled FLOAT_PERCENTAGE in 0x%04X",
 				parent->id);
 #endif
 			break;
@@ -684,7 +684,7 @@ gboolean x3ds_cb_0xA300(x3ds_global_data *global, x3ds_parent_data *parent)
 
 		default:
 #if DEBUG > 0
-			g_printerr("[3DS] unhandled texture name in 0x%04X\n", parent->id);
+			g_warning("[3DS] unhandled texture name in 0x%04X", parent->id);
 #endif
 
 			break;
@@ -711,7 +711,7 @@ gboolean x3ds_cb_0xA354(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	image->tex_scale_u = scale;
 #if DEBUG > 3
-	g_print("[3DS] scale_u: %f\n", image->tex_scale_u);
+	g_debug("[3DS] scale_u: %f", image->tex_scale_u);
 #endif
 
 	return TRUE;
@@ -735,7 +735,7 @@ gboolean x3ds_cb_0xA356(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	image->tex_scale_v = scale;
 #if DEBUG > 3
-	g_print("[3DS] scale_v: %f\n", image->tex_scale_v);
+	g_debug("[3DS] scale_v: %f", image->tex_scale_v);
 #endif
 
 	return TRUE;
@@ -778,7 +778,7 @@ gboolean x3ds_cb_0xB00A(x3ds_global_data *global, x3ds_parent_data *parent)
 	parent->nb -= 2;
 
 #if DEBUG > 0
-	g_printerr("[3DS] keyframe data: r%d, %d frames, \"%s\"\n",
+	g_debug("[3DS] keyframe data: r%d, %d frames, \"%s\"",
 		rev, len, buffer);
 #endif
 	return TRUE;
@@ -793,7 +793,7 @@ gboolean x3ds_cb_0xB010(x3ds_global_data *global, x3ds_parent_data *parent)
 
 	parent->nb -= x3ds_read_cstr(global->stream, buffer);
 #if DEBUG > 3
-	g_printerr("[3DS] NODE_HDR: %s\n", buffer);
+	g_debug("[3DS] NODE_HDR: %s", buffer);
 #endif
 
 	/* find object by name */
@@ -835,7 +835,7 @@ gboolean x3ds_cb_0xB013(x3ds_global_data *global, x3ds_parent_data *parent)
 	parent->nb -= 12;
 
 #if DEBUG > 3
-	g_printerr("[3DS]: PIVOT: (%.2f,%.2f,%.2f)\n", x, y, z);
+	g_debug("[3DS]: PIVOT: (%.2f,%.2f,%.2f)", x, y, z);
 #endif
 
 	return TRUE;
@@ -899,8 +899,8 @@ gboolean x3ds_cb_0xB020(x3ds_global_data *global, x3ds_parent_data *parent)
 		z = g3d_stream_read_float_le(global->stream);
 		parent->nb -= 12;
 #if DEBUG > 3
-		g_printerr("[3DS]: POS_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f) (0x%X) "
-			"object: %s\n",
+		g_debug("[3DS]: POS_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f) (0x%X) "
+			"object: %s",
 			fnum, x, y, z, fflags, object->name);
 #endif
 
@@ -951,8 +951,8 @@ gboolean x3ds_cb_0xB021(x3ds_global_data *global, x3ds_parent_data *parent)
 		z = g3d_stream_read_float_le(global->stream);
 		parent->nb -= 16;
 #if DEBUG > 3
-		g_printerr(
-			"[3DS]: ROT_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f), %.2f rad\n",
+		g_debug(
+			"[3DS]: ROT_TRACK_TAG: frame %d: (%.2f,%.2f,%.2f), %.2f rad",
 			fnum, x, y, z, rot);
 #endif
 		if(fnum == -1)
@@ -985,7 +985,7 @@ gboolean x3ds_cb_0xB030(x3ds_global_data *global, x3ds_parent_data *parent)
 	id = g3d_stream_read_int16_le(global->stream);
 	parent->nb -= 2;
 #if DEBUG > 3
-	g_printerr("[3DS] NODE_ID: %d\n", id);
+	g_debug("[3DS] NODE_ID: %d", id);
 #endif
 
 	return TRUE;

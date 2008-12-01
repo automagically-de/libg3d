@@ -62,7 +62,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	ver_min = line[9] - '0';
 
 #if DEBUG > 0
-	g_print("VRML: version %d.%d\n", ver_maj, ver_min);
+	g_debug("VRML: version %d.%d", ver_maj, ver_min);
 #endif
 
 	setlocale(LC_NUMERIC, "C");

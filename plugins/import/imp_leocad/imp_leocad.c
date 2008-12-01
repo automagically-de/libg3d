@@ -63,8 +63,8 @@ void plugin_cleanup(gpointer user_data)
 {
 	LeoCadLibrary *library;
 
-#if DEBUG > 0
-	g_print("LeoCAD: cleaning up library\n");
+#if DEBUG > 1
+	g_debug("LeoCAD: cleaning up library\n");
 #endif
 
 	library = (LeoCadLibrary *)user_data;
@@ -133,7 +133,7 @@ static gboolean leocad_change_key(guint16 ktime, gfloat *param, guint8 ktype,
 		}
 	}
 #if DEBUG > 0
-	g_print("LeoCAD: key 0x%02x (%d): %+2.2f %+2.2f %+2.2f %+2.2f\n",
+	g_debug("LeoCAD: key 0x%02x (%d): %+2.2f %+2.2f %+2.2f %+2.2f",
 		ktype, ktime, param[0], param[1], param[2], param[3]);
 #endif
 	return TRUE;
@@ -249,12 +249,13 @@ static gboolean leocad_load_lcd_piece(G3DStream *stream, G3DModel *model,
 						if(pver > 3)
 						{
 #if DEBUG > 2
-							g_print("LeoCAD: matrix\n");
+							g_debug("LeoCAD: matrix\n");
 #endif
 							/* matrix */
 							for(j = 0; j < 4; j ++)
 								for(k = 0; k < 4; k ++)
-									matrix[j * 4 + k] = g3d_stream_read_float_le(stream);
+									matrix[j * 4 + k] =
+										g3d_stream_read_float_le(stream);
 
 							valid_matrix = TRUE;
 						}
@@ -305,7 +306,7 @@ static gboolean leocad_load_lcd_piece(G3DStream *stream, G3DModel *model,
 			color = leocad_library_convert_color(color);
 
 #if DEBUG > 0
-		g_print("LeoCAD: [%d]: '%-8s', color 0x%02x\n", pver, name, color);
+		g_debug("LeoCAD: [%d]: '%-8s', color 0x%02x", pver, name, color);
 #endif
 
 		/* step show */
@@ -427,13 +428,13 @@ static gboolean leocad_load_lcd(G3DStream *stream, G3DModel *model,
 
 	if(version > 0.4) {
 #if DEBUG > 0
-		g_print("LeoCAD: file version %.1f, getting next float\n", version);
+		g_debug("LeoCAD: file version %.1f, getting next float", version);
 #endif
 		version = g3d_stream_read_float_le(stream);
 	}
 
 #if DEBUG > 0
-	g_print("LeoCAD: file version %.1f\n", version);
+	g_debug("LeoCAD: file version %.1f", version);
 #endif
 
 	r = g3d_stream_read_int8(stream) / 255.0;

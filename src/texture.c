@@ -75,7 +75,7 @@ G3DImage *g3d_texture_load(G3DContext *context, const gchar *filename)
 
 	if(realfile == NULL)
 	{
-		g_printerr("failed to find a file matching '%s'\n", filename);
+		g_warning("failed to find a file matching '%s'", filename);
 		return NULL;
 	}
 

@@ -48,7 +48,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		g_strstrip(line);
 
 #if DEBUG > 4
-		g_print("ASE: %s\n", line);
+		g_debug("ASE: %s", line);
 #endif
 
 		if(strncmp(line, "*GEOMOBJECT ", 12) == 0)
@@ -69,7 +69,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			{
 				tmp[strlen(tmp) - 1] = '\0';
 #if DEBUG > 2
-				g_print("ASE: material file: %s\n", tmp);
+				g_debug("ASE: material file: %s", tmp);
 #endif
 				/* TODO: parse .fx file */
 				s = g_strdup_printf("%.*s.jpg", strlen(tmp) - 3, tmp);

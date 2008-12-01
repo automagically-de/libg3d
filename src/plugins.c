@@ -171,15 +171,17 @@ static gboolean plugins_magic_init(G3DContext *context)
 #endif
 		);
 
-	g_printerr("D: checking and loading %s\n", MAGIC_FILENAME);
+#if DEBUG > 0
+	g_debug("checking and loading %s", MAGIC_FILENAME);
+#endif
 
 	if(context->magic_cookie == NULL) {
-		g_printerr("E: magic_open() failed\n");
+		g_warning("magic_open() failed");
 		return FALSE;
 	}
 
 	if(magic_load(context->magic_cookie, MAGIC_FILENAME) != 0) {
-		g_printerr("E: magic_load() failed: %s (%d)\n",
+		g_warning("magic_load() failed: %s (%d)",
 			magic_error(context->magic_cookie),
 			magic_errno(context->magic_cookie));
 		magic_close(context->magic_cookie);
@@ -225,7 +227,7 @@ static G3DPlugin *plugins_magic_lookup(G3DContext *context,
 
 #if DEBUG > 0
 	if(plugin != NULL)
-		g_print("D: libmagic detected plugin %s for %s\n",
+		g_debug("libmagic detected plugin %s for %s",
 			plugin->name, filename);
 #endif
 
@@ -277,7 +279,7 @@ void g3d_plugins_cleanup(G3DContext *context)
 		plugin = (G3DPlugin *)plist->data;
 
 #if DEBUG > 2
-		g_print("D: cleaning up plugin '%s'\n", plugin->name);
+		g_debug("cleaning up plugin '%s'", plugin->name);
 #endif
 
 		/* cleanup plugin-specific data */

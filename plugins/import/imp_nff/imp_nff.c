@@ -66,9 +66,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	model->objects = g_slist_append(model->objects, object);
 
 	while(nff_readline(stream, line, 1024)) {
-#if DEBUG > 3
-		g_printerr("DEBUG: %s\n", line);
-#endif
 		if(strcmp(line, "v") == 0) {
 			section = NFF_SEC_VIEWPOINT;
 		} else if(sscanf(line, "b %g %g %g", &r, &g, &b) == 3) {
@@ -111,7 +108,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			/* most faces are in this direction, but there are wrong models */
 			for(i = num - 1; i >= 0; i --) {
 				if(!nff_readline(stream, line, 1024)) {
-					g_printerr("reading vertices failed\n");
+					g_warning("reading vertices failed");
 					return FALSE;
 				}
 				if((section == NFF_SEC_POLPATCH) &&
@@ -133,7 +130,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 					object->vertex_data[index*3+2] = v3;
 					face->vertex_indices[i] = index;
 				} else
-					g_printerr("error in line '%s'\n", line);
+					g_warning("error in line '%s'", line);
 			}
 		}
 	}

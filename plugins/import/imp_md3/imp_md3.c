@@ -73,8 +73,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	/* try to load skin */
 	md3_load_skin(context, model, stream->uri);
 
-	g_print("MD3: version: %u, file size: %u bytes\n", version, filesize);
-	g_print("MD3: tags @ 0x%08x, meshes @ 0x%08x\n", off_tags, off_meshes);
+	g_debug("MD3: version: %u, file size: %u bytes", version, filesize);
+	g_debug("MD3: tags @ 0x%08x, meshes @ 0x%08x", off_tags, off_meshes);
 
 	g3d_stream_seek(stream, off_tags, G_SEEK_SET);
 	if(magic == G3D_IFF_MKID('I', 'D', 'P', '3'))
@@ -115,7 +115,7 @@ gboolean md3_load_skin(G3DContext *context, G3DModel *model,
 	skinname = g_strdup_printf("%.*s_default.skin",
 		strlen(basename) - 4, basename);
 
-	g_print("MD3: trying to open skin file %s\n", skinname);
+	g_debug("MD3: trying to open skin file %s", skinname);
 
 	stream = g3d_stream_open_file(skinname, "r");
 
@@ -132,7 +132,7 @@ gboolean md3_load_skin(G3DContext *context, G3DModel *model,
 			g_strchomp(parts[1]);
 			if(strlen(parts[1]) > 0)
 			{
-				g_print("MD3: skin texture for %s: %s\n",
+				g_debug("MD3: skin texture for %s: %s",
 					parts[0], parts[1]);
 
 				material = g3d_material_new();
@@ -159,7 +159,7 @@ gboolean md3_read_tag(G3DStream *stream, G3DContext *context, G3DModel *model)
 	g3d_stream_read(stream, name, 64);
 	name[64] = '\0';
 
-	g_print("MD3: tag: %s\n", name);
+	g_debug("MD3: tag: %s", name);
 
 	/* position */
 	g3d_stream_read_float_le(stream);
@@ -265,7 +265,7 @@ gboolean md3_read_mesh(G3DStream *stream, G3DContext *context, G3DModel *model)
 	/* skins */
 	g3d_stream_seek(stream, off_start + off_skins, G_SEEK_SET);
 	g3d_stream_read(stream, name, 64);
-	g_print("MD3: skin name: %s\n", name);
+	g_debug("MD3: skin name: %s", name);
 
 	/* read texture image */
 	if(strlen(name) > 0) {

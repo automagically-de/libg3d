@@ -82,7 +82,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						v_cnt = 1;
 #endif
 					}
-					else g_printerr("parse error in line: %s\n", line);
+					else g_warning("parse error in line: %s", line);
 					break;
 
 #if 0
@@ -133,7 +133,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						object->vertex_data[v_cnt*3+2] = z;
 						v_cnt++;
 					}
-					else g_printerr("parse error in line: %s\n", line);
+					else g_warning("parse error in line: %s", line);
 					break;
 
 				case 'f': /* face */
@@ -144,9 +144,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						int i;
 
 						num_v = 0;
-						if(object == NULL)
-						{
-							g_printerr("error: face before object\n");
+						if(object == NULL) {
+							g_warning("error: face before object");
 							return FALSE;
 						}
 						face = g_new0(G3DFace, 1);
@@ -171,8 +170,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 						/* read vertices */
 						face->vertex_indices = g_new0(guint32, num_v - 1);
-						for(i = 1; i < num_v; i ++)
-						{
+						for(i = 1; i < num_v; i ++) {
 							gint32 index = strtol(vstrs[i], NULL, 10);
 
 							if(index < 0)
@@ -185,40 +183,39 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						object->faces = g_slist_prepend(object->faces, face);
 					}
 					else
-						g_printerr("parse error in line: %s\n", line);
+						g_warning("parse error in line: %s", line);
 					break;
 
 				case 'u': /* usemat? */
 				case 'm':
 				case 's':
-					if(sscanf(line, "usemtl %s", matname) == 1)
-					{
+					if(sscanf(line, "usemtl %s", matname) == 1) {
 						material = obj_usemat(model, matname);
-					}
-					else if(sscanf(line, "mtllib %s", matfile) == 1)
-					{
+					} else if(sscanf(line, "mtllib %s", matfile) == 1) {
 						/* loads external material library */
 						if(obj_tryloadmat(model, matfile) != TRUE)
-						{
-							g_printerr("error loading material library '%s'\n", matfile);
-						}
+							g_warning("error loading material library '%s'\n",
+								matfile);
 					}
 					break;
 				default:
-					g_printerr("unknown type of line: %s\n", line);
+#if DEBUG > 0
+					g_debug("unknown type of line: %s\n", line);
+#endif
+					break;
 			}
 		}
 	}
 	return TRUE;
 }
 
-char *plugin_description(void)
+gchar *plugin_description(void)
 {
 	return g_strdup(
 		"Import plugin for Maya .obj files\n");
 }
 
-char **plugin_extensions(void)
+gchar **plugin_extensions(void)
 {
 	return g_strsplit("obj", ":", 0);
 }
@@ -247,19 +244,17 @@ int obj_tryloadmat(G3DModel *model, const char *filename)
 	G3DMaterial *material = NULL;
 
 	f = fopen(filename, "r");
-	if(f == NULL)
-	{
+	if(f == NULL) {
 #if DEBUG > 1
-		g_printerr("obj_tryloadmat: loading '%s' failed: %s\n", filename,
-							 strerror(errno));
+		g_warning("obj_tryloadmat: loading '%s' failed: %s", filename,
+			strerror(errno));
 #endif
 		return FALSE;
 	}
 #if DEBUG > 0
-	g_printerr("loading material library %s\n", filename);
+	g_debug("loading material library %s", filename);
 #endif
-	while(!feof(f))
-	{
+	while(!feof(f)) {
 		char line[2048];
 		float r,g,b, t1,t2, ni;
 		int tf, ns, il;
@@ -310,9 +305,7 @@ int obj_tryloadmat(G3DModel *model, const char *filename)
 				/* ?? */
 			}
 			else
-			{
-				g_printerr("unknown type of line: %s", line);
-			}
+				g_debug("unknown type of line: %s", line);
 		}
 	}
 	return TRUE;

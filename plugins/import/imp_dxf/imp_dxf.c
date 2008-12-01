@@ -69,7 +69,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		if(retval != TRUE) {
 			if(retval == 0xE0F)
 				return TRUE;
-			g_printerr("error in section..\n");
+			g_warning("error in section..");
 			return FALSE;
 		}
 	}
@@ -101,7 +101,7 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 	grpcode = dxf_read_code(global);
 	if(grpcode != 0) {
 #if DEBUG > 0
-		g_printerr("unexpected group code: %d (0 expected)\n", grpcode);
+		g_debug("unexpected group code: %d (0 expected)", grpcode);
 #endif
 		return FALSE;
 	}
@@ -110,14 +110,14 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 		return 0xE0F;
 	if(strcmp("SECTION", val_str) != 0) {
 #if DEBUG > 0
-		g_printerr("SECTION expected, found: %s\n", val_str);
+		g_debug("SECTION expected, found: %s", val_str);
 #endif
 		return FALSE;
 	}
 	grpcode = dxf_read_code(global);
 	if(grpcode != 2) {
 #if DEBUG > 0
-		g_printerr("unexpected group code: %d (2 expected)\n", grpcode);
+		g_debug("unexpected group code: %d (2 expected)", grpcode);
 #endif
 		return FALSE;
 	}
@@ -135,12 +135,12 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 		 (strcmp(val_str, "BLOCKS") == 0) ||
 		 (strcmp(val_str, "OBJECTS") == 0)) {
 #if DEBUG > 0
-		g_printerr("skipping section: %s\n", val_str);
+		g_debug("skipping section: %s", val_str);
 #endif
 		dxf_skip_section(global);
 	} else if(strcmp(val_str, "ENTITIES") == 0) {
 #if DEBUG > 0
-		g_printerr("processing entities section...\n");
+		g_debug("processing entities section...");
 #endif
 		while(1) {
 			key = dxf_read_code(global);
@@ -161,7 +161,7 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 						object->faces = g_slist_prepend(object->faces, face);
 						nfaces = g_slist_length(object->faces);
 #if DEBUG > 2
-						g_printerr("creating face... (#%d)\n", nfaces);
+						g_debug("creating face... (#%d)", nfaces);
 #endif
 						object->vertex_count = nfaces * 4;
 						object->vertex_data = g_realloc(object->vertex_data,
@@ -241,7 +241,7 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 	else
 	{
 #if DEBUG > 0
-		g_printerr("unknown section '%s', skipping...\n", val_str);
+		g_debug("unknown section '%s', skipping...", val_str);
 #endif
 		dxf_skip_section(global);
 	}

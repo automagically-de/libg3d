@@ -51,13 +51,13 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	idid = g3d_stream_read_int32_be(stream);
 	if(idid != G3D_IFF_MKID('I','D','P','2')) {
-		g_printerr("file '%s' is not a .md2 file\n", stream->uri);
+		g_critical("file '%s' is not a .md2 file", stream->uri);
 		return FALSE;
 	}
 
 	idver = g3d_stream_read_int32_le(stream);
 	if(idver != 8) {
-		g_printerr("file '%s' has wrong version (%d)\n", stream->uri, idver);
+		g_warning("file '%s' has wrong version (%d)", stream->uri, idver);
 #define CLOSE_ON_WRONG_VERSION
 #ifdef CLOSE_ON_WRONG_VERSION
 		return FALSE;
@@ -102,7 +102,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			if(skinnames[i][0] == '.')
 				memmove(skinnames[i], skinnames[i] + 1, MD2_SKINNAMELEN - 1);
 #if DEBUG > 0
-			g_printerr("skin #%d: %s\n", i + 1, skinnames[i]);
+			g_debug("skin #%d: %s", i + 1, skinnames[i]);
 #endif
 		}
 
@@ -170,7 +170,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	g3d_stream_seek(stream, offframes, G_SEEK_SET);
 	/* vertices per frame */
 #if DEBUG > 0
-	g_printerr("numframes: %d\n", numframes);
+	g_debug("numframes: %d", numframes);
 #endif
 	for(i = 0; i < numframes; i ++) {
 		gfloat s0,s1,s2, t0,t1,t2;

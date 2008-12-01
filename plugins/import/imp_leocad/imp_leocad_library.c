@@ -73,7 +73,7 @@ LeoCadLibrary *leocad_library_load(const gchar *libdir)
 	idx = g3d_stream_open_file(filename, "rb");
 	if(idx == NULL) {
 #if DEBUG > 0
-		g_print("LeoCAD: failed to read '%s'\n", filename);
+		g_warning("LeoCAD: failed to read '%s'", filename);
 #endif
 		g_free(library);
 		return NULL;
@@ -83,7 +83,7 @@ LeoCadLibrary *leocad_library_load(const gchar *libdir)
 	bin = g3d_stream_open_file(filename, "rb");
 	if(bin == NULL) {
 #if DEBUG > 0
-		g_print("LeoCAD: failed to read '%s'\n", filename);
+		g_debug("LeoCAD: failed to read '%s'", filename);
 #endif
 		g3d_stream_close(idx);
 		g_free(library);
@@ -109,7 +109,7 @@ static gboolean leocad_free_piece_cb(gpointer key, gpointer value,
 	piece = (LeoCadPiece *)value;
 
 #if DEBUG > 3
-	g_print("D: freeing piece %s\n", piece->name);
+	g_debug("D: freeing piece %s", piece->name);
 #endif
 
 	if(piece->name) g_free(piece->name);
@@ -270,19 +270,18 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 				leocad_read_scaled16(bin, scale);
 		}
 #if DEBUG > 1
-		g_print("LeoCAD: piece '%s': flags 0x%02X\n",
-			name, piece->flags);
+		g_debug("LeoCAD: piece '%s': flags 0x%02X", name, piece->flags);
 #endif
 
 #if DEBUG > 1
-		g_print("LeoCAD: piece '%s': %d vertices\n",
+		g_debug("LeoCAD: piece '%s': %d vertices",
 			name, piece->object->vertex_count);
 #endif
 
 		/* connections */
 		nconn = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
-		g_print("LeoCAD: piece '%s': %d connections\n", name, nconn);
+		g_debug("LeoCAD: piece '%s': %d connections", name, nconn);
 #endif
 		connections = g_new0(struct LeoCadConnection, nconn);
 		for(i = 0; i < nconn; i ++)
@@ -304,7 +303,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 		ntex = g3d_stream_read_int8(bin);
 #if DEBUG > 0
 		if(ntex > 0)
-			g_print("LeoCAD: piece '%s': %d textures\n", name, ntex);
+			g_debug("LeoCAD: piece '%s': %d textures", name, ntex);
 #endif
 		for(i = 0; i < ntex; i ++)
 		{
@@ -314,7 +313,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 		/* groups */
 		ngrp = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
-		g_print("LeoCAD: piece '%s': %d groups @ 0x%08lx\n",
+		g_debug("LeoCAD: piece '%s': %d groups @ 0x%08lx",
 			name, ngrp, ftell(bin));
 #endif
 		for(i = 0; i < ngrp; i ++)
@@ -336,7 +335,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 					break;
 				}
 #if DEBUG > 1
-				g_print("LeoCAD: piece '%s': grp %d: type 0x%02x @ 0x%08lx\n",
+				g_debug("LeoCAD: piece '%s': grp %d: type 0x%02x @ 0x%08lx",
 					name, i, grp_type, ftell(bin));
 #endif
 
@@ -345,17 +344,15 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 					case LEOCAD_TYPE_MESH:
 						ncol = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
-						g_print("LeoCAD: piece '%s': grp %d: %d colors "
-							"(@ 0x%08lx)\n",
-							name, i, ncol, ftell(bin));
+						g_debug("LeoCAD: piece '%s': grp %d: %d colors "
+							"(@ 0x%08lx)", name, i, ncol, ftell(bin));
 #endif
 						for(j = 0; j < ncol; j ++)
 						{
 							/* color code */
 							color = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
-							g_print(
-								"LeoCAD: piece '%s': grp %d: color 0x%04x\n",
+							g_debug("LeoCAD: piece '%s': grp %d: color 0x%04x",
 								name, i, color);
 #endif
 							/* quads? */
@@ -382,9 +379,8 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 									piece->object->faces, face);
 							}
 #if DEBUG > 1
-							g_print("LeoCAD: piece '%s': grp %d: "
-								"quads: %d bytes\n",
-								name, i, nx * 2);
+							g_debug("LeoCAD: piece '%s': grp %d: "
+								"quads: %d bytes", name, i, nx * 2);
 #endif
 							nx = g3d_stream_read_int16_le(bin);
 							for(k = 0; k < nx / 3; k ++)
@@ -408,14 +404,14 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 							}
 
 #if DEBUG > 1
-							g_print("LeoCAD: piece '%s': grp %d: "
-								"triangles: %d bytes\n",
+							g_debug("LeoCAD: piece '%s': grp %d: "
+								"triangles: %d bytes",
 								name, i, nx * 2);
 #endif
 							nx = g3d_stream_read_int16_le(bin);
 #if DEBUG > 1
-							g_print("LeoCAD: piece '%s': grp %d: "
-								"skipping %d bytes @ 0x%08lx\n",
+							g_debug("LeoCAD: piece '%s': grp %d: "
+								"skipping %d bytes @ 0x%08lx",
 								name, i, nx * 2, ftell(bin));
 #endif
 							g3d_stream_skip(bin, nx * 2);
@@ -429,7 +425,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 						stud = NULL;
 						color = g3d_stream_read_int8(bin);
 #if DEBUG > 0
-						g_print("LeoCAD: piece '%s': stud 0x%02x\n",
+						g_debug("LeoCAD: piece '%s': stud 0x%02x",
 							name, grp_type);
 #endif
 						if(grp_type == LEOCAD_TYPE_STUD4)
@@ -463,9 +459,9 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 
 					default:
 #if DEBUG > 1
-						g_print(
+						g_debug(
 							"LeoCAD: piece '%s': unhandled group type 0x%02x "
-							"@ 0x%08lx\n",
+							"@ 0x%08lx",
 							name, grp_type, ftell(bin));
 #endif
 						break;
@@ -480,7 +476,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 		for(i = 0; i < nconn; i ++)
 		{
 #if DEBUG > 4
-			g_print("LeoCAD: connection %d: type 0x%02x\n",
+			g_debug("LeoCAD: connection %d: type 0x%02x",
 				i, connections[i].type);
 #endif
 
@@ -513,7 +509,7 @@ G3DObject *leocad_library_get_piece(LeoCadLibrary *library, const gchar *name)
 			if(stud)
 			{
 #if DEBUG > 5
-				g_print("LeoCAD: stud\n");
+				g_debug("LeoCAD: stud");
 #endif
 				/* transform stud */
 				for(j = 0; j < stud->vertex_count; j ++)
@@ -569,7 +565,7 @@ static gboolean leocad_library_read_piece(LeoCadLibrary *library,
 	piece->info_size = g3d_stream_read_int32_le(idx);
 
 #if DEBUG > 1
-	g_print("LeoCAD: %-8s: @ 0x%08x, %s\n",
+	g_debug("LeoCAD: %-8s: @ 0x%08x, %s",
 		piece->name, piece->offset_bin, piece->description);
 #endif
 
@@ -589,7 +585,7 @@ static gboolean leocad_library_read_pieces_idx(LeoCadLibrary *library,
 	g3d_stream_read(idx, magic, 32);
 	if(strncmp(magic, "LeoCAD piece library index file", 31) != 0)
 	{
-		g_print("LeoCAD: pieces.idx: wrong magic\n");
+		g_debug("LeoCAD: pieces.idx: wrong magic");
 		return FALSE;
 	}
 
@@ -604,9 +600,9 @@ static gboolean leocad_library_read_pieces_idx(LeoCadLibrary *library,
 	g3d_stream_seek(idx, 34, G_SEEK_SET);
 
 #if DEBUG > 0
-	g_print("LeoCAD: pieces.idx: version %d, last update %d\n",
+	g_debug("LeoCAD: pieces.idx: version %d, last update %d",
 		version, lastupdate);
-	g_print("LeoCAD: pieces.idx: %d pieces, %d moves, pieces.bin %d bytes\n",
+	g_debug("LeoCAD: pieces.idx: %d pieces, %d moves, pieces.bin %d bytes",
 		npieces, nmoved, nbinsize);
 #endif
 

@@ -38,7 +38,8 @@ static gboolean q3o_read_mesh(G3DStream *stream, G3DModel *model,
 	guint32 n_textures, G3DContext *context);
 static gboolean q3o_read_material(G3DStream *stream, G3DModel *model,
 	guint32 index, guint32 n_textures);
-static gboolean q3o_read_texture(G3DStream *stream, G3DModel *model);
+static gboolean q3o_read_texture(G3DStream *stream, G3DModel *model,
+	guint32 *idx);
 static gboolean q3o_read_scene(G3DStream *stream, G3DContext *context);
 static gboolean q3o_read_eof(G3DStream *stream);
 
@@ -46,7 +47,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	gchar signature[8], ver_min, ver_maj, id;
-	guint32 nmeshes, nmats, ntexs, i;
+	guint32 nmeshes, nmats, ntexs, i, tex_index = 0;
 
 	g3d_stream_read(stream, signature, 8);
 	if(strncmp(signature, "quick3Ds", 8) && strncmp(signature, "quick3Do", 8))
@@ -93,7 +94,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 			case 't': /* texture */
 				for(i = 0; i < ntexs; i ++)
-					q3o_read_texture(stream, model);
+					q3o_read_texture(stream, model, &tex_index);
 				break;
 
 			case 's': /* scene */
@@ -437,7 +438,8 @@ static gboolean q3o_read_material(G3DStream *stream, G3DModel *model,
 	return TRUE;
 }
 
-static int q3o_read_texture(G3DStream *stream, G3DModel *model)
+static gboolean q3o_read_texture(G3DStream *stream, G3DModel *model,
+	guint32 *idx)
 {
 	G3DImage *image;
 	gchar buffer[2048], *bufp;
@@ -445,7 +447,6 @@ static int q3o_read_texture(G3DStream *stream, G3DModel *model)
 	gchar *ppmname;
 #endif
 	guint32 width, height, y, x;
-	static guint32 index = 0;
 
 	memset(buffer, 0, 2048);
 	bufp = buffer;
@@ -455,18 +456,18 @@ static int q3o_read_texture(G3DStream *stream, G3DModel *model)
 	width = g3d_stream_read_int32_le(stream);
 	height = g3d_stream_read_int32_le(stream);
 #if DEBUG > 0
-	g_debug("Q3O: texture #%d '%s': %dx%d", index, buffer, width, height);
+	g_debug("Q3O: texture #%d '%s': %dx%d", *idx, buffer, width, height);
 #endif
 
-	image = q3o_get_texture_nth(model, index);
-	index ++;
+	image = q3o_get_texture_nth(model, *idx);
+	(*idx) ++;
 
 	image->name = g_strdup(buffer);
 	image->width = width;
 	image->height = height;
 	image->depth = 32;
 	image->pixeldata = g_new0(guint8, width * height * 4);
-	image->tex_id = index;
+	image->tex_id = *idx;
 
 	for(y = 0; y < height; y ++)
 		for(x = 0; x < width; x ++) {

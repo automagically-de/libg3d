@@ -93,7 +93,6 @@ gboolean lwo_cb_IMAG(G3DIffGlobal *global, G3DIffLocal *local)
 	LwoObject *obj;
 	G3DMaterial *material;
 	guint32 index, i;
-	static guint32 tex_id = 0;
 
 	obj = (LwoObject *)global->user_data;
 	g_return_val_if_fail(obj != NULL, FALSE);
@@ -113,12 +112,6 @@ gboolean lwo_cb_IMAG(G3DIffGlobal *global, G3DIffLocal *local)
 	{
 		material->tex_image = g3d_texture_load_cached(
 			global->context, global->model, obj->clipfiles[i]);
-		if(material->tex_image && (material->tex_image->tex_id == 0))
-		{
-			tex_id ++;
-			if(tex_id == 0) tex_id = 1;
-			material->tex_image->tex_id = tex_id;
-		}
 	}
 
 	return TRUE;

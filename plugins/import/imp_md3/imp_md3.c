@@ -195,7 +195,6 @@ gboolean md3_read_mesh(G3DStream *stream, G3DContext *context, G3DModel *model)
 	gchar name[64], *strp;
 	guint32 nmeshframe, nskin, nvertex, ntris, mlength, flags;
 	goffset off_tris, off_texvec, off_vertex, off_start, off_skins;
-	static guint32 tex_id = 1;
 
 	off_start = g3d_stream_tell(stream);
 
@@ -290,11 +289,6 @@ gboolean md3_read_mesh(G3DStream *stream, G3DContext *context, G3DModel *model)
 			}
 			mitem = mitem->next;
 		}
-	}
-
-	if(image && (image->tex_id == 0)) {
-		image->tex_id = tex_id;
-		tex_id ++;
 	}
 
 	/* read vertex data */

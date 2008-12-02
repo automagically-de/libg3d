@@ -177,7 +177,6 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 	guint32 len;
 	gchar *filename;
 	gint32 kidsread, objectcount = 0;
-	static guint32 texid = 1;
 	static gchar *padding = "                      ";
 
 	if(sscanf(line, "OBJECT %s", namebuf) != 1)
@@ -449,12 +448,6 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 					filename);
 				if(object->tex_image)
 				{
-					if(object->tex_image->tex_id == 0)
-					{
-						object->tex_image->tex_id = texid;
-						texid ++;
-
-					}
 					g3d_texture_prepare(object->tex_image);
 
 					texscaleu = object->tex_image->tex_scale_u;

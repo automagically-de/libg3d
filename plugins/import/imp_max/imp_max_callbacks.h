@@ -59,6 +59,8 @@ gboolean max_cb_IDMATG_0x4000(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_IDGEOM_0x08FE(MaxGlobalData *global, MaxLocalData *local);
 gboolean max_cb_IDGEOM_0x0962(MaxGlobalData *global, MaxLocalData *local);
 
+gboolean max_cb_IDFILE_0x1201(MaxGlobalData *global, MaxLocalData *local);
+
 gboolean max_cb_0x0001_0x0005(MaxGlobalData *global, MaxLocalData *local);
 
 gboolean max_cb_0x0118_0x0110(MaxGlobalData *global, MaxLocalData *local);

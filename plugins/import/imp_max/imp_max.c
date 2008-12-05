@@ -79,6 +79,7 @@ typedef struct {
 	guint32 l2id;
 	guint32 id;
 	gchar *text;
+	G3DObject *object;
 } MaxTreeItem;
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
@@ -204,6 +205,27 @@ static GNode *max_find_node(GNode *tree, guint32 id)
 	return NULL;
 }
 
+static gboolean max_create_l2_tree_object(MaxGlobalData *global,
+	MaxLocalData *local, G3DObject *parent)
+{
+	G3DObject *object;
+
+	object = g_new0(G3DObject, 1);
+	object->name = g_strdup_printf("0x%04X object @ 0x%08x",
+		local->id, (guint32)g3d_stream_tell(global->stream));
+	local->object = object;
+	if(parent)
+		parent->objects = g_slist_append(parent->objects, object);
+	else
+		global->model->objects = g_slist_append(global->model->objects,
+			object);
+
+	global->object = object;
+	global->vertex_offset = 0;
+
+	return TRUE;
+}
+
 static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	guint32 level, gint32 parentid, gpointer object, guint32 *l2cnt,
 	GNode *tree)
@@ -214,7 +236,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	MaxChunk *chunk;
 	MaxLocalData *local;
 	MaxTreeItem *mtitem;
-	GNode *pnode, *node;
+	GNode *pnode = NULL, *node;
 
 	if(nb && (*nb < 6))
 		return FALSE;
@@ -235,11 +257,11 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	chunk = max_get_chunk_desc(id, parentid, container);
 
 #if DEBUG > 0
-	g_debug("\\%s(%d)[0x%04X][0x%04X][%c%c] %s -- %d (%d) bytes @ 0x%08x",
+	g_debug("\\%s(%d)[0x%04X][%c%c] %s -- %d (%d) bytes @ 0x%08x",
 		(global->padding + (strlen(global->padding) - level)), level,
-		id, (l2cnt ? *l2cnt : 0xFFFF), (container ? 'c' : ' '),
+		id, (container ? 'c' : ' '),
 		(chunk && chunk->callback) ? 'f' : ' ',
-		chunk ? chunk->desc : "unknown",
+		chunk ? chunk->desc : (level == 2) ? "level 2 container" : "unknown",
 		length - 6, length,
 		(guint32)g3d_stream_tell(global->stream) - 6);
 #endif
@@ -270,17 +292,23 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 	}
 
 	local = g_new0(MaxLocalData, 1);
-	local->id = id;
+	local->id = (level > 2) ? id : 0x0000;
 	local->parentid = parentid;
 	local->nb = length - 6;
 	local->level = level + 1;
 	local->object = object;
 
-#if 0
-	if(chunk && chunk->callback)
+	if((level > 2) && chunk && chunk->callback)
 		chunk->callback(global, local);
-#endif
-	if(container/* && (level < 2)*/)
+	if(level == 2) {
+		mtitem = pnode ? pnode->data : NULL;
+		max_create_l2_tree_object(global, local,
+			mtitem ? mtitem->object : NULL);
+		mtitem = node->data;
+		mtitem->object = local->object;
+	}
+
+	if(container)
 		while(local->nb > 0)
 			if(!max_read_chunk(global, &(local->nb), level + 1, id,
 				local->object, l2cnt, node))

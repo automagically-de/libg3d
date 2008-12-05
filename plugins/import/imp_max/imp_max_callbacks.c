@@ -145,6 +145,21 @@ gboolean max_cb_0x0001_0x0005(MaxGlobalData *global, MaxLocalData *local)
 	return TRUE;
 }
 
+gboolean max_cb_IDFILE_0x1201(MaxGlobalData *global, MaxLocalData *local)
+{
+	guint16 width, height;
+
+	width = g3d_stream_read_int16_le(global->stream);
+	height = g3d_stream_read_int16_le(global->stream);
+	local->nb -= 4;
+#if DEBUG > 0
+	g_debug("|%s[IMG] %u x %u",
+		(global->padding + (strlen(global->padding) - local->level)),
+		width, height);
+#endif
+	return TRUE;
+}
+
 /* vertex data */
 gboolean max_cb_0x08FE_0x0100(MaxGlobalData *global, MaxLocalData *local)
 {

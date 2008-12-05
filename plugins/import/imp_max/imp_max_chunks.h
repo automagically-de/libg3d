@@ -57,25 +57,6 @@ typedef struct {
 
 /* container chunks */
 static MaxChunk max_cnt_chunks[] = {
-	{ 0x0000, IDROOT, "[DEBUG] container",         NULL },
-	{ 0x0001, IDROOT, "[DEBUG] container",         NULL },
-	{ 0x0002, IDROOT, "[DEBUG] container",         NULL },
-	{ 0x0003, IDROOT, "[DEBUG] container",         NULL },
-	{ 0x0004, IDROOT, "[DEBUG] container",         NULL },
-
-	{ 0x0010, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0011, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0013, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0014, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0016, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0017, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0018, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0019, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x001A, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x001B, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0023, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-	{ 0x0026, IDROOT, "geometric object",          max_cb_IDROOT_IDGEOM },
-
 	{ 0x0118, 0x08FE, "face",                      NULL },
 
 	{ 0x08FE, IDGEOM, "mesh",                      max_cb_IDGEOM_0x08FE },
@@ -105,9 +86,6 @@ static MaxChunk max_cnt_chunks[] = {
 
 /* data chunks */
 static MaxChunk max_chunks[] = {
-	/* IDSOME */
-	{ 0x2034, IDSOME, "init something",            max_cb_debug_int32 },
-	{ 0x2035, IDSOME, "init something",            max_cb_debug_int32 },
 	/* IDGEOM */
 	{ 0x08FF, IDGEOM, "mesh something",            max_cb_debug_int32 },
 	{ 0x0900, IDGEOM, "object something",          max_cb_debug_int32 },
@@ -151,6 +129,7 @@ static MaxChunk max_chunks[] = {
 	/* IDMATG */
 	{ 0x5300, IDMATG, "material something",        max_cb_debug_int32 },
 	/* IDFILE */
+	{ 0x1201, IDFILE, "file dimensions + unknown", max_cb_IDFILE_0x1201 },
 	{ 0x1230, IDFILE, "file name",                 max_cb_debug_wchars },
 	{ 0x1240, IDFILE, "file type",                 max_cb_debug_wchars },
 	/* 0x0000 */
@@ -299,6 +278,10 @@ static MaxChunk max_chunks[] = {
 	{ 0x4003, 0x4000, "material something (4)",    max_cb_debug_int32 },
 	{ 0x4020, 0x4000, "material something (4)",    max_cb_debug_int32 },
 	{ 0x4030, 0x4000, "material color",            max_cb_0x4000_0x4030 },
+
+	/* IDSOME */
+	{ 0x2034, IDSOME, "init something",            max_cb_debug_int32 },
+	{ 0x2035, IDSOME, "init something",            max_cb_debug_int32 },
 
 	{ IDNONE, IDSOME, NULL, NULL }
 };

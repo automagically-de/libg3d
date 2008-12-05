@@ -28,6 +28,7 @@
 #include <glib.h>
 
 #include <g3d/types.h>
+#include <g3d/context.h>
 #include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
@@ -165,8 +166,7 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 	G3DObject *object;
 	G3DMaterial *material = NULL;
 	G3DFace *face;
-	/* FIXME: remove static buffers */
-	static gchar buffer[2049], namebuf[257];
+	gchar buffer[2049], namebuf[257];
 	guint32 nkids, ti1, i, surf_flags, surf_done;
 	guint32 i1, i2, i3;
 	gfloat u1, u2, u3, v1, v2, v3;
@@ -174,10 +174,11 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 	gfloat texrepu = 1.0, texrepv = 1.0, texoffu = 0.0, texoffv = 0.0;
 	gfloat texscaleu = 1.0, texscalev = 1.0;
 	gfloat crease = 0.0;
-	guint32 len;
+	guint32 len, facecnt = 0;
 	gchar *filename;
 	gint32 kidsread, objectcount = 0;
-	static gchar *padding = "                      ";
+	static const gchar *padding = "                      ";
+	gfloat pcnt, prev_pcnt = 0.0;
 
 	if(sscanf(line, "OBJECT %s", namebuf) != 1)
 	{
@@ -413,18 +414,27 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 							}
 
 							face->vertex_indices[0] = i1;
-							face->vertex_indices[1] = i2;
-							face->vertex_indices[2] = i3;
-
 							face->tex_vertex_data[0] = u1;
 							face->tex_vertex_data[1] = v1;
-							face->tex_vertex_data[2] = u2;
-							face->tex_vertex_data[3] = v2;
-							face->tex_vertex_data[4] = u3;
-							face->tex_vertex_data[5] = v3;
+							if(facecnt % 2) {
+								face->vertex_indices[1] = i3;
+								face->vertex_indices[2] = i2;
+								face->tex_vertex_data[2] = u3;
+								face->tex_vertex_data[3] = v3;
+								face->tex_vertex_data[4] = u2;
+								face->tex_vertex_data[5] = v2;
+							} else {
+								face->vertex_indices[1] = i2;
+								face->vertex_indices[2] = i3;
+								face->tex_vertex_data[2] = u2;
+								face->tex_vertex_data[3] = v2;
+								face->tex_vertex_data[4] = u3;
+								face->tex_vertex_data[5] = v3;
+							}
 
 							object->faces =
 								g_slist_prepend(object->faces, face);
+							facecnt ++;
 						}
 					} /* .acc */
 
@@ -503,6 +513,13 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 #if DEBUG > 0
 			g_warning("AC3D: unhandled line %d: %s", *rowcnt, buffer);
 #endif
+		}
+
+		pcnt = (gfloat)g3d_stream_tell(stream) /
+				(gfloat)g3d_stream_size(stream);
+		if((pcnt - prev_pcnt) > 0.005) {
+			prev_pcnt = pcnt;
+			g3d_context_update_progress_bar(context, pcnt, TRUE);
 		}
 	}
 

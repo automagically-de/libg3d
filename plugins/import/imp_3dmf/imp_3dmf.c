@@ -30,6 +30,7 @@
 #include <g3d/matrix.h>
 #include <g3d/material.h>
 #include <g3d/iff.h>
+#include <g3d/debug.h>
 
 #include "imp_3dmf_chunks.h"
 
@@ -449,7 +450,6 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 	X3dmfChunkDesc *chunkdesc;
 	guint32 len, id, chk, i;
 	gfloat matrix[16];
-	static gchar padding[] = "                                           ";
 
 	g3d_matrix_identity(matrix);
 
@@ -466,8 +466,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 		chunkdesc = x3dmf_get_chunk_info(id);
 
 #if DEBUG > 0
-		g_debug("\\%s[%c%c%c%c]: %s (%d bytes)",
-			padding + strlen(padding) - level,
+		g_debug("\\%s[%c%c%c%c]: %s (%d bytes)", debug_pad(level),
 			X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 			X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
 			chunkdesc ? chunkdesc->description : "unknown chunk",
@@ -480,7 +479,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				/* container */
 #if DEBUG > 0
 				g_debug("|%snew container @ 0x%x (%d bytes)",
-					padding + strlen(padding) - level - 1,
+					debug_pad(level - 1),
 					(guint32)g3d_stream_tell(stream) - 8, len);
 #endif
 				x3dmf_read_container(stream, len, model, object, level + 1,

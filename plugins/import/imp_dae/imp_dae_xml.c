@@ -24,6 +24,7 @@
 #include <ctype.h>
 
 #include <g3d/context.h>
+#include <g3d/debug.h>
 
 #include <glib.h>
 #include <libxml/tree.h>
@@ -142,17 +143,14 @@ gboolean dae_xml_parse(DaeGlobalData *global, xmlNodePtr parent,
 	DaeLocalData *local;
 	xmlNodePtr node = NULL, instance = NULL;
 	gchar *name;
-	static gchar *padding = "                                  ";
 	gint i;
 
 	g_return_val_if_fail(parent != NULL, FALSE);
 
 	while(dae_xml_next_child(global->lib, parent, &node, &instance, &name)) {
-
-		g_debug("\\%s<%s>",
-			padding + (strlen(padding) - level),
-			name);
-
+#if DEBUG > 0
+		g_debug("\\%s<%s>", debug_pad(level), name);
+#endif
 		if(chunks) {
 			local = g_new0(DaeLocalData, 1);
 			local->parent = parent;

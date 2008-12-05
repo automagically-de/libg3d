@@ -32,6 +32,7 @@
 #include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
+#include <g3d/debug.h>
 
 #define AC3D_FLAG_ACC    0x01
 
@@ -177,7 +178,6 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 	guint32 len, facecnt = 0;
 	gchar *filename;
 	gint32 kidsread, objectcount = 0;
-	static const gchar *padding = "                      ";
 	gfloat pcnt, prev_pcnt = 0.0;
 
 	if(sscanf(line, "OBJECT %s", namebuf) != 1)
@@ -208,9 +208,10 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 				/* read kids */
 				*rowcnt += 1;
 				g3d_stream_read_line(stream, buffer, 2048);
-				g_debug("\\%s(%d) Object (line %d)",
-					padding + (strlen(padding) - level),
+#if DEBUG > 0
+				g_debug("\\%s(%d) Object (line %d)", debug_pad(level),
 					level, *rowcnt);
+#endif
 				kidsread = ac3d_read_object(stream, context, model, buffer,
 					transform, flags, &(object->objects), rowcnt, level + 1);
 				objectcount += kidsread;

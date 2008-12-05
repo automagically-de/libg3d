@@ -31,6 +31,7 @@
 #include <g3d/object.h>
 #include <g3d/material.h>
 #include <g3d/stream.h>
+#include <g3d/debug.h>
 
 #include "imp_max_chunks.h"
 
@@ -130,13 +131,13 @@ static void max_walk_tree(GNode *tree, guint32 level)
 {
 	GNode *node;
 	MaxTreeItem *mtitem;
-	static const gchar *padding = "                                    ";
 
 	mtitem = (MaxTreeItem *)tree->data;
 
-	g_debug("\\%s(%u)[0x%04X][0x%04X] %s",
-		padding + (strlen(padding) - level), level,
+#if DEBUG > 0
+	g_debug("\\%s(%u)[0x%04X][0x%04X] %s", debug_pad(level), level,
 		mtitem->l2id, mtitem->id, mtitem->text);
+#endif
 
 	for(node = tree->children; node != NULL; node = node->next) {
 		max_walk_tree(node, level + 1);
@@ -172,7 +173,6 @@ static gboolean max_read_subfile(G3DContext *context, G3DModel *model,
 	global->context = context;
 	global->model = model;
 	global->stream = ssf;
-	global->padding = "                                               ";
 	global->subfile = subfile;
 
 	while(max_read_chunk(global, &fsize, 1 /* level */, IDNONE, NULL, &l2cnt,
@@ -258,7 +258,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 
 #if DEBUG > 0
 	g_debug("\\%s(%d)[0x%04X][%c%c] %s -- %d (%d) bytes @ 0x%08x",
-		(global->padding + (strlen(global->padding) - level)), level,
+		debug_pad(level), level,
 		id, (container ? 'c' : ' '),
 		(chunk && chunk->callback) ? 'f' : ' ',
 		chunk ? chunk->desc : (level == 2) ? "level 2 container" : "unknown",

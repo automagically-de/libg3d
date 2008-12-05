@@ -11,4 +11,12 @@
 #endif
 /*< public >*/
 
+#if DEBUG > 0
+#include <string.h>
+static const gchar *debug_padding_str = "                                    ";
+static inline const gchar *debug_pad(guint32 level) {
+	return debug_padding_str + (strlen(debug_padding_str) - level);
+}
+#endif
+
 #endif /* _G3D_DEBUG_H */

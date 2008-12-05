@@ -30,7 +30,6 @@ typedef struct {
 	G3DContext *context;
 	G3DModel *model;
 	G3DStream *stream;
-	gchar *padding;
 	const gchar *subfile;
 
 	G3DObject *object;

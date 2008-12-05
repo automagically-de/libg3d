@@ -23,6 +23,7 @@
 #include <string.h>
 #include <g3d/material.h>
 #include <g3d/stream.h>
+#include <g3d/debug.h>
 
 #include "imp_max_callbacks.h"
 
@@ -59,10 +60,10 @@ gboolean max_cb_debug_int32(MaxGlobalData *global, MaxLocalData *local)
 	while(local->nb >= 4) {
 		u.i = g3d_stream_read_int32_le(global->stream);
 		local->nb -= 4;
-
-		g_debug("|%s[D32] 0x%08x, %d, %.2f",
-			(global->padding + (strlen(global->padding) - local->level)),
+#if DEBUG > 0
+		g_debug("|%s[D32] 0x%08x, %d, %.2f", debug_pad(local->level),
 			u.i, u.i, u.f);
+#endif
 	}
 	return TRUE;
 }
@@ -75,10 +76,10 @@ gboolean max_cb_debug_wchars(MaxGlobalData *global, MaxLocalData *local)
 	len = local->nb / 2;
 	str = max_read_wchar(global->stream, len);
 	local->nb -= len * 2;
-
-	g_debug("|%s[TEXT] %s (%d)",
-		(global->padding + (strlen(global->padding) - local->level)),
+#if DEBUG > 0
+	g_debug("|%s[TEXT] %s (%d)", debug_pad(local->level),
 		str, len);
+#endif
 	g_free(str);
 
 	return TRUE;
@@ -98,10 +99,10 @@ gboolean max_cb_debug_string(MaxGlobalData *global, MaxLocalData *local)
 	str = g_new0(gchar, len + 1);
 	g3d_stream_read(global->stream, str, len);
 	local->nb -= len;
-
-	g_debug("|%s[TEXT] %s (%d)",
-		(global->padding + (strlen(global->padding) - local->level)),
+#if DEBUG > 0
+	g_debug("|%s[TEXT] %s (%d)", debug_pad(local->level),
 		str, len);
+#endif
 	g_free(str);
 
 	return TRUE;
@@ -120,8 +121,7 @@ gboolean max_cb_0x0001_0x0005(MaxGlobalData *global, MaxLocalData *local)
 	local->nb -= 4;
 
 #if DEBUG > 0
-	g_debug("|%s[PROP] 0x%08x",
-		(global->padding + (strlen(global->padding) - local->level)), i);
+	g_debug("|%s[PROP] 0x%08x", debug_pad(local->level), i);
 #endif
 
 	while(local->nb > 0) {
@@ -136,7 +136,7 @@ gboolean max_cb_0x0001_0x0005(MaxGlobalData *global, MaxLocalData *local)
 		cnt ++;
 #if DEBUG > 0
 		g_debug("|%s[PROP]  %04d: '%s' (%d bytes) [%d, %d, %d]",
-			(global->padding + (strlen(global->padding) - local->level)),
+			debug_pad(local->level),
 			cnt, str, len,
 			w3[0], w3[1], w3[2]);
 #endif
@@ -153,9 +153,7 @@ gboolean max_cb_IDFILE_0x1201(MaxGlobalData *global, MaxLocalData *local)
 	height = g3d_stream_read_int16_le(global->stream);
 	local->nb -= 4;
 #if DEBUG > 0
-	g_debug("|%s[IMG] %u x %u",
-		(global->padding + (strlen(global->padding) - local->level)),
-		width, height);
+	g_debug("|%s[IMG] %u x %u", debug_pad(local->level), width, height);
 #endif
 	return TRUE;
 }
@@ -180,9 +178,7 @@ gboolean max_cb_0x08FE_0x0100(MaxGlobalData *global, MaxLocalData *local)
 	}
 
 #if DEBUG > 0
-	g_debug("|%s[VERT] %d vertices",
-		(global->padding + (strlen(global->padding) - local->level)),
-		num);
+	g_debug("|%s[VERT] %d vertices", debug_pad(local->level), num);
 #endif
 	global->vertex_offset = object->vertex_count;
 	object->vertex_count += num;
@@ -215,9 +211,7 @@ gboolean max_cb_0x08FE_0x010A(MaxGlobalData *global, MaxLocalData *local)
 	local->nb -= 4;
 
 #if DEBUG > 0
-	g_debug("|%s[LINE] %d lines",
-		(global->padding + (strlen(global->padding) - local->level)),
-		num);
+	g_debug("|%s[LINE] %d lines", debug_pad(local->level), num);
 #endif
 	for(i = 0; i < num; i ++) {
 		if(local->nb < 12)
@@ -228,8 +222,7 @@ gboolean max_cb_0x08FE_0x010A(MaxGlobalData *global, MaxLocalData *local)
 		local->nb -= 12;
 
 #if DEBUG > 1
-		g_debug("|%s[LINE] 0x%08x: (%d => %d)",
-			(global->padding + (strlen(global->padding) - local->level)),
+		g_debug("|%s[LINE] 0x%08x: (%d => %d)", debug_pad(local->level),
 			v[0], v[1], v[2]);
 #endif
 	}
@@ -255,16 +248,14 @@ gboolean max_cb_0x08FE_0x011A(MaxGlobalData *global, MaxLocalData *local)
 	numpoly = g3d_stream_read_int32_le(global->stream);
 	local->nb -= 4;
 #if DEBUG > 0
-	g_debug("|%s[POLY] %d polygons to read",
-		(global->padding + (strlen(global->padding) - local->level)),
+	g_debug("|%s[POLY] %d polygons to read", debug_pad(local->level),
 		numpoly);
 #endif
 	while(local->nb >= 4) {
 		numvert = g3d_stream_read_int32_le(global->stream);
 		local->nb -= 4;
 #if DEBUG > 0
-		g_debug("|%s[POLY] %04d: %d vertices",
-		(global->padding + (strlen(global->padding) - local->level)),
+		g_debug("|%s[POLY] %04d: %d vertices", debug_pad(local->level),
 		cntpoly, numvert);
 #endif
 		g_return_val_if_fail(numvert >= 3, FALSE);
@@ -290,8 +281,7 @@ gboolean max_cb_0x08FE_0x011A(MaxGlobalData *global, MaxLocalData *local)
 #if DEBUG > 0
 			numvert = MIN(local->nb / 2, 20);
 			for(i = 0; i < numvert; i ++) {
-				g_debug("|%s[POLY] 0x%04x",
-				(global->padding + (strlen(global->padding) - local->level)),
+				g_debug("|%s[POLY] 0x%04x", debug_pad(local->level),
 					g3d_stream_read_int16_le(global->stream));
 				local->nb -= 2;
 			}
@@ -320,8 +310,7 @@ gboolean max_cb_0x08FE_0x011A(MaxGlobalData *global, MaxLocalData *local)
 		cntpoly ++;
 	}
 #if DEBUG > 0
-	g_debug("|%s[POLY] %d faces added to object",
-		(global->padding + (strlen(global->padding) - local->level)),
+	g_debug("|%s[POLY] %d faces added to object", debug_pad(local->level),
 		cntpoly);
 #endif
 	return TRUE;
@@ -340,9 +329,7 @@ gboolean max_cb_0x08FE_0x0128(MaxGlobalData *global, MaxLocalData *local)
 	local->nb -= 4;
 
 #if DEBUG > 0
-	g_debug("|%s[TEXV] %d texture vertices",
-		(global->padding + (strlen(global->padding) - local->level)),
-		num);
+	g_debug("|%s[TEXV] %d texture vertices", debug_pad(local->level), num);
 #endif
 	return TRUE;
 }
@@ -371,8 +358,7 @@ gboolean max_cb_0x08FE_0x012B(MaxGlobalData *global, MaxLocalData *local)
 		if(local->nb < (vcnt * 4)) {
 #if DEBUG > 0
 			g_debug("|%s[TIDX] %d polygons, max index: %d, max vcnt: %d "
-				"(nb=%d, vcnt=%d)",
-				(global->padding + (strlen(global->padding) - local->level)),
+				"(nb=%d, vcnt=%d)", debug_pad(local->level),
 				numpoly, maxidx, maxvcnt, local->nb, vcnt);
 #endif
 
@@ -392,8 +378,7 @@ gboolean max_cb_0x08FE_0x012B(MaxGlobalData *global, MaxLocalData *local)
 	}
 #if DEBUG > 0
 	g_debug("|%s[TIDX] %d polygons, max index: %d, max vcnt: %d",
-		(global->padding + (strlen(global->padding) - local->level)),
-		numpoly, maxidx, maxvcnt);
+		debug_pad(local->level), numpoly, maxidx, maxvcnt);
 #endif
 	return TRUE;
 }
@@ -438,9 +423,7 @@ gboolean max_cb_IDGEOM_0x0962(MaxGlobalData *global, MaxLocalData *local)
 		name, (guint32)g3d_stream_tell(global->stream) - len - 6);
 	g_free(name);
 #if DEBUG > 0
-	g_debug("|%s[NAME] %s",
-		(global->padding + (strlen(global->padding) - local->level)),
-		object->name);
+	g_debug("|%s[NAME] %s", debug_pad(local->level), object->name);
 #endif
 	local->nb -= len * 2;
 
@@ -512,9 +495,7 @@ gboolean max_cb_0x08FE_0x0912(MaxGlobalData *global, MaxLocalData *local)
 		return FALSE;
 	}
 #if DEBUG > 0
-	g_debug("|%s[TRIS] %d triangles",
-		(global->padding + (strlen(global->padding) - local->level)),
-		num);
+	g_debug("|%s[TRIS] %d triangles", debug_pad(local->level), num);
 #endif
 	for(i = 0; i < num; i ++) {
 		face = g_new0(G3DFace, 1);
@@ -559,9 +540,7 @@ gboolean max_cb_0x08FE_0x0914(MaxGlobalData *global, MaxLocalData *local)
 	num = g3d_stream_read_int32_le(global->stream);
 	local->nb -= 4;
 #if DEBUG > 0
-	g_debug("|%s[VERT] %d vertices",
-		(global->padding + (strlen(global->padding) - local->level)),
-		num);
+	g_debug("|%s[VERT] %d vertices", debug_pad(local->level), num);
 #endif
 	global->vertex_offset = object->vertex_count;
 	object->vertex_count += num;
@@ -601,8 +580,7 @@ gboolean max_cb_0x08FE_0x0918(MaxGlobalData *global, MaxLocalData *local)
 
 #if DEBUG > 0
 	g_debug("|%s[TEXI] %d textured triangles (%d bytes left)",
-		(global->padding + (strlen(global->padding) - local->level)),
-		cnttris, local->nb);
+		debug_pad(local->level), cnttris, local->nb);
 #endif
 	return 0;
 }
@@ -632,9 +610,7 @@ gboolean max_cb_0x08FE_0x2396(MaxGlobalData *global, MaxLocalData *local)
 	num = g3d_stream_read_int32_le(global->stream);
 	local->nb -= 4;
 #if DEBUG > 0
-	g_debug("|%s[TRIS] %d triangles",
-		(global->padding + (strlen(global->padding) - local->level)),
-		num);
+	g_debug("|%s[TRIS] %d triangles", debug_pad(local->level), num);
 #endif
 	for(i = 0; i < num; i ++) {
 		g_return_val_if_fail(local->nb >= 12, FALSE);
@@ -693,9 +669,7 @@ gboolean max_cb_0x4000_0x4001(MaxGlobalData *global, MaxLocalData *local)
 	material->name = max_read_wchar(global->stream, len);
 	local->nb -= len * 2;
 #if DEBUG > 0
-	g_debug("|%s[MATN] %s",
-		(global->padding + (strlen(global->padding) - local->level)),
-		material->name);
+	g_debug("|%s[MATN] %s", debug_pad(local->level), material->name);
 #endif
 	return TRUE;
 }
@@ -714,8 +688,7 @@ gboolean max_cb_0x4000_0x4030(MaxGlobalData *global, MaxLocalData *local)
 	material->a = g3d_stream_read_float_le(global->stream);
 	local->nb -= 16;
 #if DEBUG > 0
-	g_debug("|%s[MATC] %.2f, %.2f, %.2f, %.2f",
-		(global->padding + (strlen(global->padding) - local->level)),
+	g_debug("|%s[MATC] %.2f, %.2f, %.2f, %.2f", debug_pad(local->level),
 		material->r, material->g, material->b, material->a);
 #endif
 	return TRUE;

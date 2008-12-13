@@ -7,17 +7,17 @@ stream: [5]
 # Works without seeking
 seekfree: [5]
 # Progress bar updates
-progress: 
+progress: [5]
 # Container format
 container: [5]
 # Object grouping
-grouping: [0] not yet implemented
+grouping: [1] optional, but not working yet
 # Object transformation
 transformation: 
 # Vertex data
 vertex: [4]
 # Normal data
-normal: 
+normal: [0] not yet implemented
 # Face data
 face: [4]
 # Face colors
@@ -27,6 +27,6 @@ alpha:
 # Texture images
 teximage: 
 # Texture coordinates (UV)
-texuv: 
+texuv: [0] not yet implemented
 # Texture mapping parameters
 texmap: 

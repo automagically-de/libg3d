@@ -31,20 +31,39 @@
 #include <g3d/material.h>
 #include <g3d/stream.h>
 
-static G3DObject *obj_createobject(GSList **olist, const gchar *name);
+#define OBJ_USE_GROUPING 0
+
+typedef struct {
+	goffset goff;
+	goffset ooff;
+	G3DObject *object;
+} ObjGroupOffset;
+
 static gboolean obj_tryloadmat(G3DModel *model, const gchar *filename);
 static G3DMaterial *obj_usemat(G3DModel *model, const gchar *matname);
+
+static G3DObject *obj_object_by_name(G3DModel *model, const gchar *name);
+#if OBJ_USE_GROUPING
+static G3DObject *obj_get_offset(GSList *group_list, guint32 *voffp,
+	guint32 index, G3DObject *defobj);
+#endif
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	gchar line[2048], oname[128], matname[128], matfile[1024];
+	gchar line[2048], matname[128], matfile[1024];
 	gchar *filename;
 	G3DObject *object = NULL;
 	G3DMaterial *material = NULL;
 	gfloat pcnt, prev_pcnt = 0.0;
 	gdouble x,y,z;
 	guint32 num_v, v_off = 1, v_cnt = 0;
+#if OBJ_USE_GROUPING
+	gchar oname[128];
+	ObjGroupOffset *grpoff;
+	GSList *group_list = NULL;
+#endif
+	goffset global_vertex_count = 0;
 
 	setlocale(LC_NUMERIC, "C");
 	filename = g3d_stream_get_uri(stream);
@@ -54,7 +73,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	strcat(matfile, "mtl");
 	obj_tryloadmat(model, matfile);
 
-	object = obj_createobject(&(model->objects), "(default)");
+	object = obj_object_by_name(model, "(default)");
 
 	while(!g3d_stream_eof(stream))
 	{
@@ -62,57 +81,40 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		g3d_stream_read_line(stream, line, 2048);
 		/* remove leading and trailing whitespace characters */
 		g_strstrip(line);
-		if(strlen(line) > 0)
-		{
-			switch(line[0])
-			{
+		if(strlen(line) > 0) {
+			switch(line[0]) {
 				case '#':
-				case '\n': continue; break;
+					continue;
+					break;
 
 				case 'g': /* group */
+#if OBJ_USE_GROUPING
 					if(strlen(line) == 1)
-					{
-					}
-					else if(sscanf(line, "g %s", oname) == 1)
-					{
-						material = obj_usemat(model, oname);
-#if 0
-						object = obj_createobject(&(model->objects), oname);
+						strcpy(oname, "(default)");
+					else
+						sscanf(line, "g %s", oname);
+
+					material = obj_usemat(model, oname);
+
+					grpoff = g_new0(ObjGroupOffset, 1);
+					grpoff->object = obj_object_by_name(model, oname);
+					grpoff->goff = global_vertex_count;
+					grpoff->ooff = grpoff->object->vertex_count;
+					group_list = g_slist_append(group_list, grpoff);
+#if DEBUG > 0
+					g_debug("[g] 0x%08x / 0x%08x: \"%s\"",
+						(guint32)grpoff->goff,
+						(guint32)grpoff->ooff, grpoff->object->name);
 #endif
-#if 0
-						v_off += v_cnt;
-						v_cnt = 1;
+					object = grpoff->object;
+					v_cnt = grpoff->ooff;
 #endif
-					}
-					else g_warning("parse error in line: %s", line);
 					break;
 
 				case 'l': /* line */
 					break;
 
 				case 'o': /* object */
-#if 0
-					if(strlen(line) == 1)
-					{
-						object = obj_createobject(
-							object ? &(object->objects) : &(model->objects),
-							"(unnamed object)");
-						v_off += v_cnt;
-						v_cnt = 1;
-					}
-					else if(sscanf(line, "o %s", oname) == 1)
-					{
-						object = obj_createobject(
-							object ? &(object->objects) : &(model->objects),
-							oname);
-						v_off += v_cnt;
-						v_cnt = 1;
-					}
-					else
-					{
-						g_warning("[OBJ] parse error in line: %s", line);
-					}
-#endif
 					break;
 
 				case 'v': /* vertex */
@@ -126,18 +128,15 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 					}
 					else if(sscanf(line, "v %lf %lf %lf", &x, &y, &z) == 3)
 					{
-						if(object == NULL)
-						{
-							object = obj_createobject(
-								&(model->objects), "(noname)");
-						}
-						object->vertex_count++;
+						object->vertex_count ++;
 						object->vertex_data = g_realloc(object->vertex_data,
 							object->vertex_count * 3 * sizeof(gfloat));
-						object->vertex_data[v_cnt*3+0] = x;
-						object->vertex_data[v_cnt*3+1] = y;
-						object->vertex_data[v_cnt*3+2] = z;
-						v_cnt++;
+						object->vertex_data[v_cnt * 3 + 0] = x;
+						object->vertex_data[v_cnt * 3 + 1] = y;
+						object->vertex_data[v_cnt * 3 + 2] = z;
+
+						v_cnt ++;
+						global_vertex_count ++;
 					}
 					else g_warning("parse error in line: %s", line);
 					break;
@@ -150,10 +149,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						int i;
 
 						num_v = 0;
-						if(object == NULL) {
-							g_warning("error: face before object");
-							return FALSE;
-						}
 						face = g_new0(G3DFace, 1);
 						if(material != NULL)
 							face->material = material;
@@ -169,6 +164,21 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						if(face->vertex_count < 3)
 							continue;
 
+						/* calculate object-local vertex offset, indices
+						 * in .obj files are absolute */
+						i = strtol(vstrs[1], NULL, 10);
+#if OBJ_USE_GROUPING
+						object = obj_get_offset(group_list, &v_off,
+							(i < 0) ? global_vertex_count - i - 1 : i,
+							object);
+#else
+						v_off = 0;
+#endif
+						if(object == NULL) {
+							g_warning("error: face before object");
+							return FALSE;
+						}
+
 						/* read vertices */
 						face->vertex_indices = g_new0(guint32, num_v - 1);
 						for(i = 1; i < num_v; i ++) {
@@ -176,9 +186,11 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 							if(index < 0)
 								face->vertex_indices[i - 1] =
-									v_cnt + index - v_off + 1;
+									global_vertex_count + index + v_off - 1;
 							else
-								face->vertex_indices[i - 1] = index - v_off;
+								face->vertex_indices[i - 1] = MIN(
+									(index - 1) + v_off,
+									object->vertex_count - 1);
 						}
 						g_strfreev(vstrs);
 						object->faces = g_slist_prepend(object->faces, face);
@@ -233,18 +245,6 @@ gchar **plugin_extensions(void)
 
 /*****************************************************************************/
 
-G3DObject *obj_createobject(GSList **olist, const char *name)
-{
-	G3DObject *object;
-	G3DMaterial *material = g3d_material_new();
-
-	object = g_new0(G3DObject, 1);
-	object->name = g_strdup(name);
-	*olist = g_slist_append(*olist, object);
-	object->materials = g_slist_append(object->materials, material);
-	return object;
-}
-
 /*****************************************************************************/
 /* material file ops                                                         */
 /*****************************************************************************/
@@ -271,6 +271,7 @@ int obj_tryloadmat(G3DModel *model, const char *filename)
 		int tf, ns, il;
 
 		fgets(line, 2048, f);
+		g_strstrip(line);
 		if(strlen(line))
 		{
 			char mname[128];
@@ -341,4 +342,60 @@ G3DMaterial *obj_usemat(G3DModel *model, const gchar *matname)
 
 	return NULL;
 }
+
+static G3DObject *obj_object_by_name(G3DModel *model, const gchar *name)
+{
+	G3DObject *object;
+	G3DMaterial *material;
+	GSList *oitem;
+
+#if DEBUG > 4
+	g_debug("looking for object '%s'", name);
+#endif
+
+	for(oitem = model->objects; oitem != NULL; oitem = oitem->next) {
+		object = oitem->data;
+		if(strcmp(object->name, name) == 0)
+			return object;
+	}
+
+	material = g3d_material_new();
+	material->name = g_strdup("(default material)");
+
+	object = g_new0(G3DObject, 1);
+	object->name = g_strdup(name);
+	object->materials = g_slist_append(object->materials, material);
+	model->objects = g_slist_append(model->objects, object);
+
+	return object;
+}
+
+#if OBJ_USE_GROUPING
+static G3DObject *obj_get_offset(GSList *group_list, guint32 *voffp,
+	guint32 index, G3DObject *defobj)
+{
+	GSList *leitem, *gitem;
+	ObjGroupOffset *grpoff;
+
+	for(leitem = gitem = group_list; gitem != NULL; gitem = gitem->next) {
+		grpoff = gitem->data;
+
+		/* this one is too big */
+		if(grpoff->goff > index) {
+			grpoff = leitem->data;
+			*voffp = grpoff->ooff - grpoff->goff;
+#if DEBUG > 0
+			g_debug("[o]: i=%-6d, go=%-6d, oo=%-6d, vo=%-6d (%s, %d vtxs)",
+				index, (guint32)grpoff->goff, (guint32)grpoff->ooff, *voffp,
+				grpoff->object->name, grpoff->object->vertex_count);
+#endif
+			return grpoff->object;
+		}
+		leitem = gitem;
+	}
+
+	*voffp = 0;
+	return defobj;
+}
+#endif
 

@@ -15,6 +15,11 @@ typedef struct {
 #define DXF_MAX_LINE 512
 #define DXF_CODE_INVALID 0xDEADBEEF
 
+#define DXF_ID_HEADER	0x00FF0000
+#define DXF_ID_TABLES	0x00FF0001
+#define DXF_ID_ENTITIES	0x00FF0002
+#define DXF_ID_BLOCKS   0x00FF0003
+
 #define DXF_TEST_ENDSEC(str) \
 	if(strcmp((str), "ENDSEC") == 0) return TRUE;
 

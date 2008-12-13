@@ -141,32 +141,6 @@ gboolean dxf_section_HEADER(DxfGlobalData *global)
 	return dxf_skip_section(global);
 }
 
-gboolean dxf_section_TABLES(DxfGlobalData *global)
-{
-	gint32 key;
-	gchar str[DXF_MAX_LINE + 1];
-
-#if DEBUG > 0
-	g_debug("DXF: parsing TABLES section");
-#endif
-	while(TRUE) {
-		key = dxf_read_code(global);
-		switch(key) {
-			case DXF_CODE_INVALID:
-				return 0xE0F;
-				break;
-			case 0: /* string */
-				dxf_read_string(global, str);
-				DXF_TEST_ENDSEC(str);
-				break;
-			default:
-				DXF_HANDLE_UNKNOWN(global, key, str, "TABLES");
-				break;
-		} /* key */
-	}
-	return dxf_skip_section(global);
-}
-
 static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 	gint32 parentid, const gchar *section)
 {
@@ -186,7 +160,8 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 	g_debug("\\[%s]", section);
 #endif
 
-	if(strcmp(section, "ENTITIES") == 0) {
+	if((strcmp(section, "ENTITIES") == 0) ||
+		(strcmp(section, "BLOCKS") == 0))	{
 		object = g_slist_nth_data(global->model->objects, 0);
 		material = g_slist_nth_data(object->materials, 0);
 	}
@@ -200,9 +175,11 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 
 #if DEBUG > 0
 		if(chunk_info)
-			g_debug("\\ [%+4d]: %s", key, chunk_info->description);
+			g_debug("\\ [%+4d]: %s (line %d)", key, chunk_info->description,
+				g3d_stream_line(global->stream));
 		else
-			g_warning("unknown chunk type %d", key);
+			g_warning("unknown chunk type %d in line %d", key,
+				g3d_stream_line(global->stream));
 #endif
 
 		if(key == 0) { /* new entity or end of section */
@@ -254,5 +231,15 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 
 gboolean dxf_section_ENTITIES(DxfGlobalData *global)
 {
-	return dxf_parse_chunks(global, dxf_chunks, 0xFF0001, "ENTITIES");
+	return dxf_parse_chunks(global, dxf_chunks, DXF_ID_ENTITIES, "ENTITIES");
+}
+
+gboolean dxf_section_BLOCKS(DxfGlobalData *global)
+{
+	return dxf_parse_chunks(global, dxf_chunks, DXF_ID_BLOCKS, "BLOCKS");
+}
+
+gboolean dxf_section_TABLES(DxfGlobalData *global)
+{
+	return dxf_parse_chunks(global, dxf_chunks, DXF_ID_TABLES, "TABLES");
 }

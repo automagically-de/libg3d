@@ -92,11 +92,7 @@ gchar **plugin_extensions(void)
 gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 {
 	gint grpcode;
-	G3DFace *face = NULL;
 	gchar val_str[DXF_MAX_LINE + 1];
-	gint32 key;
-	gchar str[DXF_MAX_LINE + 1];
-	gdouble val_f64;
 
 	grpcode = dxf_read_code(global);
 	if(grpcode != 0) {
@@ -129,13 +125,15 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 		return dxf_section_TABLES(global);
 	else if(strcmp(val_str, "ENTITIES") == 0)
 		return dxf_section_ENTITIES(global);
+	else if(strcmp(val_str, "BLOCKS") == 0)
+		return dxf_section_BLOCKS(global);
 
 	if(
 		 (strcmp(val_str, "CLASSES") == 0) ||
 		 (strcmp(val_str, "BLOCKS") == 0) ||
 		 (strcmp(val_str, "OBJECTS") == 0)) {
 #if DEBUG > 0
-		g_printerr("skipping section: %s\n", val_str);
+		g_warning("skipping section: %s\n", val_str);
 #endif
 		dxf_skip_section(global);
 	}

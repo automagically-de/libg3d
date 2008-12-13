@@ -138,6 +138,7 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 		g_printerr("skipping section: %s\n", val_str);
 #endif
 		dxf_skip_section(global);
+	}
 	else
 	{
 #if DEBUG > 0

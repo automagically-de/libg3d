@@ -22,16 +22,18 @@
 #include <string.h>
 #include <math.h>
 
+#include <g3d/context.h>
+
 #include "imp_dxf.h"
 #include "imp_dxf_vars.h"
 #include "imp_dxf_chunks.h"
 
-static DxfChunkInfo *dxf_get_chunk_info(gint32 id)
+static DxfChunkInfo *dxf_get_chunk_info(DxfChunkInfo *chunks, gint32 id)
 {
 	guint32 i;
 
-	for(i = 0; dxf_chunks[i].id != DXF_GRPCODE_TERMINATOR; i ++)
-		if(dxf_chunks[i].id == id)
+	for(i = 0; chunks[i].id != DXF_GRPCODE_TERMINATOR; i ++)
+		if(chunks[i].id == id)
 			return &(dxf_chunks[i]);
 	return NULL;
 }
@@ -165,164 +167,92 @@ gboolean dxf_section_TABLES(DxfGlobalData *global)
 	return dxf_skip_section(global);
 }
 
-static gboolean dxf_vertex_equals(gfloat *v1, gfloat *v2)
-{
-	return ((fabs(v1[0] - v2[0]) < 0.0001) &&
-		(fabs(v1[1] - v2[1]) < 0.0001) &&
-		(fabs(v1[2] - v2[2]) < 0.0001));
-}
-
-
-gboolean dxf_section_ENTITIES(DxfGlobalData *global)
+static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
+	gint32 parentid, const gchar *section)
 {
 	gint32 key;
-	gchar str[DXF_MAX_LINE + 1];
-	G3DObject *object;
-	G3DMaterial *material;
-	G3DFace *face = NULL;
-	gdouble dbl;
-	guint32 voff = 0;
 	DxfChunkInfo *chunk_info;
+	DxfLocalData *local;
+	gchar *entity = NULL;
+	gchar str[DXF_MAX_LINE + 1];
+
+	/* entity-local data */
+	G3DFace *face = NULL;
+	G3DObject *object = NULL;
+	G3DMaterial *material = NULL;
+	guint32 vertex_offset = 0;
 
 #if DEBUG > 0
-	g_debug("DXF: parsing ENTITIES section");
+	g_debug("\\[%s]", section);
 #endif
 
-	object = g_slist_nth_data(global->model->objects, 0);
-	material = g_slist_nth_data(object->materials, 0);
+	if(strcmp(section, "ENTITIES") == 0) {
+		object = g_slist_nth_data(global->model->objects, 0);
+		material = g_slist_nth_data(object->materials, 0);
+	}
 
 	while(TRUE) {
 		key = dxf_read_code(global);
-		chunk_info = dxf_get_chunk_info(key);
+		chunk_info = dxf_get_chunk_info(chunks, key);
+
+		if(key == DXF_CODE_INVALID)
+			return FALSE;
+
 #if DEBUG > 0
 		if(chunk_info)
-			g_debug("\\[%+4d]: %s", key, chunk_info->description);
+			g_debug("\\ [%+4d]: %s", key, chunk_info->description);
 		else
 			g_warning("unknown chunk type %d", key);
 #endif
-		switch(key) {
-			case DXF_CODE_INVALID:
-				return 0xE0F;
-				break;
-			case 0: /* string */
-				face = NULL;
-				dxf_read_string(global, str);
-				DXF_TEST_ENDSEC(str);
-				if(strcmp(str, "3DFACE") == 0) {
-					face = g_new0(G3DFace, 1);
-					face->material = material;
-					face->vertex_count = 3;
-					face->vertex_indices = g_new0(guint32, 3);
-					voff = object->vertex_count;
-					face->vertex_indices[0] = voff;
-					face->vertex_indices[1] = voff + 1;
-					face->vertex_indices[2] = voff + 2;
-					object->vertex_count += 3;
-					object->vertex_data = g_realloc(object->vertex_data,
-						object->vertex_count * 3 * sizeof(gfloat));
-					object->faces = g_slist_append(object->faces, face);
-				}
-				break;
-			case 2: /* name */
-				dxf_read_string(global, str);
-				break;
-			case 8:
-				dxf_read_string(global, str);
-				break;
-			case 10:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[voff * 3 + 0] = dbl;
-				break;
-			case 11:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[(voff + 1) * 3 + 0] = dbl;
-				break;
-			case 12:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[(voff + 2) * 3 + 0] = dbl;
-				break;
-			case 13:
-				dbl = dxf_read_float64(global);
-				if(face) {
-					face->vertex_count = 4;
-					face->vertex_indices = g_realloc(face->vertex_indices,
-						4 * sizeof(guint32));
-					face->vertex_indices[3] = voff + 3;
-					object->vertex_count ++;
-					object->vertex_data = g_realloc(object->vertex_data,
-						object->vertex_count * 3 * sizeof(gfloat));
-					object->vertex_data[(voff + 3) * 3 + 0] = dbl;
-				}
-				break;
-			case 20:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[voff * 3 + 1] = dbl;
-				break;
-			case 21:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[(voff + 1) * 3 + 1] = dbl;
-				break;
-			case 22:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[(voff + 2) * 3 + 1] = dbl;
-				break;
-			case 23:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[(voff + 3) * 3 + 1] = dbl;
-				break;
-			case 30:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[voff * 3 + 2] = dbl;
-				break;
-			case 31:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[(voff + 1) * 3 + 2] = dbl;
-				break;
-			case 32:
-				dbl = dxf_read_float64(global);
-				if(face)
-					object->vertex_data[(voff + 2) * 3 + 2] = dbl;
-				break;
-			case 33:
-				dbl = dxf_read_float64(global);
-				if(face) {
-					object->vertex_data[(voff + 3) * 3 + 2] = dbl;
-					if(dxf_vertex_equals(
-						object->vertex_data + (voff + 2) * 3,
-						object->vertex_data + (voff + 3) * 3))
-						face->vertex_count = 3;
-				}
-				break;
-			case 40:
-			case 41:
-			case 50: /* angle */
-				dbl = dxf_read_float64(global);
-				break;
-			case 62: /* color number */
-			case 66:
-			case 70:
-			case 71:
-			case 72:
-				dxf_read_int16(global);
-				break;
-			case 210: /* extrusion */
-			case 220:
-			case 230:
-				dbl = dxf_read_float64(global);
-				break;
-			default:
-				DXF_HANDLE_UNKNOWN(global, key, str, "ENTITIES");
-				break;
-		} /* key */
-	}
-	return dxf_skip_section(global);
+
+		if(key == 0) { /* new entity or end of section */
+			dxf_read_string(global, str);
+			DXF_TEST_ENDSEC(str);
+			if(entity != NULL)
+				g_free(entity);
+			entity = g_strdup(str);
+			face = NULL;
+#if DEBUG > 0
+			g_debug("|  %s", entity);
+#endif
+		}
+
+		if(chunk_info) {
+			if(chunk_info->callback) {
+				local = g_new0(DxfLocalData, 1);
+				local->id = key;
+				local->parentid = parentid;
+				local->entity = entity;
+
+				local->face = face;
+				local->object = object;
+				local->material = material;
+				local->vertex_offset = vertex_offset;
+
+				chunk_info->callback(global, local);
+
+				face = local->face;
+				object = local->object;
+				material = local->material;
+				vertex_offset = local->vertex_offset;
+
+				g_free(local);
+			} /* callback */
+			else {
+				DXF_HANDLE_UNKNOWN(global, key, str, section);
+			}
+		} /* chunk_info */
+		else {
+			DXF_HANDLE_UNKNOWN(global, key, str, section);
+		}
+
+		g3d_context_update_interface(global->context);
+	} /* endless loop */
+
+	return FALSE;
+}
+
+gboolean dxf_section_ENTITIES(DxfGlobalData *global)
+{
+	return dxf_parse_chunks(global, dxf_chunks, 0xFF0001, "ENTITIES");
 }

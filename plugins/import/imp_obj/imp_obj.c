@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <locale.h>
 
+#include <g3d/context.h>
 #include <g3d/types.h>
 #include <g3d/material.h>
 #include <g3d/stream.h>
@@ -41,6 +42,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	gchar *filename;
 	G3DObject *object = NULL;
 	G3DMaterial *material = NULL;
+	gfloat pcnt, prev_pcnt = 0.0;
 	gdouble x,y,z;
 	guint32 num_v, v_off = 1, v_cnt = 0;
 
@@ -85,8 +87,11 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 					else g_warning("parse error in line: %s", line);
 					break;
 
-#if 0
+				case 'l': /* line */
+					break;
+
 				case 'o': /* object */
+#if 0
 					if(strlen(line) == 1)
 					{
 						object = obj_createobject(
@@ -107,8 +112,9 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 					{
 						g_warning("[OBJ] parse error in line: %s", line);
 					}
-					break;
 #endif
+					break;
+
 				case 'v': /* vertex */
 					if(strncmp(line, "vn ", 3) == 0)
 					{
@@ -163,11 +169,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						if(face->vertex_count < 3)
 							continue;
 
-#if DEBUG > 3
-						printf("D: OBJ: v_cnt = %d, v_off = %d\n",
-							v_cnt, v_off);
-#endif
-
 						/* read vertices */
 						face->vertex_indices = g_new0(guint32, num_v - 1);
 						for(i = 1; i < num_v; i ++) {
@@ -194,18 +195,28 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 					} else if(sscanf(line, "mtllib %s", matfile) == 1) {
 						/* loads external material library */
 						if(obj_tryloadmat(model, matfile) != TRUE)
-							g_warning("error loading material library '%s'\n",
+							g_warning("error loading material library '%s'",
 								matfile);
 					}
 					break;
 				default:
 #if DEBUG > 0
-					g_debug("unknown type of line: %s\n", line);
+					g_debug("unknown type of line: %s", line);
 #endif
 					break;
 			}
 		}
-	}
+
+#if 1
+		pcnt = (gfloat)g3d_stream_tell(stream) /
+			(gfloat)g3d_stream_size(stream);
+		if((pcnt - prev_pcnt) > 0.01) {
+			prev_pcnt = pcnt;
+			g3d_context_update_progress_bar(context, pcnt, TRUE);
+		}
+#endif
+		g3d_context_update_interface(context);
+	} /* !eof(stream) */
 	return TRUE;
 }
 
@@ -304,10 +315,13 @@ int obj_tryloadmat(G3DModel *model, const char *filename)
 			{
 				/* ?? */
 			}
-			else
-				g_debug("unknown type of line: %s", line);
+			else {
+#if DEBUG > 0
+				g_warning("unknown type of line: %s", line);
+#endif
+			}
 		}
-	}
+	} /* !feof */
 	return TRUE;
 }
 

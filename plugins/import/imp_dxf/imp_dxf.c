@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: imp_dxf.c 256 2008-09-04 12:02:58Z mmmaddd $ */
 
 /*
     libg3d - 3D object loading library
@@ -69,7 +69,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		if(retval != TRUE) {
 			if(retval == 0xE0F)
 				return TRUE;
-			g_warning("error in section..");
+			g_printerr("error in section..\n");
 			return FALSE;
 		}
 	}
@@ -101,7 +101,7 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 	grpcode = dxf_read_code(global);
 	if(grpcode != 0) {
 #if DEBUG > 0
-		g_debug("unexpected group code: %d (0 expected)", grpcode);
+		g_printerr("unexpected group code: %d (0 expected)\n", grpcode);
 #endif
 		return FALSE;
 	}
@@ -110,14 +110,14 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 		return 0xE0F;
 	if(strcmp("SECTION", val_str) != 0) {
 #if DEBUG > 0
-		g_debug("SECTION expected, found: %s", val_str);
+		g_printerr("SECTION expected, found: %s\n", val_str);
 #endif
 		return FALSE;
 	}
 	grpcode = dxf_read_code(global);
 	if(grpcode != 2) {
 #if DEBUG > 0
-		g_debug("unexpected group code: %d (2 expected)", grpcode);
+		g_printerr("unexpected group code: %d (2 expected)\n", grpcode);
 #endif
 		return FALSE;
 	}
@@ -135,113 +135,13 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 		 (strcmp(val_str, "BLOCKS") == 0) ||
 		 (strcmp(val_str, "OBJECTS") == 0)) {
 #if DEBUG > 0
-		g_debug("skipping section: %s", val_str);
+		g_printerr("skipping section: %s\n", val_str);
 #endif
 		dxf_skip_section(global);
-	} else if(strcmp(val_str, "ENTITIES") == 0) {
-#if DEBUG > 0
-		g_debug("processing entities section...");
-#endif
-		while(1) {
-			key = dxf_read_code(global);
-			switch(key)
-			{
-				case DXF_CODE_INVALID:
-					return 0xE0F;
-					break;
-				case 0:
-					face = NULL;
-					dxf_read_string(global, str);
-					DXF_TEST_ENDSEC(str);
-					if(strcmp("3DFACE", str) == 0)
-					{
-						int nfaces, i;
-
-						face = g_new0(G3DFace, 1);
-						object->faces = g_slist_prepend(object->faces, face);
-						nfaces = g_slist_length(object->faces);
-#if DEBUG > 2
-						g_debug("creating face... (#%d)", nfaces);
-#endif
-						object->vertex_count = nfaces * 4;
-						object->vertex_data = g_realloc(object->vertex_data,
-							object->vertex_count * 3 * sizeof(gfloat));
-
-						face->vertex_count = 4;
-						face->vertex_indices = g_new0(guint32, 4);
-						for(i = 0; i < 4; i ++)
-						{
-							face->vertex_indices[i] = (nfaces-1) * 4 + i;
-							object->vertex_data[
-								face->vertex_indices[i] * 3 + 0] = 0.0;
-							object->vertex_data[
-								face->vertex_indices[i] * 3 + 1] = 0.0;
-							object->vertex_data[
-								face->vertex_indices[i] * 3 + 2] = 0.0;
-						}
-						face->material =
-							g_slist_nth_data(object->materials, 0);
-					}
-					break;
-
-				case 8:
-					dxf_read_string(global, str);
-					break;
-
-				case 10: case 20: case 30:
-				case 11: case 21: case 31:
-				case 12: case 22: case 32:
-				case 13: case 23: case 33:
-					val_f64 = dxf_read_float64(global);
-					if(face != NULL)
-					{
-						object->vertex_data[
-							face->vertex_indices[key % 10] * 3 +
-							(key / 10) - 1] =
-							(gfloat)val_f64;
-					}
-					break;
-
-				case 62:
-				case 67:
-				case 68:
-				case 69:
-				case 70:
-				case 1070:
-					/* 16-bit integer */
-					if(global->binary)
-						g3d_stream_read_int16_le(global->stream);
-					else {
-						g3d_stream_read_line(global->stream, str,
-                            DXF_MAX_LINE);
-						global->line ++;
-					}
-					break;
-
-				case 40:
-				case 41:
-				case 50:
-				case 210: case 220: case 230:
-				case 1040:
-					/* double */
-					dxf_read_float64(global);
-					break;
-
-				case 1002:
-					/* string */
-					dxf_read_string(global, str);
-					break;
-
-				default:
-					DXF_HANDLE_UNKNOWN(global, key, str, "** GLOBAL **");
-					break;
-			}
-		}
-	}
 	else
 	{
 #if DEBUG > 0
-		g_debug("unknown section '%s', skipping...", val_str);
+		g_printerr("unknown section '%s', skipping...\n", val_str);
 #endif
 		dxf_skip_section(global);
 	}

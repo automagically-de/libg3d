@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: imp_dxf_section.c 312 2008-11-17 18:28:56Z mmmaddd $ */
 
 /*
     libg3d - 3D object loading library
@@ -24,6 +24,18 @@
 
 #include "imp_dxf.h"
 #include "imp_dxf_vars.h"
+#include "imp_dxf_chunks.h"
+
+static DxfChunkInfo *dxf_get_chunk_info(gint32 id)
+{
+	guint32 i;
+
+	for(i = 0; dxf_chunks[i].id != DXF_GRPCODE_TERMINATOR; i ++)
+		if(dxf_chunks[i].id == id)
+			return &(dxf_chunks[i]);
+	return NULL;
+}
+
 
 static gboolean dxf_str_in_array(gchar **array, const gchar *needle)
 {
@@ -170,6 +182,7 @@ gboolean dxf_section_ENTITIES(DxfGlobalData *global)
 	G3DFace *face = NULL;
 	gdouble dbl;
 	guint32 voff = 0;
+	DxfChunkInfo *chunk_info;
 
 #if DEBUG > 0
 	g_debug("DXF: parsing ENTITIES section");
@@ -180,6 +193,13 @@ gboolean dxf_section_ENTITIES(DxfGlobalData *global)
 
 	while(TRUE) {
 		key = dxf_read_code(global);
+		chunk_info = dxf_get_chunk_info(key);
+#if DEBUG > 0
+		if(chunk_info)
+			g_debug("\\[%+4d]: %s", key, chunk_info->description);
+		else
+			g_warning("unknown chunk type %d", key);
+#endif
 		switch(key) {
 			case DXF_CODE_INVALID:
 				return 0xE0F;
@@ -202,6 +222,9 @@ gboolean dxf_section_ENTITIES(DxfGlobalData *global)
 						object->vertex_count * 3 * sizeof(gfloat));
 					object->faces = g_slist_append(object->faces, face);
 				}
+				break;
+			case 2: /* name */
+				dxf_read_string(global, str);
 				break;
 			case 8:
 				dxf_read_string(global, str);
@@ -278,6 +301,23 @@ gboolean dxf_section_ENTITIES(DxfGlobalData *global)
 						object->vertex_data + (voff + 3) * 3))
 						face->vertex_count = 3;
 				}
+				break;
+			case 40:
+			case 41:
+			case 50: /* angle */
+				dbl = dxf_read_float64(global);
+				break;
+			case 62: /* color number */
+			case 66:
+			case 70:
+			case 71:
+			case 72:
+				dxf_read_int16(global);
+				break;
+			case 210: /* extrusion */
+			case 220:
+			case 230:
+				dbl = dxf_read_float64(global);
 				break;
 			default:
 				DXF_HANDLE_UNKNOWN(global, key, str, "ENTITIES");

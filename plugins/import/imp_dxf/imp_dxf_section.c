@@ -147,31 +147,30 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 	gint32 key;
 	DxfChunkInfo *chunk_info;
 	DxfLocalData *local;
+	DxfEntityData *edata;
 	gchar *entity = NULL;
 	gchar str[DXF_MAX_LINE + 1];
-
-	/* entity-local data */
-	G3DFace *face = NULL;
-	G3DObject *object = NULL;
-	G3DMaterial *material = NULL;
-	guint32 vertex_offset = 0;
 
 #if DEBUG > 0
 	g_debug("\\[%s]", section);
 #endif
 
+	edata = g_new0(DxfEntityData, 1);
+
 	if((strcmp(section, "ENTITIES") == 0) ||
 		(strcmp(section, "BLOCKS") == 0))	{
-		object = g_slist_nth_data(global->model->objects, 0);
-		material = g_slist_nth_data(object->materials, 0);
+		edata->object = g_slist_nth_data(global->model->objects, 0);
+		edata->material = g_slist_nth_data(edata->object->materials, 0);
 	}
 
 	while(TRUE) {
 		key = dxf_read_code(global);
 		chunk_info = dxf_get_chunk_info(chunks, key);
 
-		if(key == DXF_CODE_INVALID)
+		if(key == DXF_CODE_INVALID) {
+			g_free(edata);
 			return FALSE;
+		}
 
 #if DEBUG > 0
 		if(chunk_info)
@@ -188,9 +187,9 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 			if(entity != NULL)
 				g_free(entity);
 			entity = g_strdup(str);
-			face = NULL;
+			edata->face = NULL;
 #if DEBUG > 0
-			g_debug("|  %s", entity);
+			g_debug("|  entity: %s", entity);
 #endif
 		}
 
@@ -200,18 +199,9 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 				local->id = key;
 				local->parentid = parentid;
 				local->entity = entity;
-
-				local->face = face;
-				local->object = object;
-				local->material = material;
-				local->vertex_offset = vertex_offset;
+				local->edata = edata;
 
 				chunk_info->callback(global, local);
-
-				face = local->face;
-				object = local->object;
-				material = local->material;
-				vertex_offset = local->vertex_offset;
 
 				g_free(local);
 			} /* callback */
@@ -226,6 +216,7 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 		g3d_context_update_interface(global->context);
 	} /* endless loop */
 
+	g_free(edata);
 	return FALSE;
 }
 

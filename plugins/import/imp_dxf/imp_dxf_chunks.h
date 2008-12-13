@@ -71,9 +71,9 @@ static DxfChunkInfo dxf_chunks[] = {
 	/* 16-bit integer value: 60-79 */
 	{ 62,    "color number",                          dxf_debug_i16 },
 	{ 66,    "entities follow",                       dxf_debug_i16 },
-	{ 70,    "integer value, 16-bit",                 dxf_debug_i16 },
-	{ 71,    "integer value, 16-bit",                 dxf_debug_i16 },
-	{ 72,    "integer value, 16-bit",                 dxf_debug_i16 },
+	{ 70,    "integer value, 16-bit",                 dxf_grpcode_70 },
+	{ 71,    "integer value, 16-bit",                 dxf_grpcode_71 },
+	{ 72,    "integer value, 16-bit",                 dxf_grpcode_72 },
 	{ 73,    "integer value, 16-bit",                 dxf_debug_i16 },
 	{ 74,    "integer value, 16-bit",                 dxf_debug_i16 },
 	{ 75,    "integer value, 16-bit",                 dxf_debug_i16 },

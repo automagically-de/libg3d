@@ -12,6 +12,15 @@ typedef struct {
 	guint32 line;
 } DxfGlobalData;
 
+typedef struct {
+	G3DObject *object;
+	G3DMaterial *material;
+	G3DFace *face;
+	guint32 vertex_offset;
+	gint32 tmp_70, tmp_71;
+	gint32 tmp_i1;
+} DxfEntityData;
+
 #define DXF_MAX_LINE 512
 #define DXF_CODE_INVALID 0xDEADBEEF
 
@@ -19,6 +28,15 @@ typedef struct {
 #define DXF_ID_TABLES	0x00FF0001
 #define DXF_ID_ENTITIES	0x00FF0002
 #define DXF_ID_BLOCKS   0x00FF0003
+
+#define DXF_POLY_CLOSED             1
+#define DXF_POLY_CURVE_FIT_ADDED    2
+#define DXF_POLY_SPLINE_FIT_ADDED   4
+#define DXF_POLY_3D_POLYLINE        8
+#define DXF_POLY_3D_POLYMESH       16
+#define DXF_POLY_N_CLOSED          32
+#define DXF_POLY_POLYFACE          64
+#define DXF_POLY_LT_PATTERN       128
 
 #define DXF_TEST_ENDSEC(str) \
 	if(strcmp((str), "ENDSEC") == 0) return TRUE;

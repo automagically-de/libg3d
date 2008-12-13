@@ -9,10 +9,7 @@ typedef struct {
 	gint32 id;
 	gint32 parentid;
 	gchar *entity;
-	G3DObject *object;
-	G3DMaterial *material;
-	G3DFace *face;
-	guint32 vertex_offset;
+	DxfEntityData *edata;
 } DxfLocalData;
 
 typedef gboolean (* DxfCallback)(DxfGlobalData *, DxfLocalData *);
@@ -22,6 +19,9 @@ gboolean dxf_debug_i16(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_debug_dbl(DxfGlobalData *global, DxfLocalData *local);
 
 gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local);
+gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local);
+gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local);
+gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_pnt_coord(DxfGlobalData *global, DxfLocalData *local);
 
 #endif /* _IMP_DXF_CALLBACKS_H */

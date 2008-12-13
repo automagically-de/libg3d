@@ -59,6 +59,8 @@ static gchar *generic_readline(G3DStream *stream, gchar *buf, gsize size)
 
 gchar *g3d_stream_read_line(G3DStream *stream, gchar *buf, gsize size)
 {
+	stream->linecount ++;
+
 	if(stream->readline)
 		return stream->readline(buf, size, stream->data);
 	else
@@ -99,6 +101,11 @@ goffset g3d_stream_tell(G3DStream *stream)
 	if(stream->tell)
 		return stream->tell(stream->data);
 	return 0;
+}
+
+guint32 g3d_stream_line(G3DStream *stream)
+{
+	return stream->linecount;
 }
 
 goffset g3d_stream_size(G3DStream *stream)

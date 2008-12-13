@@ -140,6 +140,7 @@ struct _G3DStream {
 	G3DStreamEofFunc eof;
 	G3DStreamCloseFunc close;
 	gpointer data;
+	guint32 linecount;
 };
 
 /* public interface */
@@ -326,6 +327,18 @@ gint g3d_stream_seek(G3DStream *stream, goffset offset, GSeekType whence);
  * Returns: current stream position
  */
 goffset g3d_stream_tell(G3DStream *stream);
+
+/**
+ * g3d_stream_line:
+ * @stream: stream to get line from
+ *
+ * Get the current line number from stream. This only works if line are
+ * consequently read with g3d_stream_read_line(), so it's only applicable
+ * for text streams.
+ *
+ * Returns: current line number, may be 0
+ */
+guint32 g3d_stream_line(G3DStream *stream);
 
 /**
  * g3d_stream_size:

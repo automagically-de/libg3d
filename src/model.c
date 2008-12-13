@@ -91,53 +91,41 @@ static gboolean objects_check(GSList *objects)
 	GSList *fitem, *oitem;
 	guint32 i, no = 0, nf;
 
-	oitem = objects;
-	while(oitem)
-	{
+	for(oitem = objects; oitem != NULL; oitem = oitem->next) {
 		object = (G3DObject *)oitem->data;
 
-		nf = 0;
-		fitem = object->faces;
-		while(fitem)
-		{
+		for(nf = 0, fitem = object->faces; fitem != NULL;
+			fitem = fitem->next, nf ++) {
 			face = (G3DFace *)fitem->data;
 
-			if(face->material == NULL)
-			{
+			if(face->material == NULL) {
 				g_warning("g3d_object_check: face->material is NULL"
-					" (o: %d, f: %d)", no, nf);
+					" (o: %d, %s; f: %d)",
+					no, object->name ? object->name : "(unnamed)", nf);
 				return FALSE;
 			}
 
-			if(face->vertex_count < 3)
-			{
+			if(face->vertex_count < 3) {
 				g_warning("g3d_object_check: face->num_vertices < 3 (%d)"
-					" (o: %d, f: %d)", face->vertex_count, no, nf);
+					" (o: %d, %s; f: %d)", face->vertex_count,
+					no, object->name ? object->name : "(unnamed)", nf);
 				return FALSE;
 			}
 
 			for(i = 0; i < face->vertex_count; i ++)
-			{
-				if(face->vertex_indices[i] >= object->vertex_count)
-				{
+				if(face->vertex_indices[i] >= object->vertex_count) {
 					g_warning("g3d_object_check: "
 						"vertex_indices[%d] >= vertex_count (%d >= %d)"
-						" (o: %d, f: %d)",
+						" (o: %d, %s; f: %d)",
 						i, face->vertex_indices[i], object->vertex_count,
-						no, nf);
+						no, object->name ? object->name : "(unnamed)", nf);
 					return FALSE;
 				}
-			}
-
-			nf ++;
-			fitem = fitem->next;
-		} /* while(fitem) */
+		} /* (fitem) */
 
 		if(objects_check(object->objects) == FALSE)
 			return FALSE;
-
-		oitem = oitem->next;
-	} /* while(oitem) */
+	} /* (oitem) */
 	return TRUE;
 
 }

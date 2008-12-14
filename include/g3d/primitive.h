@@ -131,6 +131,23 @@ G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 G3DObject *g3d_primitive_box_strip_2d(guint32 vcnt, gdouble *vdata,
 	gdouble height, gdouble width, G3DMaterial *material);
 
+/**
+ * g3d_primitive_mesh:
+ * @m: number of vertices in m direction
+ * @n: number of vertices in n direction
+ * @wrap_m: wrap around in m direction
+ * @wrap_n: wrap around in n direction
+ * @material: material to use for faces
+ *
+ * Generate a mesh consisting of m * n vertices. The vertex data is
+ * initialized with (0.0, 0.0, 0.0) and has to be set to something
+ * useful.
+ *
+ * Returns: mesh object
+ */
+G3DObject *g3d_primitive_mesh(guint32 m, guint32 n, gboolean wrap_m,
+	gboolean wrap_n, G3DMaterial *material);
+
 G_END_DECLS
 
 #endif /* __G3D_PRIMITIVE_H__ */

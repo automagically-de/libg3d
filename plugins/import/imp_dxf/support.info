@@ -7,7 +7,7 @@ stream: [5]
 # Works without seeking
 seekfree: [3] not yet, should be possible
 # Progress bar updates
-progress: 
+progress: [5]
 # Container format
 container: [5]
 # Object grouping
@@ -15,11 +15,11 @@ grouping:
 # Object transformation
 transformation: 
 # Vertex data
-vertex: 
+vertex: [3] 3DFACE works, POLYLINE not
 # Normal data
 normal: 
 # Face data
-face: 
+face: [3] 3DFACE works, POLYLINE not
 # Face colors
 color: 
 # Face transparency

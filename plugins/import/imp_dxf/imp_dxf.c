@@ -43,7 +43,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	global->context = context;
 	global->model = model;
 	global->stream = stream;
-	global->line = 1;
 
 	setlocale(LC_NUMERIC, "C");
 
@@ -127,18 +126,11 @@ gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 		return dxf_section_ENTITIES(global);
 	else if(strcmp(val_str, "BLOCKS") == 0)
 		return dxf_section_BLOCKS(global);
-
-	if(
-		 (strcmp(val_str, "CLASSES") == 0) ||
-		 (strcmp(val_str, "BLOCKS") == 0) ||
-		 (strcmp(val_str, "OBJECTS") == 0)) {
-#if DEBUG > 0
-		g_warning("skipping section: %s\n", val_str);
-#endif
-		dxf_skip_section(global);
-	}
-	else
-	{
+	else if(strcmp(val_str, "OBJECTS") == 0)
+		return dxf_section_OBJECTS(global);
+	else if(strcmp(val_str, "CLASSES") == 0)
+		return  dxf_section_CLASSES(global);
+	else {
 #if DEBUG > 0
 		g_printerr("unknown section '%s', skipping...\n", val_str);
 #endif
@@ -163,7 +155,6 @@ gchar *dxf_read_string(DxfGlobalData *global, gchar *value)
 		gchar line[DXF_MAX_LINE + 1];
 
 		g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
-		global->line ++;
 		line[DXF_MAX_LINE] = '\0';
 		if(sscanf(line, "%s", value) == 1)
 			return g_strchomp(value);
@@ -182,13 +173,11 @@ gint32 dxf_read_code(DxfGlobalData *global)
 		return g3d_stream_read_int8(global->stream);
 	else {
 		g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
-		global->line ++;
 		if((sscanf(line, "%d", &val) != 1) &&
 			(sscanf(line, " %d", &val) != 1))
 			return DXF_CODE_INVALID;
 		if(val == 999) { /* comment */
 			g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
-			global->line ++;
 			return dxf_read_code(global);
 		}
 		return val;
@@ -205,7 +194,25 @@ gint32 dxf_read_int16(DxfGlobalData *global)
 		gchar line[DXF_MAX_LINE];
 
 		g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
-		global->line ++;
+		if(sscanf(line, "%i", &val) == 1)
+			return val;
+		if(sscanf(line, " %i", &val) == 1)
+			return val;
+		else
+			return DXF_CODE_INVALID;
+	}
+}
+
+gint32 dxf_read_int32(DxfGlobalData *global)
+{
+	if(global->binary)
+		return g3d_stream_read_int32_le(global->stream);
+	else
+	{
+		gint32 val;
+		gchar line[DXF_MAX_LINE];
+
+		g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
 		if(sscanf(line, "%i", &val) == 1)
 			return val;
 		if(sscanf(line, " %i", &val) == 1)
@@ -225,7 +232,6 @@ gdouble dxf_read_float64(DxfGlobalData *global)
 		gchar line[DXF_MAX_LINE];
 
 		g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
-		global->line ++;
 		if(sscanf(line, "%lf", &val) == 1)
 			return val;
 		if(sscanf(line, " %lf", &val) == 1)
@@ -250,7 +256,6 @@ gboolean dxf_skip_section(DxfGlobalData *global)
 				g3d_stream_seek(global->stream, -read, G_SEEK_CUR);
 		} else {
 			g3d_stream_read_line(global->stream, line, DXF_MAX_LINE);
-			global->line ++;
 			if(strncmp(line, "ENDSEC", 6) == 0)
 				return TRUE;
 		}

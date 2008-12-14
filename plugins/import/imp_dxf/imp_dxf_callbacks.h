@@ -16,7 +16,9 @@ typedef gboolean (* DxfCallback)(DxfGlobalData *, DxfLocalData *);
 
 gboolean dxf_debug_str(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_debug_i16(DxfGlobalData *global, DxfLocalData *local);
+gboolean dxf_debug_i32(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_debug_dbl(DxfGlobalData *global, DxfLocalData *local);
+gboolean dxf_debug_var(DxfGlobalData *global, DxfLocalData *local);
 
 gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local);

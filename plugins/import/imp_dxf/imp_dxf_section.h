@@ -7,5 +7,7 @@ gboolean dxf_section_HEADER(DxfGlobalData *global);
 gboolean dxf_section_TABLES(DxfGlobalData *global);
 gboolean dxf_section_BLOCKS(DxfGlobalData *global);
 gboolean dxf_section_ENTITIES(DxfGlobalData *global);
+gboolean dxf_section_OBJECTS(DxfGlobalData *global);
+gboolean dxf_section_CLASSES(DxfGlobalData *global);
 
 #endif /* _IMP_DXF_SECTION_H */

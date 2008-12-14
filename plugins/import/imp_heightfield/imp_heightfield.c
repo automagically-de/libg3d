@@ -24,8 +24,10 @@
 #include <string.h>
 
 #include <g3d/types.h>
+#include <g3d/context.h>
 #include <g3d/plugins.h>
 #include <g3d/material.h>
+#include <g3d/primitive.h>
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
@@ -34,15 +36,12 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DObject *object;
 	G3DMaterial *material;
 	guint32 x, y, index;
+	gfloat pcnt, prev_pcnt = 0.0;
 
 	if(!g3d_plugins_load_image_from_stream(context, stream, image)) {
 		g_free(image);
 		return FALSE;
 	}
-
-	object = g_new0(G3DObject, 1);
-	object->name = g_strdup("height field");
-	model->objects = g_slist_append(model->objects, object);
 
 	material = g3d_material_new();
 	material->name = g_strdup("default material");
@@ -50,10 +49,12 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	material->g = 0.4;
 	material->b = 0.4;
 	material->a = 1.0;
-	object->materials = g_slist_append(object->materials, material);
+	model->materials = g_slist_append(model->materials, material);
 
-	object->vertex_count = image->width * image->height;
-	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+	object = g3d_primitive_mesh(image->width, image->height, FALSE, FALSE,
+		material);
+	object->name = g_strdup("height field");
+	model->objects = g_slist_append(model->objects, object);
 
 #if DEBUG > 0
 	g_debug("height field loader: image: %dx%dx%d",
@@ -61,20 +62,20 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 #endif
 
 	for(y = 0; y < image->height; y ++) {
-		for(x=0; x<image->width; x++) {
-			index = y*image->width + x;
+		for(x = 0; x < image->width; x ++) {
+			index = y * image->width + x;
 
-			object->vertex_data[index*3+0] = x;
-			object->vertex_data[index*3+1] = y;
+			object->vertex_data[index * 3 + 0] = x;
+			object->vertex_data[index * 3 + 1] = y;
 			switch(image->depth) {
 				case 8:
-					object->vertex_data[index*3+2] = 0.0 +
-						(float)image->pixeldata[index] / 32.0;
+					object->vertex_data[index * 3 + 2] = 0.0 +
+						(gfloat)image->pixeldata[index] / 32.0;
 					break;
 				case 15:
 				case 16:
 					object->vertex_data[index*3+2] = 0.0 +
-						*((short int*)&image->pixeldata[index]);
+						*((guint16*)&image->pixeldata[index]);
 					break;
 				case 24:
 				case 32:
@@ -85,26 +86,13 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 					break;
 			}
 
-			if((x < (image->width-1)) && (y < (image->height-1))) {
-				G3DFace *face = g_new0(G3DFace, 1);
-
-				face->material = material;
-				face->vertex_count = 3;
-				face->vertex_indices = g_new0(guint32, 3);
-				face->vertex_indices[0] = index;
-				face->vertex_indices[1] = index + 1;
-				face->vertex_indices[2] = index + image->width;
-				object->faces = g_slist_prepend(object->faces, face);
-
-				face = g_new0(G3DFace, 1);
-				face->material = material;
-				face->vertex_count = 3;
-				face->vertex_indices = g_new0(guint32, 3);
-				face->vertex_indices[0] = index + 1;
-				face->vertex_indices[1] = index + image->width + 1;
-				face->vertex_indices[2] = index + image->width;
-				object->faces = g_slist_prepend(object->faces, face);
+			pcnt = (gfloat)(y * image->width + x) /
+				(gfloat)(image->width * image->height);
+			if((pcnt - prev_pcnt) > 0.01) {
+				prev_pcnt = pcnt;
+				g3d_context_update_progress_bar(context, pcnt, TRUE);
 			}
+			g3d_context_update_interface(context);
 		} /* for(x) */
 	} /* for(y) */
 

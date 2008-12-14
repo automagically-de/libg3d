@@ -24,6 +24,8 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local);
+gboolean dxf_grpcode_73(DxfGlobalData *global, DxfLocalData *local);
+gboolean dxf_grpcode_74(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_pnt_coord(DxfGlobalData *global, DxfLocalData *local);
 
 #endif /* _IMP_DXF_CALLBACKS_H */

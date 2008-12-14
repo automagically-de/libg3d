@@ -142,6 +142,7 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local)
 	if(strcmp(local->entity, "3DFACE") == 0) {
 		object = g_slist_nth_data(global->model->objects, 0);
 		local->edata->object = object;
+		local->edata->polyline_flags = 0;
 
 		face = g_new0(G3DFace, 1);
 		face->material = local->edata->material;
@@ -156,6 +157,8 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local)
 			object->vertex_count * 3 * sizeof(gfloat));
 		object->faces = g_slist_append(object->faces, face);
 		local->edata->face = face;
+	} else if(strcmp(local->entity, "POLYLINE") == 0) {
+		local->edata->face = NULL;
 	}
 
 	return TRUE;
@@ -175,14 +178,45 @@ gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local)
 
 gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local)
 {
+	G3DObject *object;
+	G3DFace *face;
+
 	local->edata->tmp_71 = dxf_read_int16(global);
+	object = local->edata->object;
+	if(object == NULL)
+		return TRUE;
+
+	if((strcmp(local->entity, "POLYLINE") == 0) &&
+		(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
+		object = g_new0(G3DObject, 1);
+		object->name = g_strdup_printf("Poly Face @ line %d",
+			g3d_stream_line(global->stream));
+		object->vertex_count = local->edata->tmp_71;
+		object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+		global->model->objects = g_slist_append(global->model->objects,
+			object);
+		local->edata->object = object;
+		local->edata->vertex_offset = 0;
+	} else if(strcmp(local->entity, "VERTEX") == 0) {
+		if((local->edata->polyline_flags & DXF_POLY_POLYFACE) &&
+			(local->edata->tmp_70 & 128)) {
+			/* vertex has face */
+			face = g_new0(G3DFace, 1);
+			face->material = local->edata->material;
+			face->vertex_count = 3;
+			face->vertex_indices = g_new0(guint32, face->vertex_count);
+			face->vertex_indices[0] = ABS(local->edata->tmp_71) - 1;
+			local->edata->face = face;
+			object->faces = g_slist_prepend(object->faces, face);
+		}
+	}
 	return TRUE;
 }
 
 gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 {
 	G3DObject *object = local->edata->object;
-	guint32 width, height;
+	gint32 width, height;
 
 	width = dxf_read_int16(global);
 	height = local->edata->tmp_71;
@@ -196,22 +230,57 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 			local->edata->polyline_flags);
 #endif
 
-		if(!(local->edata->polyline_flags & DXF_POLY_3D_POLYMESH))
-			return TRUE;
+		if(local->edata->polyline_flags & DXF_POLY_3D_POLYMESH) {
+			object = g3d_primitive_mesh(width, height,
+				(local->edata->polyline_flags & DXF_POLY_CLOSED),
+				(local->edata->polyline_flags & DXF_POLY_N_CLOSED),
+				local->edata->material);
+			object->name = g_strdup_printf("3D Poly Mesh @ line %d",
+				g3d_stream_line(global->stream));
+			local->edata->object = object;
+			global->model->objects = g_slist_append(global->model->objects,
+				object);
 
-		object = g3d_primitive_mesh(width, height,
-			(local->edata->polyline_flags & DXF_POLY_CLOSED),
-			(local->edata->polyline_flags & DXF_POLY_N_CLOSED),
-			local->edata->material);
-		object->name = g_strdup_printf("POLYLINE @ line %d",
-			g3d_stream_line(global->stream));
-		local->edata->object = object;
-		global->model->objects = g_slist_append(global->model->objects,
-			object);
+			local->edata->vertex_offset = 0;
+			local->edata->tmp_71 = 0;
+			local->edata->tmp_i1 = 0; /* vertex counter */
+		}
+	} else if(strcmp(local->entity, "VERTEX") == 0) {
+		if(local->edata->face &&
+			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
+			local->edata->face->vertex_indices[1] = ABS(width) - 1;
+		}
+	}
+	return TRUE;
+}
 
-		local->edata->vertex_offset = 0;
-		local->edata->tmp_71 = 0;
-		local->edata->tmp_i1 = 0; /* vertex counter */
+gboolean dxf_grpcode_73(DxfGlobalData *global, DxfLocalData *local)
+{
+	gint32 i;
+
+	i = dxf_read_int16(global);
+	if(strcmp(local->entity, "VERTEX") == 0) {
+		if(local->edata->face &&
+			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
+			local->edata->face->vertex_indices[2] = ABS(i) - 1;
+		}
+	}
+	return TRUE;
+}
+
+gboolean dxf_grpcode_74(DxfGlobalData *global, DxfLocalData *local)
+{
+	gint32 i;
+
+	i = dxf_read_int16(global);
+	if(strcmp(local->entity, "VERTEX") == 0) {
+		if(local->edata->face &&
+			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
+			local->edata->face->vertex_count ++;
+			local->edata->face->vertex_indices = g_realloc(
+				local->edata->face->vertex_indices, 4 * sizeof(guint32));
+			local->edata->face->vertex_indices[3] = ABS(i) - 1;
+		}
 	}
 	return TRUE;
 }
@@ -243,6 +312,8 @@ gboolean dxf_pnt_coord(DxfGlobalData *global, DxfLocalData *local)
 			return TRUE;
 		if(local->id == 30)
 			local->edata->tmp_i1 ++;
+		if(!(local->edata->tmp_70 & 64))
+			return TRUE;
 	}
 
 #if DEBUG > 0

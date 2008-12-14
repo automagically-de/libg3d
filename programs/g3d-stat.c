@@ -85,7 +85,10 @@ static void log_handler(const gchar *log_domain, GLogLevelFlags log_level,
 	} else if(message[0] == '|') {
 		printf("%s\n", message + 1);
 	} else {
-		printf(ANSI_RED "%s\n" ANSI_RESET, message);
+		if(config->use_color)
+			printf(ANSI_RED "%s\n" ANSI_RESET, message);
+		else
+			printf("%s\n", message);
 	}
 }
 

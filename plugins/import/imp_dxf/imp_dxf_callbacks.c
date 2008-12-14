@@ -139,6 +139,9 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local)
 		return TRUE;
 
 	if(strcmp(local->entity, "3DFACE") == 0) {
+		object = g_slist_nth_data(global->model->objects, 0);
+		local->edata->object = object;
+
 		face = g_new0(G3DFace, 1);
 		face->material = local->edata->material;
 		face->vertex_count = 3;
@@ -160,6 +163,10 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local)
 gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local)
 {
 	local->edata->tmp_70 = dxf_read_int16(global);
+#if DEBUG > 0
+	g_debug("|  [70]: 0x%08x (%d)",
+		local->edata->tmp_70, local->edata->tmp_70);
+#endif
 	return TRUE;
 }
 
@@ -176,8 +183,8 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 	guint32 width, height;
 	gint32 x, y;
 
-	height = dxf_read_int16(global);
-	width = local->edata->tmp_71;
+	width = dxf_read_int16(global);
+	height = local->edata->tmp_71;
 
 	if(object == NULL)
 		return TRUE;
@@ -191,6 +198,13 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 		if(!(local->edata->tmp_70 & DXF_POLY_3D_POLYMESH))
 			return TRUE;
 
+		object = g_new0(G3DObject, 1);
+		object->name = g_strdup_printf("POLYLINE @ line %d",
+			g3d_stream_line(global->stream));
+		local->edata->object = object;
+		global->model->objects = g_slist_append(global->model->objects,
+			object);
+
 		local->edata->vertex_offset = object->vertex_count;
 		object->vertex_count += width * height;
 		object->vertex_data = g_realloc(object->vertex_data,
@@ -201,7 +215,7 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 		local->edata->tmp_71 = 0;
 		local->edata->tmp_i1 = 0; /* vertex counter */
 
-		for(y = 0; y < (height - 1); y ++)
+		for(y = 0; y < (height - 1); y ++) {
 			for(x = 0; x < (width - 1); x ++) {
 				face = g3d_face_new_tri(local->edata->material,
 					local->edata->vertex_offset + (y * width) + x,
@@ -215,6 +229,52 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 					local->edata->vertex_offset + ((y + 1) * width) + x + 1);
 				object->faces = g_slist_append(object->faces, face);
 			}
+
+			if(local->edata->tmp_70 & DXF_POLY_N_CLOSED) {
+				face = g3d_face_new_tri(local->edata->material,
+					local->edata->vertex_offset + ((y + 1) * width) - 1,
+					local->edata->vertex_offset + (y * width),
+					local->edata->vertex_offset + ((y + 2) * width) - 1);
+				object->faces = g_slist_append(object->faces, face);
+
+				face = g3d_face_new_tri(local->edata->material,
+					local->edata->vertex_offset + ((y + 2) * width) - 1,
+					local->edata->vertex_offset + (y * width),
+					local->edata->vertex_offset + ((y + 1) * width) - 1);
+				object->faces = g_slist_append(object->faces, face);
+			}
+		}
+
+		if(local->edata->tmp_70 & DXF_POLY_CLOSED) {
+			for(x = 0; x < (width - 1); x ++) {
+				face = g3d_face_new_tri(local->edata->material,
+					local->edata->vertex_offset + ((height - 1) * width) + x,
+					local->edata->vertex_offset + ((height - 1) * width) + x
+						+ 1,
+					local->edata->vertex_offset + x);
+				object->faces = g_slist_append(object->faces, face);
+
+				face = g3d_face_new_tri(local->edata->material,
+					local->edata->vertex_offset + x,
+					local->edata->vertex_offset + ((height - 1) * width) + x
+						+ 1,
+					local->edata->vertex_offset + x + 1);
+				object->faces = g_slist_append(object->faces, face);
+			}
+			if(local->edata->tmp_70 & DXF_POLY_N_CLOSED) {
+				face = g3d_face_new_tri(local->edata->material,
+					local->edata->vertex_offset + height * width - 1,
+					local->edata->vertex_offset + (height - 1) * width,
+					local->edata->vertex_offset + width - 1);
+				object->faces = g_slist_append(object->faces, face);
+
+				face = g3d_face_new_tri(local->edata->material,
+					local->edata->vertex_offset + width - 1,
+					local->edata->vertex_offset + (height - 1) * width,
+					local->edata->vertex_offset);
+				object->faces = g_slist_append(object->faces, face);
+			}
+		}
 	}
 	return TRUE;
 }
@@ -241,9 +301,9 @@ gboolean dxf_pnt_coord(DxfGlobalData *global, DxfLocalData *local)
 	coord = local->id / 10 - 1;
 
 	if(is_vertex) {
-		if(!(local->edata->tmp_70 & DXF_POLY_3D_POLYMESH))
-			return TRUE;
 		index += local->edata->tmp_i1;
+		if(index >= object->vertex_count)
+			return TRUE;
 		if(local->id == 30)
 			local->edata->tmp_i1 ++;
 	}

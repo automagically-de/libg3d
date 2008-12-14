@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include <g3d/face.h>
+#include <g3d/primitive.h>
 
 #include "imp_dxf.h"
 #include "imp_dxf_callbacks.h"
@@ -163,6 +164,8 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local)
 gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local)
 {
 	local->edata->tmp_70 = dxf_read_int16(global);
+	if(strcmp(local->entity, "POLYLINE") == 0)
+		local->edata->polyline_flags = local->edata->tmp_70;
 #if DEBUG > 0
 	g_debug("|  [70]: 0x%08x (%d)",
 		local->edata->tmp_70, local->edata->tmp_70);
@@ -179,9 +182,7 @@ gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local)
 gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 {
 	G3DObject *object = local->edata->object;
-	G3DFace *face;
 	guint32 width, height;
-	gint32 x, y;
 
 	width = dxf_read_int16(global);
 	height = local->edata->tmp_71;
@@ -192,89 +193,25 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 	if(strcmp(local->entity, "POLYLINE") == 0) {
 #if DEBUG > 0
 		g_debug("|  POLYLINE: %d x %d (0x%08x)", width, height,
-			local->edata->tmp_70);
+			local->edata->polyline_flags);
 #endif
 
-		if(!(local->edata->tmp_70 & DXF_POLY_3D_POLYMESH))
+		if(!(local->edata->polyline_flags & DXF_POLY_3D_POLYMESH))
 			return TRUE;
 
-		object = g_new0(G3DObject, 1);
+		object = g3d_primitive_mesh(width, height,
+			(local->edata->polyline_flags & DXF_POLY_CLOSED),
+			(local->edata->polyline_flags & DXF_POLY_N_CLOSED),
+			local->edata->material);
 		object->name = g_strdup_printf("POLYLINE @ line %d",
 			g3d_stream_line(global->stream));
 		local->edata->object = object;
 		global->model->objects = g_slist_append(global->model->objects,
 			object);
 
-		local->edata->vertex_offset = object->vertex_count;
-		object->vertex_count += width * height;
-		object->vertex_data = g_realloc(object->vertex_data,
-			object->vertex_count * 3 * sizeof(gfloat));
-		memset(object->vertex_data +
-			local->edata->vertex_offset * 3,
-			0, width * height * 3 * sizeof(gfloat));
+		local->edata->vertex_offset = 0;
 		local->edata->tmp_71 = 0;
 		local->edata->tmp_i1 = 0; /* vertex counter */
-
-		for(y = 0; y < (height - 1); y ++) {
-			for(x = 0; x < (width - 1); x ++) {
-				face = g3d_face_new_tri(local->edata->material,
-					local->edata->vertex_offset + (y * width) + x,
-					local->edata->vertex_offset + (y * width) + x + 1,
-					local->edata->vertex_offset + ((y + 1) * width) + x);
-				object->faces = g_slist_append(object->faces, face);
-
-				face = g3d_face_new_tri(local->edata->material,
-					local->edata->vertex_offset + ((y + 1) * width) + x,
-					local->edata->vertex_offset + (y * width) + x + 1,
-					local->edata->vertex_offset + ((y + 1) * width) + x + 1);
-				object->faces = g_slist_append(object->faces, face);
-			}
-
-			if(local->edata->tmp_70 & DXF_POLY_N_CLOSED) {
-				face = g3d_face_new_tri(local->edata->material,
-					local->edata->vertex_offset + ((y + 1) * width) - 1,
-					local->edata->vertex_offset + (y * width),
-					local->edata->vertex_offset + ((y + 2) * width) - 1);
-				object->faces = g_slist_append(object->faces, face);
-
-				face = g3d_face_new_tri(local->edata->material,
-					local->edata->vertex_offset + ((y + 2) * width) - 1,
-					local->edata->vertex_offset + (y * width),
-					local->edata->vertex_offset + ((y + 1) * width) - 1);
-				object->faces = g_slist_append(object->faces, face);
-			}
-		}
-
-		if(local->edata->tmp_70 & DXF_POLY_CLOSED) {
-			for(x = 0; x < (width - 1); x ++) {
-				face = g3d_face_new_tri(local->edata->material,
-					local->edata->vertex_offset + ((height - 1) * width) + x,
-					local->edata->vertex_offset + ((height - 1) * width) + x
-						+ 1,
-					local->edata->vertex_offset + x);
-				object->faces = g_slist_append(object->faces, face);
-
-				face = g3d_face_new_tri(local->edata->material,
-					local->edata->vertex_offset + x,
-					local->edata->vertex_offset + ((height - 1) * width) + x
-						+ 1,
-					local->edata->vertex_offset + x + 1);
-				object->faces = g_slist_append(object->faces, face);
-			}
-			if(local->edata->tmp_70 & DXF_POLY_N_CLOSED) {
-				face = g3d_face_new_tri(local->edata->material,
-					local->edata->vertex_offset + height * width - 1,
-					local->edata->vertex_offset + (height - 1) * width,
-					local->edata->vertex_offset + width - 1);
-				object->faces = g_slist_append(object->faces, face);
-
-				face = g3d_face_new_tri(local->edata->material,
-					local->edata->vertex_offset + width - 1,
-					local->edata->vertex_offset + (height - 1) * width,
-					local->edata->vertex_offset);
-				object->faces = g_slist_append(object->faces, face);
-			}
-		}
 	}
 	return TRUE;
 }

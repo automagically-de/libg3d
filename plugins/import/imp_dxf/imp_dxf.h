@@ -16,6 +16,7 @@ typedef struct {
 	G3DMaterial *material;
 	G3DFace *face;
 	guint32 vertex_offset;
+	guint32 polyline_flags;
 	gint32 tmp_70, tmp_71;
 	gint32 tmp_i1;
 } DxfEntityData;

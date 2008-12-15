@@ -45,6 +45,9 @@ static DxfEntityInfo *dxf_get_entity_info(const gchar *str)
 	for(i = 0; dxf_entities[i].name != NULL; i ++)
 		if(strcmp(dxf_entities[i].name, str) == 0)
 			return &(dxf_entities[i]);
+#if DEBUG > 0
+	g_debug("unknown entity: %s", str);
+#endif
 	return NULL;
 }
 
@@ -86,6 +89,18 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 			DXF_TEST_ENDSEC(str);
 			einfo = dxf_get_entity_info(str);
 			edata->face = NULL;
+			if(einfo) {
+				if(einfo->callback) {
+					local = g_new0(DxfLocalData, 1);
+					local->id = einfo->id;
+					local->parentid = parentid;
+					local->edata = edata;
+
+					einfo->callback(global, local);
+
+					g_free(local);
+				}
+			}
 #if DEBUG > 0
 			g_debug("|  entity: %s", str);
 #endif
@@ -109,6 +124,7 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 				local = g_new0(DxfLocalData, 1);
 				local->id = key;
 				local->parentid = parentid;
+				local->sid = parentid;
 				local->eid = einfo ? einfo->id : DXF_E_OTHER;
 				local->edata = edata;
 
@@ -139,7 +155,11 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 
 gboolean dxf_section_HEADER(DxfGlobalData *global)
 {
+#if 0
 	return dxf_parse_chunks(global, dxf_chunks, DXF_ID_HEADER, "HEADER");
+#else
+	return dxf_skip_section(global);
+#endif
 }
 
 gboolean dxf_section_ENTITIES(DxfGlobalData *global)
@@ -154,15 +174,27 @@ gboolean dxf_section_BLOCKS(DxfGlobalData *global)
 
 gboolean dxf_section_TABLES(DxfGlobalData *global)
 {
+#if 0
 	return dxf_parse_chunks(global, dxf_chunks, DXF_ID_TABLES, "TABLES");
+#else
+	return dxf_skip_section(global);
+#endif
 }
 
 gboolean dxf_section_OBJECTS(DxfGlobalData *global)
 {
+#if 0
 	return dxf_parse_chunks(global, dxf_chunks, DXF_ID_OBJECTS, "OBJECTS");
+#else
+	return dxf_skip_section(global);
+#endif
 }
 
 gboolean dxf_section_CLASSES(DxfGlobalData *global)
 {
+#if 0
 	return dxf_parse_chunks(global, dxf_chunks, DXF_ID_CLASSES, "TABLES");
+#else
+	return dxf_skip_section(global);
+#endif
 }

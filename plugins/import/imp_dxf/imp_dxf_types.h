@@ -12,6 +12,7 @@ typedef struct {
 
 typedef struct {
 	G3DObject *object;
+	G3DObject *block;
 	G3DMaterial *material;
 	G3DFace *face;
 	guint32 vertex_offset;
@@ -34,7 +35,7 @@ typedef struct {
 	const gchar *name;
 	const gchar *description;
 	guint32 id;
-	DxfCallback *callback;
+	DxfCallback callback;
 } DxfEntityInfo;
 
 typedef struct {

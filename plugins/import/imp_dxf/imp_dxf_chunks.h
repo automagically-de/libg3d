@@ -8,7 +8,7 @@
 static DxfChunkInfo dxf_chunks[] = {
 	/* app: <0 */
 	/* string: 0-9 */
-	{ 0,     "entity type",                           dxf_grpcode_0 },
+	{ 0,     "entity type",                           dxf_empty },
 	{ 1,     "primary text value",                    dxf_debug_str },
 	{ 2,     "name",                                  dxf_debug_str },
 	{ 3,     "other text (3)",                        dxf_debug_str },

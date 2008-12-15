@@ -92,7 +92,7 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 			if(einfo) {
 				if(einfo->callback) {
 					local = g_new0(DxfLocalData, 1);
-					local->id = einfo->id;
+					local->eid = einfo->id;
 					local->parentid = parentid;
 					local->edata = edata;
 

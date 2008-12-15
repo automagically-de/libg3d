@@ -10,7 +10,7 @@ static DxfEntityInfo dxf_entities[] = {
 	{ "POLYLINE",  "Polyline",                DXF_E_POLYLINE, dxf_e_POLYLINE },
 	{ "VERTEX",    "Vertex",                    DXF_E_VERTEX,   NULL },
 
-	{ "BLOCK",     "block",                     DXF_E_OTHER,    dxf_e_BLOCK },
+	{ "BLOCK",     "block",                     DXF_E_BLOCK,    dxf_e_BLOCK },
 	{ "ENDBLK",    "end of block",              DXF_E_OTHER,    dxf_e_ENDBLK },
 
 	{ "3DLINE",    "3D line",                   DXF_E_OTHER,    NULL },

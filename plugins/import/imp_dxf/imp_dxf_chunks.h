@@ -10,7 +10,7 @@ static DxfChunkInfo dxf_chunks[] = {
 	/* string: 0-9 */
 	{ 0,     "entity type",                           dxf_empty },
 	{ 1,     "primary text value",                    dxf_debug_str },
-	{ 2,     "name",                                  dxf_debug_str },
+	{ 2,     "name",                                  dxf_grpcode_2 },
 	{ 3,     "other text (3)",                        dxf_debug_str },
 	{ 4,     "other text (4)",                        dxf_debug_str },
 	{ 5,     "entity handle",                         dxf_debug_str },

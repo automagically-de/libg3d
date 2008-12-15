@@ -136,6 +136,29 @@ gboolean dxf_debug_var(DxfGlobalData *global, DxfLocalData *local)
 	return TRUE;
 }
 
+static inline void dxf_object_append(DxfGlobalData *global,
+	DxfLocalData *local, G3DObject *object)
+{
+	if(local->edata->block)
+		local->edata->block->objects = g_slist_append(
+			local->edata->block->objects, object);
+	else
+		global->model->objects = g_slist_append(global->model->objects,
+			object);
+}
+
+gboolean dxf_grpcode_2(DxfGlobalData *global, DxfLocalData *local)
+{
+	gchar str[DXF_MAX_LINE + 1];
+
+	dxf_read_string(global, str);
+	if(local->eid == DXF_E_BLOCK) {
+		g_free(local->edata->block->name);
+		local->edata->block->name = g_strdup(str);
+	}
+	return TRUE;
+}
+
 gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local)
 {
 	local->edata->tmp_70 = dxf_read_int16(global);
@@ -166,8 +189,7 @@ gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local)
 			g3d_stream_line(global->stream));
 		object->vertex_count = local->edata->tmp_71;
 		object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
-		global->model->objects = g_slist_append(global->model->objects,
-			object);
+		dxf_object_append(global, local, object);
 		local->edata->object = object;
 		local->edata->vertex_offset = 0;
 	} else if(local->eid == DXF_E_VERTEX) {
@@ -212,8 +234,7 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 				(local->sid == DXF_ID_BLOCKS) ? "[BLOCKS] " : "",
 				g3d_stream_line(global->stream));
 			local->edata->object = object;
-			global->model->objects = g_slist_append(global->model->objects,
-				object);
+			dxf_object_append(global, local, object);
 
 			local->edata->vertex_offset = 0;
 			local->edata->tmp_71 = 0;
@@ -348,6 +369,7 @@ gboolean dxf_e_BLOCK(DxfGlobalData *global, DxfLocalData *local)
 
 	if(local->parentid == DXF_ID_BLOCKS) {
 		object = g_new0(G3DObject, 1);
+		object->hide = TRUE;
 		object->name = g_strdup_printf("unnamed block @ line %d",
 			g3d_stream_line(global->stream));
 		local->edata->block = object;

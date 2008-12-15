@@ -11,6 +11,7 @@ gboolean dxf_debug_i32(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_debug_dbl(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_debug_var(DxfGlobalData *global, DxfLocalData *local);
 
+gboolean dxf_grpcode_2(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local);

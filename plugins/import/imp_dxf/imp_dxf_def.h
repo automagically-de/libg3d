@@ -15,6 +15,7 @@
 #define DXF_E_POLYLINE       0x0002
 #define DXF_E_VERTEX         0x0003
 #define DXF_E_BLOCK          0x0004
+#define DXF_E_INSERT         0x0005
 #define DXF_E_OTHER          0xFFFF
 
 #define DXF_POLY_CLOSED             1

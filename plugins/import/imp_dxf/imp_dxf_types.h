@@ -8,6 +8,7 @@ typedef struct {
 	G3DModel *model;
 	G3DStream *stream;
 	gboolean binary;
+	GHashTable *blocks;
 } DxfGlobalData;
 
 typedef struct {

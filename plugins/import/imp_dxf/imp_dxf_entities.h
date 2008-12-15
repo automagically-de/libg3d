@@ -12,6 +12,7 @@ static DxfEntityInfo dxf_entities[] = {
 
 	{ "BLOCK",     "block",                     DXF_E_BLOCK,    dxf_e_BLOCK },
 	{ "ENDBLK",    "end of block",              DXF_E_OTHER,    dxf_e_ENDBLK },
+	{ "INSERT",    "insert block reference",    DXF_E_INSERT,   NULL },
 
 	{ "3DLINE",    "3D line",                   DXF_E_OTHER,    NULL },
 	{ "ACDBDICTIONARYWDFLT", "unknown",         DXF_E_OTHER,    NULL },
@@ -25,7 +26,6 @@ static DxfEntityInfo dxf_entities[] = {
 	{ "DICTIONARY", "dictionary",               DXF_E_OTHER,    NULL },
 	{ "DIMSTYLE",  "unknown",                   DXF_E_OTHER,    NULL },
 	{ "ENDTAB",    "end of table",              DXF_E_OTHER,    NULL },
-	{ "INSERT",    "insert block reference",    DXF_E_OTHER,    NULL },
 	{ "LAYER",     "layer",                     DXF_E_OTHER,    NULL },
 	{ "LAYOUT",    "layout",                    DXF_E_OTHER,    NULL },
 	{ "LINE",      "line",                      DXF_E_OTHER,    NULL },

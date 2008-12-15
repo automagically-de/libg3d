@@ -1,6 +1,8 @@
 #include <string.h>
 
 #include <g3d/face.h>
+#include <g3d/object.h>
+#include <g3d/matrix.h>
 #include <g3d/primitive.h>
 
 #include "imp_dxf.h"
@@ -150,11 +152,29 @@ static inline void dxf_object_append(DxfGlobalData *global,
 gboolean dxf_grpcode_2(DxfGlobalData *global, DxfLocalData *local)
 {
 	gchar str[DXF_MAX_LINE + 1];
+	G3DObject *block, *object, *subobject;
+	GSList *item;
 
 	dxf_read_string(global, str);
 	if(local->eid == DXF_E_BLOCK) {
 		g_free(local->edata->block->name);
 		local->edata->block->name = g_strdup(str);
+		g_hash_table_insert(global->blocks, local->edata->block->name,
+			local->edata->block);
+	} else if(local->eid == DXF_E_INSERT) {
+		block = g_hash_table_lookup(global->blocks, str);
+		if(block) {
+			object = g_new0(G3DObject, 1);
+			object->name = g_strdup_printf("copy of %s", str);
+			for(item = block->objects; item != NULL; item = item->next) {
+				subobject = g3d_object_duplicate(item->data);
+				object->objects = g_slist_append(object->objects, subobject);
+			}
+			global->model->objects = g_slist_append(global->model->objects,
+				object);
+			local->edata->object = object;
+			local->edata->vertex_offset = 0;
+		}
 	}
 	return TRUE;
 }
@@ -287,6 +307,7 @@ gboolean dxf_pnt_coord(DxfGlobalData *global, DxfLocalData *local)
 	guint32 index, coord;
 	gdouble dbl;
 	gboolean is_vertex;
+	gfloat matrix[16];
 
 	dbl = dxf_read_float64(global);
 	is_vertex = (local->eid == DXF_E_VERTEX);
@@ -294,12 +315,23 @@ gboolean dxf_pnt_coord(DxfGlobalData *global, DxfLocalData *local)
 	if(object == NULL)
 		return TRUE;
 
+	index = local->id % 10 + local->edata->vertex_offset;
+	coord = local->id / 10 - 1;
+
+	if(local->eid == DXF_E_INSERT) {
+		g3d_matrix_identity(matrix);
+		g3d_matrix_translate(
+			(coord == 0) ? dbl : 0.0,
+			(coord == 1) ? dbl : 0.0,
+			(coord == 2) ? dbl : 0.0,
+			matrix);
+		g3d_object_transform(object, matrix);
+		return TRUE;
+	}
+
 	if(face == NULL)
 		if(!is_vertex)
 			return TRUE;
-
-	index = local->id % 10 + local->edata->vertex_offset;
-	coord = local->id / 10 - 1;
 
 	if(is_vertex) {
 		index += local->edata->tmp_i1;

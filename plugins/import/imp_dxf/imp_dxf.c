@@ -32,6 +32,8 @@
 #include "imp_dxf_section.h"
 #include "imp_dxf_def.h"
 
+static void dxf_cleanup(DxfGlobalData *global);
+
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
@@ -44,6 +46,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	global->context = context;
 	global->model = model;
 	global->stream = stream;
+	global->blocks = g_hash_table_new(g_str_hash, g_str_equal);
 
 	setlocale(LC_NUMERIC, "C");
 
@@ -67,12 +70,17 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	while(!g3d_stream_eof(stream)) {
 		int retval = dxf_read_section(global, object);
 		if(retval != TRUE) {
-			if(retval == 0xE0F)
+			if(retval == 0xE0F) {
+				dxf_cleanup(global);
 				return TRUE;
+			}
 			g_printerr("error in section..\n");
+			dxf_cleanup(global);
 			return FALSE;
 		}
 	}
+
+	dxf_cleanup(global);
 	return TRUE;
 }
 
@@ -88,6 +96,12 @@ gchar **plugin_extensions(void)
 }
 
 /*****************************************************************************/
+
+static void dxf_cleanup(DxfGlobalData *global)
+{
+	g_hash_table_destroy(global->blocks);
+	g_free(global);
+}
 
 gboolean dxf_read_section(DxfGlobalData *global, G3DObject *object)
 {

@@ -80,14 +80,6 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 			return FALSE;
 		}
 
-#if DEBUG > 0
-		if(chunk_info)
-			g_debug("\\ [%+4d]: %s (line %d)", key, chunk_info->description,
-				g3d_stream_line(global->stream));
-		else
-			g_warning("unknown chunk type %d in line %d", key,
-				g3d_stream_line(global->stream));
-#endif
 
 		if(key == 0) { /* new entity or end of section */
 			dxf_read_string(global, str);
@@ -98,6 +90,19 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 			g_debug("|  entity: %s", str);
 #endif
 		}
+
+#if DEBUG > 0
+		if(chunk_info)
+			g_debug("\\ %s[%+4d]: %s%s%s (line %d)",
+				key ? " " : "",
+				key, chunk_info->description,
+				key ? "" : ": ",
+				key ? "" : str,
+				g3d_stream_line(global->stream));
+		else
+			g_warning("unknown chunk type %d in line %d", key,
+				g3d_stream_line(global->stream));
+#endif
 
 		if(chunk_info) {
 			if(chunk_info->callback) {

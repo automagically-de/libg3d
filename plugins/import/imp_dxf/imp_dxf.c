@@ -30,6 +30,7 @@
 
 #include "imp_dxf.h"
 #include "imp_dxf_section.h"
+#include "imp_dxf_def.h"
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)

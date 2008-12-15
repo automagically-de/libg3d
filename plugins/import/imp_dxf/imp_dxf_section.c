@@ -26,14 +26,25 @@
 
 #include "imp_dxf.h"
 #include "imp_dxf_chunks.h"
+#include "imp_dxf_entities.h"
 
 static DxfChunkInfo *dxf_get_chunk_info(DxfChunkInfo *chunks, gint32 id)
 {
 	guint32 i;
 
-	for(i = 0; chunks[i].id != DXF_GRPCODE_TERMINATOR; i ++)
+	for(i = 0; chunks[i].id != DXF_CODE_INVALID; i ++)
 		if(chunks[i].id == id)
-			return &(dxf_chunks[i]);
+			return &(chunks[i]);
+	return NULL;
+}
+
+static DxfEntityInfo *dxf_get_entity_info(const gchar *str)
+{
+	guint32 i;
+
+	for(i = 0; dxf_entities[i].name != NULL; i ++)
+		if(strcmp(dxf_entities[i].name, str) == 0)
+			return &(dxf_entities[i]);
 	return NULL;
 }
 
@@ -44,7 +55,7 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 	DxfChunkInfo *chunk_info;
 	DxfLocalData *local;
 	DxfEntityData *edata;
-	gchar *entity = NULL;
+	DxfEntityInfo *einfo = NULL;
 	gchar str[DXF_MAX_LINE + 1];
 	gfloat pcnt, prev_pcnt = 0.0;
 
@@ -81,12 +92,10 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 		if(key == 0) { /* new entity or end of section */
 			dxf_read_string(global, str);
 			DXF_TEST_ENDSEC(str);
-			if(entity != NULL)
-				g_free(entity);
-			entity = g_strdup(str);
+			einfo = dxf_get_entity_info(str);
 			edata->face = NULL;
 #if DEBUG > 0
-			g_debug("|  entity: %s", entity);
+			g_debug("|  entity: %s", str);
 #endif
 		}
 
@@ -95,7 +104,7 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 				local = g_new0(DxfLocalData, 1);
 				local->id = key;
 				local->parentid = parentid;
-				local->entity = entity;
+				local->eid = einfo ? einfo->id : DXF_E_OTHER;
 				local->edata = edata;
 
 				chunk_info->callback(global, local);

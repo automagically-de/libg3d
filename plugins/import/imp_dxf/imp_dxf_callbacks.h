@@ -1,18 +1,7 @@
 #ifndef _IMP_DXF_CALLBACKS_H
 #define _IMP_DXF_CALLBACKS_H
 
-#include <g3d/types.h>
-
-#include "imp_dxf.h"
-
-typedef struct {
-	gint32 id;
-	gint32 parentid;
-	gchar *entity;
-	DxfEntityData *edata;
-} DxfLocalData;
-
-typedef gboolean (* DxfCallback)(DxfGlobalData *, DxfLocalData *);
+#include "imp_dxf_types.h"
 
 gboolean dxf_debug_str(DxfGlobalData *global, DxfLocalData *local);
 gboolean dxf_debug_i16(DxfGlobalData *global, DxfLocalData *local);

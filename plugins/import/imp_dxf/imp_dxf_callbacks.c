@@ -6,6 +6,7 @@
 #include "imp_dxf.h"
 #include "imp_dxf_callbacks.h"
 #include "imp_dxf_vars.h"
+#include "imp_dxf_def.h"
 
 #define DXF_DEBUG_VALUES 0
 
@@ -139,7 +140,7 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local)
 	if(object == NULL)
 		return TRUE;
 
-	if(strcmp(local->entity, "3DFACE") == 0) {
+	if(local->eid == DXF_E_3DFACE) {
 		object = g_slist_nth_data(global->model->objects, 0);
 		local->edata->object = object;
 		local->edata->polyline_flags = 0;
@@ -157,7 +158,7 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local)
 			object->vertex_count * 3 * sizeof(gfloat));
 		object->faces = g_slist_append(object->faces, face);
 		local->edata->face = face;
-	} else if(strcmp(local->entity, "POLYLINE") == 0) {
+	} else if(local->eid == DXF_E_POLYLINE) {
 		local->edata->face = NULL;
 	}
 
@@ -167,7 +168,7 @@ gboolean dxf_grpcode_0(DxfGlobalData *global, DxfLocalData *local)
 gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local)
 {
 	local->edata->tmp_70 = dxf_read_int16(global);
-	if(strcmp(local->entity, "POLYLINE") == 0)
+	if(local->eid == DXF_E_POLYLINE)
 		local->edata->polyline_flags = local->edata->tmp_70;
 #if DEBUG > 0
 	g_debug("|  [70]: 0x%08x (%d)",
@@ -186,7 +187,7 @@ gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local)
 	if(object == NULL)
 		return TRUE;
 
-	if((strcmp(local->entity, "POLYLINE") == 0) &&
+	if((local->eid == DXF_E_POLYLINE) &&
 		(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
 		object = g_new0(G3DObject, 1);
 		object->name = g_strdup_printf("Poly Face @ line %d",
@@ -197,7 +198,7 @@ gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local)
 			object);
 		local->edata->object = object;
 		local->edata->vertex_offset = 0;
-	} else if(strcmp(local->entity, "VERTEX") == 0) {
+	} else if(local->eid == DXF_E_VERTEX) {
 		if((local->edata->polyline_flags & DXF_POLY_POLYFACE) &&
 			(local->edata->tmp_70 & 128)) {
 			/* vertex has face */
@@ -224,7 +225,7 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 	if(object == NULL)
 		return TRUE;
 
-	if(strcmp(local->entity, "POLYLINE") == 0) {
+	if(local->eid == DXF_E_POLYLINE) {
 #if DEBUG > 0
 		g_debug("|  POLYLINE: %d x %d (0x%08x)", width, height,
 			local->edata->polyline_flags);
@@ -245,7 +246,7 @@ gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
 			local->edata->tmp_71 = 0;
 			local->edata->tmp_i1 = 0; /* vertex counter */
 		}
-	} else if(strcmp(local->entity, "VERTEX") == 0) {
+	} else if (local->eid == DXF_E_VERTEX) {
 		if(local->edata->face &&
 			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
 			local->edata->face->vertex_indices[1] = ABS(width) - 1;
@@ -259,7 +260,7 @@ gboolean dxf_grpcode_73(DxfGlobalData *global, DxfLocalData *local)
 	gint32 i;
 
 	i = dxf_read_int16(global);
-	if(strcmp(local->entity, "VERTEX") == 0) {
+	if(local->eid == DXF_E_VERTEX) {
 		if(local->edata->face &&
 			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
 			local->edata->face->vertex_indices[2] = ABS(i) - 1;
@@ -273,7 +274,7 @@ gboolean dxf_grpcode_74(DxfGlobalData *global, DxfLocalData *local)
 	gint32 i;
 
 	i = dxf_read_int16(global);
-	if(strcmp(local->entity, "VERTEX") == 0) {
+	if(local->eid == DXF_E_VERTEX) {
 		if(local->edata->face &&
 			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
 			local->edata->face->vertex_count ++;
@@ -294,7 +295,7 @@ gboolean dxf_pnt_coord(DxfGlobalData *global, DxfLocalData *local)
 	gboolean is_vertex;
 
 	dbl = dxf_read_float64(global);
-	is_vertex = (strcmp(local->entity, "VERTEX") == 0);
+	is_vertex = (local->eid == DXF_E_VERTEX);
 
 	if(object == NULL)
 		return TRUE;

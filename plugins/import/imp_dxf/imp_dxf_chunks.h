@@ -2,14 +2,8 @@
 #define _IMP_DXF_CHUNKS_H
 
 #include "imp_dxf_callbacks.h"
-
-typedef struct {
-	gint32 id;
-	const gchar *description;
-	DxfCallback callback;
-} DxfChunkInfo;
-
-#define DXF_GRPCODE_TERMINATOR 0xDEADBEEF
+#include "imp_dxf_types.h"
+#include "imp_dxf_def.h"
 
 static DxfChunkInfo dxf_chunks[] = {
 	/* app: <0 */
@@ -169,7 +163,7 @@ static DxfChunkInfo dxf_chunks[] = {
 	{ 1070,  "extended data 16-bit integer",          dxf_debug_i16 },
 	{ 1071,  "extended data 32-bit integer",          dxf_debug_i32 },
 
-	{ DXF_GRPCODE_TERMINATOR, NULL, NULL },
+	{ DXF_CODE_INVALID, NULL, NULL },
 };
 
 #endif /* _IMP_DXF_CHUNKS_H */

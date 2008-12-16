@@ -25,6 +25,7 @@
 #include <g3d/context.h>
 
 #include "imp_dxf.h"
+#include "imp_dxf_prop.h"
 #include "imp_dxf_chunks.h"
 #include "imp_dxf_entities.h"
 
@@ -51,14 +52,68 @@ static DxfEntityInfo *dxf_get_entity_info(const gchar *str)
 	return NULL;
 }
 
+static gboolean dxf_entity_finalize(DxfGlobalData *global, guint32 sid,
+	DxfEntityData *edata, DxfEntityInfo *einfo, DxfEntityProps *eprop)
+{
+	DxfLocalData *local;
+
+	if(einfo->callback) {
+		local = g_new0(DxfLocalData, 1);
+		local->sid = sid;
+		local->eid = einfo->id;
+		local->edata = edata;
+		local->eprop = eprop;
+
+		einfo->callback(global, local);
+
+		g_free(local);
+	}
+	return TRUE;
+}
+
+static gboolean dxf_read_chunk(DxfGlobalData *global, DxfChunkInfo *cinfo,
+	DxfEntityProps *eprop)
+{
+	gint32 i;
+	gdouble dbl;
+	gchar str[DXF_MAX_LINE + 1];
+
+	switch(cinfo->type) {
+		case DXF_T_UNKNOWN:
+			if(cinfo->id == 9) /* variable name */
+				return dxf_debug_var(global, NULL);
+			break;
+		case DXF_T_EMPTY:
+			return TRUE;
+			break;
+		case DXF_T_INT16:
+			i = dxf_read_int16(global);
+			dxf_prop_set_int(eprop, cinfo->id, i);
+			break;
+		case DXF_T_INT32:
+			i = dxf_read_int32(global);
+			dxf_prop_set_int(eprop, cinfo->id, i);
+			break;
+		case DXF_T_FLOAT64:
+			dbl = dxf_read_float64(global);
+			dxf_prop_set_dbl(eprop, cinfo->id, dbl);
+			break;
+		case DXF_T_STRING:
+			dxf_read_string(global, str);
+			dxf_prop_set_str(eprop, cinfo->id, str);
+			break;
+	}
+	return TRUE;
+}
+
 static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 	gint32 parentid, const gchar *section)
 {
 	gint32 key;
 	DxfChunkInfo *chunk_info;
-	DxfLocalData *local;
 	DxfEntityData *edata;
 	DxfEntityInfo *einfo = NULL;
+	DxfEntityProps *eprop = NULL;
 	gchar str[DXF_MAX_LINE + 1];
 	gfloat pcnt, prev_pcnt = 0.0;
 
@@ -83,24 +138,16 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 			return FALSE;
 		}
 
-
 		if(key == 0) { /* new entity or end of section */
+			if(einfo) {
+				dxf_entity_finalize(global, parentid, edata, einfo, eprop);
+				dxf_prop_cleanup(eprop);
+				eprop = NULL;
+			}
 			dxf_read_string(global, str);
 			DXF_TEST_ENDSEC(str);
 			einfo = dxf_get_entity_info(str);
-			edata->face = NULL;
-			if(einfo) {
-				if(einfo->callback) {
-					local = g_new0(DxfLocalData, 1);
-					local->eid = einfo->id;
-					local->parentid = parentid;
-					local->edata = edata;
-
-					einfo->callback(global, local);
-
-					g_free(local);
-				}
-			}
+			eprop = dxf_prop_create();
 #if DEBUG > 0
 			g_debug("|  entity: %s", str);
 #endif
@@ -120,21 +167,7 @@ static gboolean dxf_parse_chunks(DxfGlobalData *global, DxfChunkInfo *chunks,
 #endif
 
 		if(chunk_info) {
-			if(chunk_info->callback) {
-				local = g_new0(DxfLocalData, 1);
-				local->id = key;
-				local->parentid = parentid;
-				local->sid = parentid;
-				local->eid = einfo ? einfo->id : DXF_E_OTHER;
-				local->edata = edata;
-
-				chunk_info->callback(global, local);
-
-				g_free(local);
-			} /* callback */
-			else {
-				DXF_HANDLE_UNKNOWN(global, key, str, section);
-			}
+			dxf_read_chunk(global, chunk_info, eprop);
 		} /* chunk_info */
 		else {
 			DXF_HANDLE_UNKNOWN(global, key, str, section);

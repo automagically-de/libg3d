@@ -15,19 +15,19 @@ typedef struct {
 	G3DObject *object;
 	G3DObject *block;
 	G3DMaterial *material;
-	G3DFace *face;
 	guint32 vertex_offset;
+	guint32 tmp_i1;
 	guint32 polyline_flags;
-	gint32 tmp_70, tmp_71;
-	gint32 tmp_i1;
 } DxfEntityData;
+
+typedef struct _DxfEntityProps DxfEntityProps;
 
 typedef struct {
 	gint32 id;
-	gint32 parentid;
 	guint32 sid; /* section id */
 	guint32 eid; /* entity id */
 	DxfEntityData *edata;
+	DxfEntityProps *eprop;
 } DxfLocalData;
 
 typedef gboolean (* DxfCallback)(DxfGlobalData *, DxfLocalData *);
@@ -39,10 +39,19 @@ typedef struct {
 	DxfCallback callback;
 } DxfEntityInfo;
 
+typedef enum {
+	DXF_T_UNKNOWN,
+	DXF_T_EMPTY,
+	DXF_T_INT16,
+	DXF_T_INT32,
+	DXF_T_FLOAT64,
+	DXF_T_STRING
+} DxfChunkType;
+
 typedef struct {
 	gint32 id;
 	const gchar *description;
-	DxfCallback callback;
+	DxfChunkType type;
 } DxfChunkInfo;
 
 #endif /* _IMP_DXF_TYPES_H */

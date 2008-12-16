@@ -1,4 +1,14 @@
 #include <string.h>
+#include <math.h>
+
+/* need a way to detect non-set float values */
+#ifndef FP_NAN
+#	ifdef HUGE
+#		define FP_NAN HUGE
+#	else
+#		define FP_NAN 3.40282347e+38F
+#	endif
+#endif
 
 #include <g3d/face.h>
 #include <g3d/object.h>
@@ -9,57 +19,7 @@
 #include "imp_dxf_callbacks.h"
 #include "imp_dxf_vars.h"
 #include "imp_dxf_def.h"
-
-#define DXF_DEBUG_VALUES 0
-
-gboolean dxf_empty(DxfGlobalData *global, DxfLocalData *local)
-{
-	return TRUE;
-}
-
-gboolean dxf_debug_i16(DxfGlobalData *global, DxfLocalData *local)
-{
-	gint32 i;
-
-	i = dxf_read_int16(global);
-#if DEBUG > DXF_DEBUG_VALUES
-	g_debug("|  [i16] %i", i);
-#endif
-	return TRUE;
-}
-
-gboolean dxf_debug_i32(DxfGlobalData *global, DxfLocalData *local)
-{
-	gint32 i;
-
-	i = dxf_read_int32(global);
-#if DEBUG > DXF_DEBUG_VALUES
-	g_debug("|  [i32] %i", i);
-#endif
-	return TRUE;
-}
-
-gboolean dxf_debug_dbl(DxfGlobalData *global, DxfLocalData *local)
-{
-	gdouble d;
-
-	d = dxf_read_float64(global);
-#if DEBUG > DXF_DEBUG_VALUES
-	g_debug("|  [dbl] %f", d);
-#endif
-	return TRUE;
-}
-
-gboolean dxf_debug_str(DxfGlobalData *global, DxfLocalData *local)
-{
-	gchar str[DXF_MAX_LINE + 1];
-
-	dxf_read_string(global, str);
-#if DEBUG > 0
-	g_debug("|  [str] %s", str);
-#endif
-	return TRUE;
-}
+#include "imp_dxf_prop.h"
 
 static gboolean dxf_str_in_array(gchar **array, const gchar *needle)
 {
@@ -149,264 +109,66 @@ static inline void dxf_object_append(DxfGlobalData *global,
 			object);
 }
 
-gboolean dxf_grpcode_2(DxfGlobalData *global, DxfLocalData *local)
-{
-	gchar str[DXF_MAX_LINE + 1];
-	G3DObject *block, *object, *subobject;
-	GSList *item;
-
-	dxf_read_string(global, str);
-	if(local->eid == DXF_E_BLOCK) {
-		g_free(local->edata->block->name);
-		local->edata->block->name = g_strdup(str);
-		g_hash_table_insert(global->blocks, local->edata->block->name,
-			local->edata->block);
-	} else if(local->eid == DXF_E_INSERT) {
-		block = g_hash_table_lookup(global->blocks, str);
-		if(block) {
-			object = g_new0(G3DObject, 1);
-			object->name = g_strdup_printf("copy of %s", str);
-			for(item = block->objects; item != NULL; item = item->next) {
-				subobject = g3d_object_duplicate(item->data);
-				object->objects = g_slist_append(object->objects, subobject);
-			}
-			global->model->objects = g_slist_append(global->model->objects,
-				object);
-			local->edata->object = object;
-			local->edata->vertex_offset = 0;
-		}
-	}
-	return TRUE;
-}
-
-gboolean dxf_grpcode_70(DxfGlobalData *global, DxfLocalData *local)
-{
-	local->edata->tmp_70 = dxf_read_int16(global);
-	if(local->eid == DXF_E_POLYLINE)
-		local->edata->polyline_flags = local->edata->tmp_70;
-#if DEBUG > 0
-	g_debug("|  [70]: 0x%08x (%d)",
-		local->edata->tmp_70, local->edata->tmp_70);
-#endif
-	return TRUE;
-}
-
-gboolean dxf_grpcode_71(DxfGlobalData *global, DxfLocalData *local)
-{
-	G3DObject *object;
-	G3DFace *face;
-
-	local->edata->tmp_71 = dxf_read_int16(global);
-	object = local->edata->object;
-	if(object == NULL)
-		return TRUE;
-
-	if((local->eid == DXF_E_POLYLINE) &&
-		(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
-		object = g_new0(G3DObject, 1);
-		object->name = g_strdup_printf("%sPoly Face @ line %d",
-			(local->sid == DXF_ID_BLOCKS) ? "[BLOCKS] " : "",
-			g3d_stream_line(global->stream));
-		object->vertex_count = local->edata->tmp_71;
-		object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
-		dxf_object_append(global, local, object);
-		local->edata->object = object;
-		local->edata->vertex_offset = 0;
-	} else if(local->eid == DXF_E_VERTEX) {
-		if((local->edata->polyline_flags & DXF_POLY_POLYFACE) &&
-			(local->edata->tmp_70 & 128)) {
-			/* vertex has face */
-			face = g_new0(G3DFace, 1);
-			face->material = local->edata->material;
-			face->vertex_count = 3;
-			face->vertex_indices = g_new0(guint32, face->vertex_count);
-			face->vertex_indices[0] = ABS(local->edata->tmp_71) - 1;
-			local->edata->face = face;
-			object->faces = g_slist_prepend(object->faces, face);
-		}
-	}
-	return TRUE;
-}
-
-gboolean dxf_grpcode_72(DxfGlobalData *global, DxfLocalData *local)
-{
-	G3DObject *object = local->edata->object;
-	gint32 width, height;
-
-	width = dxf_read_int16(global);
-	height = local->edata->tmp_71;
-
-	if(object == NULL)
-		return TRUE;
-
-	if(local->eid == DXF_E_POLYLINE) {
-#if DEBUG > 0
-		g_debug("|  POLYLINE: %d x %d (0x%08x)", width, height,
-			local->edata->polyline_flags);
-#endif
-
-		if(local->edata->polyline_flags & DXF_POLY_3D_POLYMESH) {
-			object = g3d_primitive_mesh(width, height,
-				(local->edata->polyline_flags & DXF_POLY_CLOSED),
-				(local->edata->polyline_flags & DXF_POLY_N_CLOSED),
-				local->edata->material);
-			object->name = g_strdup_printf("%s3D Poly Mesh @ line %d",
-				(local->sid == DXF_ID_BLOCKS) ? "[BLOCKS] " : "",
-				g3d_stream_line(global->stream));
-			local->edata->object = object;
-			dxf_object_append(global, local, object);
-
-			local->edata->vertex_offset = 0;
-			local->edata->tmp_71 = 0;
-			local->edata->tmp_i1 = 0; /* vertex counter */
-		}
-	} else if (local->eid == DXF_E_VERTEX) {
-		if(local->edata->face &&
-			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
-			local->edata->face->vertex_indices[1] = ABS(width) - 1;
-		}
-	}
-	return TRUE;
-}
-
-gboolean dxf_grpcode_73(DxfGlobalData *global, DxfLocalData *local)
-{
-	gint32 i;
-
-	i = dxf_read_int16(global);
-	if(local->eid == DXF_E_VERTEX) {
-		if(local->edata->face &&
-			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
-			local->edata->face->vertex_indices[2] = ABS(i) - 1;
-		}
-	}
-	return TRUE;
-}
-
-gboolean dxf_grpcode_74(DxfGlobalData *global, DxfLocalData *local)
-{
-	gint32 i;
-
-	i = dxf_read_int16(global);
-	if(local->eid == DXF_E_VERTEX) {
-		if(local->edata->face &&
-			(local->edata->polyline_flags & DXF_POLY_POLYFACE)) {
-			local->edata->face->vertex_count ++;
-			local->edata->face->vertex_indices = g_realloc(
-				local->edata->face->vertex_indices, 4 * sizeof(guint32));
-			local->edata->face->vertex_indices[3] = ABS(i) - 1;
-		}
-	}
-	return TRUE;
-}
-
-gboolean dxf_pnt_coord(DxfGlobalData *global, DxfLocalData *local)
-{
-	G3DFace *face = local->edata->face;
-	G3DObject *object = local->edata->object;
-	guint32 index, coord;
-	gdouble dbl;
-	gboolean is_vertex;
-	gfloat matrix[16];
-
-	dbl = dxf_read_float64(global);
-	is_vertex = (local->eid == DXF_E_VERTEX);
-
-	if(object == NULL)
-		return TRUE;
-
-	index = local->id % 10 + local->edata->vertex_offset;
-	coord = local->id / 10 - 1;
-
-	if(local->eid == DXF_E_INSERT) {
-		g3d_matrix_identity(matrix);
-		g3d_matrix_translate(
-			(coord == 0) ? dbl : 0.0,
-			(coord == 1) ? dbl : 0.0,
-			(coord == 2) ? dbl : 0.0,
-			matrix);
-		g3d_object_transform(object, matrix);
-		return TRUE;
-	}
-
-	if(face == NULL)
-		if(!is_vertex)
-			return TRUE;
-
-	if(is_vertex) {
-		index += local->edata->tmp_i1;
-		if(index >= object->vertex_count)
-			return TRUE;
-		if(local->id == 30)
-			local->edata->tmp_i1 ++;
-		if((local->edata->polyline_flags & DXF_POLY_POLYFACE) &&
-			!(local->edata->tmp_70 & 64))
-			return TRUE;
-	}
-
-#if DEBUG > 0
-	g_debug("|  [pnt] (%d * 3 + %d) = %f", index, coord, dbl);
-#endif
-
-	/* quad instead of triangle, resize */
-	if(local->id == 13) {
-		face->vertex_count = 4;
-		face->vertex_indices = g_realloc(face->vertex_indices,
-			4 * sizeof(guint32));
-		face->vertex_indices[3] = local->edata->vertex_offset + 3;
-		object->vertex_count ++;
-		object->vertex_data = g_realloc(object->vertex_data,
-			object->vertex_count * 3 * sizeof(gfloat));
-	}
-
-	g_return_val_if_fail(index < object->vertex_count, FALSE);
-
-	object->vertex_data[index * 3 + coord] = dbl;
-
-	return TRUE;
-}
-
 gboolean dxf_e_3DFACE(DxfGlobalData *global, DxfLocalData *local)
 {
 	G3DObject *object;
 	G3DFace *face;
-
-	if(local->edata->object == NULL)
-		return TRUE;
+	gint32 key, i, j;
+	gboolean quad;
 
 	object = g_slist_nth_data(global->model->objects, 0);
 	local->edata->object = object;
 	local->edata->polyline_flags = 0;
 
+	quad = (dxf_prop_get_dbl(local->eprop, 13, FP_NAN) != FP_NAN);
+
 	face = g_new0(G3DFace, 1);
 	face->material = local->edata->material;
-	face->vertex_count = 3;
-	face->vertex_indices = g_new0(guint32, 3);
+	face->vertex_count = quad ? 4 : 3;
+	face->vertex_indices = g_new0(guint32, face->vertex_count);
 	local->edata->vertex_offset = object->vertex_count;
-	face->vertex_indices[0] = local->edata->vertex_offset;
-	face->vertex_indices[1] = local->edata->vertex_offset + 1;
-	face->vertex_indices[2] = local->edata->vertex_offset + 2;
-	object->vertex_count += 3;
+	for(i = 0; i < face->vertex_count; i ++)
+		face->vertex_indices[i] = local->edata->vertex_offset + i;
+
+	object->vertex_count += face->vertex_count;
 	object->vertex_data = g_realloc(object->vertex_data,
 		object->vertex_count * 3 * sizeof(gfloat));
-	object->faces = g_slist_append(object->faces, face);
-		local->edata->face = face;
+	object->faces = g_slist_prepend(object->faces, face);
 
+	for(i = 0; i < face->vertex_count; i ++) {
+		for(j = 0; j < 3; j ++) {
+			key = (j + 1) * 10 + i;
+			object->vertex_data[(local->edata->vertex_offset + i) * 3 + j] =
+				dxf_prop_get_dbl(local->eprop, key, 0.0);
+#if DEBUG > 2
+			g_debug("|   3DFACE: data[%d = o + %d * 3 + %d] = prop[%d] = %.2f",
+				(local->edata->vertex_offset + i) * 3 + j,
+				i, j, key,
+				object->vertex_data[
+					(local->edata->vertex_offset + i) * 3 + j]);
+#endif
+		}
+	}
 	return TRUE;
 }
 
 gboolean dxf_e_BLOCK(DxfGlobalData *global, DxfLocalData *local)
 {
 	G3DObject *object;
+	const gchar *name;
 
-	if(local->parentid == DXF_ID_BLOCKS) {
+	name = dxf_prop_get_str(local->eprop, 2, NULL);
+	if(local->sid == DXF_ID_BLOCKS) {
 		object = g_new0(G3DObject, 1);
 		object->hide = TRUE;
-		object->name = g_strdup_printf("unnamed block @ line %d",
-			g3d_stream_line(global->stream));
+		object->name = name ? g_strdup(name) :
+			g_strdup_printf("unnamed block @ line %d",
+				g3d_stream_line(global->stream));
 		local->edata->block = object;
 		global->model->objects = g_slist_append(global->model->objects,
 			object);
+		if(name)
+			g_hash_table_insert(global->blocks, object->name, object);
 	}
 	return TRUE;
 }
@@ -417,13 +179,129 @@ gboolean dxf_e_ENDBLK(DxfGlobalData *global, DxfLocalData *local)
 	return TRUE;
 }
 
+gboolean dxf_e_INSERT(DxfGlobalData *global, DxfLocalData *local)
+{
+	G3DObject *block, *object, *subobject;
+	GSList *item;
+	const gchar *name;
+	gfloat matrix[16];
+
+	name = dxf_prop_get_str(local->eprop, 2, "*** error ***");
+	block = g_hash_table_lookup(global->blocks, name);
+	if(block) {
+		object = g_new0(G3DObject, 1);
+		object->name = g_strdup_printf("copy of %s", name);
+		for(item = block->objects; item != NULL; item = item->next) {
+			subobject = g3d_object_duplicate(item->data);
+			object->objects = g_slist_append(object->objects, subobject);
+		}
+		global->model->objects = g_slist_append(global->model->objects,
+			object);
+		local->edata->object = object;
+		local->edata->vertex_offset = 0;
+
+		/* scale */
+		g3d_matrix_identity(matrix);
+		g3d_matrix_scale(
+			dxf_prop_get_dbl(local->eprop, 41, 1.0),
+			dxf_prop_get_dbl(local->eprop, 42, 1.0),
+			dxf_prop_get_dbl(local->eprop, 43, 1.0),
+			matrix);
+		g3d_object_transform(object, matrix);
+
+		/* rotate */
+		g3d_matrix_identity(matrix);
+		g3d_matrix_rotate(
+			dxf_prop_get_dbl(local->eprop, 50, 0.0),
+			dxf_prop_get_dbl(local->eprop, 210, 0.0),
+			dxf_prop_get_dbl(local->eprop, 220, 0.0),
+			dxf_prop_get_dbl(local->eprop, 230, 1.0),
+			matrix);
+		g3d_object_transform(object, matrix);
+
+		/* translate */
+		g3d_matrix_identity(matrix);
+		g3d_matrix_translate(
+			dxf_prop_get_dbl(local->eprop, 10, 0.0),
+			dxf_prop_get_dbl(local->eprop, 20, 0.0),
+			dxf_prop_get_dbl(local->eprop, 30, 0.0),
+			matrix);
+		g3d_object_transform(object, matrix);
+	}
+	return TRUE;
+}
+
 gboolean dxf_e_POLYLINE(DxfGlobalData *global, DxfLocalData *local)
 {
-	if(local->edata->object == NULL)
+	G3DObject *object = NULL;
+	guint32 flags;
+	gint32 m, n;
+
+	flags = dxf_prop_get_int(local->eprop, 70, 0);
+	if(flags & DXF_POLY_POLYFACE) {
+		object = g_new0(G3DObject, 1);
+		object->name = g_strdup_printf("POLYFACE @ line %d",
+			g3d_stream_line(global->stream));
+		object->vertex_count = dxf_prop_get_int(local->eprop, 71, 0);
+		object->vertex_data = g_new0(gfloat, 3 * object->vertex_count);
+	} else if(flags & DXF_POLY_3D_POLYMESH) {
+		m = dxf_prop_get_int(local->eprop, 71, 0);
+		n = dxf_prop_get_int(local->eprop, 72, 0);
+		object = g3d_primitive_mesh(n, m,
+			(flags & DXF_POLY_CLOSED),
+			(flags & DXF_POLY_N_CLOSED),
+			local->edata->material);
+		object->name = g_strdup_printf("3D POLYMESH %d x %d @ line %d",
+			m, n, g3d_stream_line(global->stream));
+	}
+
+	if(object)
+		dxf_object_append(global, local, object);
+
+	local->edata->object = object;
+	local->edata->vertex_offset = 0;
+	local->edata->polyline_flags = flags;
+	local->edata->tmp_i1 = 0;
+	return TRUE;
+}
+
+gboolean dxf_e_VERTEX(DxfGlobalData *global, DxfLocalData *local)
+{
+	G3DObject *object = local->edata->object;
+	G3DFace *face;
+	guint32 index, flags;
+	gint32 i;
+
+	if(object == NULL)
 		return TRUE;
 
-	local->edata->face = NULL;
-	local->edata->polyline_flags = 0;
-	local->edata->tmp_i1 = 0;
+	index = local->edata->vertex_offset + local->edata->tmp_i1;
+
+	if(local->edata->polyline_flags & DXF_POLY_3D_POLYMESH) {
+		for(i = 0; i < 3; i ++)
+			object->vertex_data[index * 3 + i] = dxf_prop_get_dbl(local->eprop,
+				10 * (i + 1), 0.0);
+		local->edata->tmp_i1 ++;
+	} else if(local->edata->polyline_flags & DXF_POLY_POLYFACE) {
+		flags = dxf_prop_get_int(local->eprop, 70, 0);
+		if(flags & 64) { /* vertex coords */
+			for(i = 0; i < 3; i ++)
+				object->vertex_data[index * 3 + i] = dxf_prop_get_dbl(
+					local->eprop, 10 * (i + 1), 0.0);
+			local->edata->tmp_i1 ++;
+		}
+		if(flags & 128) {
+			face = g_new0(G3DFace, 1);
+			face->material = local->edata->material;
+			face->vertex_count =
+				dxf_prop_get_int(local->eprop, 74, 0) ? 4 : 3;
+			face->vertex_indices = g_new0(guint32, face->vertex_count);
+			for(i = 0; i < face->vertex_count; i ++)
+				face->vertex_indices[i] =
+					MAX(ABS(dxf_prop_get_int(local->eprop, 71 + i, 0)) - 1, 0);
+			object->faces = g_slist_prepend(object->faces, face);
+		}
+	}
+
 	return TRUE;
 }

@@ -6,13 +6,13 @@
 #include "imp_dxf_callbacks.h"
 
 static DxfEntityInfo dxf_entities[] = {
-	{ "3DFACE",    "3D face",                   DXF_E_3DFACE,   dxf_e_3DFACE },
+	{ "3DFACE",    "3D face",                   DXF_E_3DFACE, dxf_e_3DFACE },
 	{ "POLYLINE",  "Polyline",                DXF_E_POLYLINE, dxf_e_POLYLINE },
-	{ "VERTEX",    "Vertex",                    DXF_E_VERTEX,   NULL },
+	{ "VERTEX",    "Vertex",                    DXF_E_VERTEX, dxf_e_VERTEX },
 
-	{ "BLOCK",     "block",                     DXF_E_BLOCK,    dxf_e_BLOCK },
-	{ "ENDBLK",    "end of block",              DXF_E_OTHER,    dxf_e_ENDBLK },
-	{ "INSERT",    "insert block reference",    DXF_E_INSERT,   NULL },
+	{ "BLOCK",     "block",                     DXF_E_BLOCK,  dxf_e_BLOCK },
+	{ "ENDBLK",    "end of block",              DXF_E_OTHER,  dxf_e_ENDBLK },
+	{ "INSERT",    "insert block reference",    DXF_E_INSERT, dxf_e_INSERT },
 
 	{ "3DLINE",    "3D line",                   DXF_E_OTHER,    NULL },
 	{ "ACDBDICTIONARYWDFLT", "unknown",         DXF_E_OTHER,    NULL },

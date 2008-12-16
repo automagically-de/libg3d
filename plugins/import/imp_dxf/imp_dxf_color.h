@@ -19,22 +19,11 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef _IMP_DXF_PROP_H
-#define _IMP_DXF_PROP_H
+#ifndef _IMP_DXF_COLOR_H
+#define _IMP_DXF_COLOR_H
 
-#include "imp_dxf_types.h"
+#include <g3d/types.h>
 
-DxfEntityProps *dxf_prop_create(void);
-void dxf_prop_cleanup(DxfEntityProps *eprop);
+G3DMaterial *dxf_color_get_material(G3DModel *model, gint32 aci);
 
-gboolean dxf_prop_set_int(DxfEntityProps *eprop, gint32 key, gint32 i);
-gboolean dxf_prop_set_dbl(DxfEntityProps *eprop, gint32 key, gdouble dbl);
-gboolean dxf_prop_set_str(DxfEntityProps *eprop, gint32 key,
-	const gchar *str);
-
-gint32 dxf_prop_get_int(DxfEntityProps *eprop, gint32 key, gint32 dfl);
-gdouble dxf_prop_get_dbl(DxfEntityProps *eprop, gint32 key, gdouble dfl);
-const gchar *dxf_prop_get_str(DxfEntityProps *eprop, gint32 key,
-	const gchar *dfl);
-
-#endif /* _IMP_DXF_PROP_H */
+#endif /* _IMP_DXF_COLOR_H */

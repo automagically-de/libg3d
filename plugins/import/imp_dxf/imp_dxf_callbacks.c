@@ -1,3 +1,24 @@
+/* $Id:$ */
+
+/*
+    libg3d - 3D object loading library
+
+    Copyright (C) 2005-2008  Markus Dahms <mad@automagically.de>
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
 #include <string.h>
 #include <math.h>
 
@@ -20,6 +41,7 @@
 #include "imp_dxf_vars.h"
 #include "imp_dxf_def.h"
 #include "imp_dxf_prop.h"
+#include "imp_dxf_color.h"
 
 static gboolean dxf_str_in_array(gchar **array, const gchar *needle)
 {
@@ -113,8 +135,14 @@ gboolean dxf_e_3DFACE(DxfGlobalData *global, DxfLocalData *local)
 {
 	G3DObject *object;
 	G3DFace *face;
-	gint32 key, i, j;
+	G3DMaterial *material;
+	gint32 key, i, j, col;
 	gboolean quad;
+
+	col = dxf_prop_get_int(local->eprop, 62, 254);
+	material = dxf_color_get_material(global->model, col);
+	if(material == NULL)
+		material = local->edata->material;
 
 	object = g_slist_nth_data(global->model->objects, 0);
 	local->edata->object = object;
@@ -123,7 +151,7 @@ gboolean dxf_e_3DFACE(DxfGlobalData *global, DxfLocalData *local)
 	quad = (dxf_prop_get_dbl(local->eprop, 13, FP_NAN) != FP_NAN);
 
 	face = g_new0(G3DFace, 1);
-	face->material = local->edata->material;
+	face->material = material;
 	face->vertex_count = quad ? 4 : 3;
 	face->vertex_indices = g_new0(guint32, face->vertex_count);
 	local->edata->vertex_offset = object->vertex_count;
@@ -234,9 +262,17 @@ gboolean dxf_e_INSERT(DxfGlobalData *global, DxfLocalData *local)
 gboolean dxf_e_POLYLINE(DxfGlobalData *global, DxfLocalData *local)
 {
 	G3DObject *object = NULL;
+	G3DMaterial *material;
 	guint32 flags;
-	gint32 m, n;
+	gint32 m, n, col;
 
+	col = dxf_prop_get_int(local->eprop, 62, 254);
+	material = dxf_color_get_material(global->model, col);
+	if(material == NULL)
+		material = local->edata->material;
+#if DEBUG > 0
+	g_debug("POLYLINE: color #%d", col);
+#endif
 	flags = dxf_prop_get_int(local->eprop, 70, 0);
 	if(flags & DXF_POLY_POLYFACE) {
 		object = g_new0(G3DObject, 1);
@@ -250,7 +286,7 @@ gboolean dxf_e_POLYLINE(DxfGlobalData *global, DxfLocalData *local)
 		object = g3d_primitive_mesh(n, m,
 			(flags & DXF_POLY_CLOSED),
 			(flags & DXF_POLY_N_CLOSED),
-			local->edata->material);
+			material);
 		object->name = g_strdup_printf("3D POLYMESH %d x %d @ line %d",
 			m, n, g3d_stream_line(global->stream));
 	}
@@ -269,8 +305,9 @@ gboolean dxf_e_VERTEX(DxfGlobalData *global, DxfLocalData *local)
 {
 	G3DObject *object = local->edata->object;
 	G3DFace *face;
+	G3DMaterial *material;
 	guint32 index, flags;
-	gint32 i;
+	gint32 i, col;
 
 	if(object == NULL)
 		return TRUE;
@@ -291,8 +328,13 @@ gboolean dxf_e_VERTEX(DxfGlobalData *global, DxfLocalData *local)
 			local->edata->tmp_i1 ++;
 		}
 		if(flags & 128) {
+			col = dxf_prop_get_int(local->eprop, 62, 254);
+			material = dxf_color_get_material(global->model, col);
+			if(material == NULL)
+				material = local->edata->material;
+
 			face = g_new0(G3DFace, 1);
-			face->material = local->edata->material;
+			face->material = material;
 			face->vertex_count =
 				dxf_prop_get_int(local->eprop, 74, 0) ? 4 : 3;
 			face->vertex_indices = g_new0(guint32, face->vertex_count);

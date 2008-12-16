@@ -85,6 +85,7 @@ static DxfChunkInfo dxf_chunks[] = {
 	{ 51,    "angle",                                 DXF_T_FLOAT64 },
 	{ 52,    "angle",                                 DXF_T_FLOAT64 },
 	/* 16-bit integer value: 60-79 */
+	{ 60,    "entity visibility",                     DXF_T_INT16 },
 	{ 62,    "color number",                          DXF_T_INT16 },
 	{ 65,    "integer value, 16-bit",                 DXF_T_INT16 },
 	{ 66,    "entities follow",                       DXF_T_INT16 },
@@ -179,9 +180,13 @@ static DxfChunkInfo dxf_chunks[] = {
 	{ 1002,  "extended data control string",          DXF_T_STRING },
 
 	{ 1010,  "extended data point, X value",          DXF_T_FLOAT64 },
+	{ 1011,  "extended 3D world space, X value",      DXF_T_FLOAT64 },
 	{ 1020,  "extended data point, Y value",          DXF_T_FLOAT64 },
+	{ 1021,  "extended 3D world space, Y value",      DXF_T_FLOAT64 },
 	{ 1030,  "extended data point, Z value",          DXF_T_FLOAT64 },
+	{ 1031,  "extended 3D world space, Z value",      DXF_T_FLOAT64 },
 	{ 1040,  "extended data dbl-prec fp value",       DXF_T_FLOAT64 },
+	{ 1041,  "extended data distance value",          DXF_T_FLOAT64 },
 	{ 1070,  "extended data 16-bit integer",          DXF_T_INT16 },
 	{ 1071,  "extended data 32-bit integer",          DXF_T_INT32 },
 

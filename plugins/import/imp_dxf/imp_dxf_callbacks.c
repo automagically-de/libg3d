@@ -270,9 +270,7 @@ gboolean dxf_e_POLYLINE(DxfGlobalData *global, DxfLocalData *local)
 	material = dxf_color_get_material(global->model, col);
 	if(material == NULL)
 		material = local->edata->material;
-#if DEBUG > 0
-	g_debug("POLYLINE: color #%d", col);
-#endif
+
 	flags = dxf_prop_get_int(local->eprop, 70, 0);
 	if(flags & DXF_POLY_POLYFACE) {
 		object = g_new0(G3DObject, 1);
@@ -315,6 +313,7 @@ gboolean dxf_e_VERTEX(DxfGlobalData *global, DxfLocalData *local)
 	index = local->edata->vertex_offset + local->edata->tmp_i1;
 
 	if(local->edata->polyline_flags & DXF_POLY_3D_POLYMESH) {
+		g_return_val_if_fail(index < object->vertex_count, FALSE);
 		for(i = 0; i < 3; i ++)
 			object->vertex_data[index * 3 + i] = dxf_prop_get_dbl(local->eprop,
 				10 * (i + 1), 0.0);
@@ -322,6 +321,7 @@ gboolean dxf_e_VERTEX(DxfGlobalData *global, DxfLocalData *local)
 	} else if(local->edata->polyline_flags & DXF_POLY_POLYFACE) {
 		flags = dxf_prop_get_int(local->eprop, 70, 0);
 		if(flags & 64) { /* vertex coords */
+			g_return_val_if_fail(index < object->vertex_count, FALSE);
 			for(i = 0; i < 3; i ++)
 				object->vertex_data[index * 3 + i] = dxf_prop_get_dbl(
 					local->eprop, 10 * (i + 1), 0.0);

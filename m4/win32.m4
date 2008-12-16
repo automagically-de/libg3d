@@ -1,5 +1,6 @@
 
-AC_DEFUN([AC_IS_WIN32], [
+AC_DEFUN([AM_IS_WIN32],
+[
 	AC_MSG_CHECKING([for Win32])
 	case "$host" in
 		*-mingw*)
@@ -22,6 +23,5 @@ AC_DEFUN([AC_IS_WIN32], [
 		enable_static=no
 		enable_shared=yes
 	fi
-	AM_CONDITIONAL(OS_WIN32, test "$os_win32" = yes)
 ])
 

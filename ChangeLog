@@ -5,6 +5,7 @@ Changes since version 0.0.6:
 	* imp_flt: some improvements
 	* imp_ldraw: LDraw plugin, usable
 	* imp_dae: COLLADA plugin, mostly usable
+	* imp_dxf: mostly rewritten, now supports POLYLINE entries
 	* imp_kmz: G**gle Earth plugin, mostly usable
 	* imp_acf: experimental X-Plane 6/7 plugin, usable to some degree
 	* imp_blend: experimental Blender plugin, not usable

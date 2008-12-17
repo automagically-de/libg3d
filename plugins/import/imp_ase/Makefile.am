@@ -1,8 +1,6 @@
 pluginimpdir = $(pkglibdir)/plugins/import
 
-if EXPERIMENTAL
 pluginimp_LTLIBRARIES = imp_ase.la
-endif
 
 AM_CFLAGS = \
 	-Wall -ansi -pedantic \

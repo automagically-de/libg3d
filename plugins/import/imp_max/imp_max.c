@@ -315,7 +315,7 @@ static gboolean max_read_chunk(MaxGlobalData *global, gint32 *nb,
 				return FALSE;
 
 	if(local->nb > 0)
-		g3d_stream_seek(global->stream, local->nb, G_SEEK_CUR);
+		g3d_stream_skip(global->stream, local->nb);
 
 	g_free(local);
 

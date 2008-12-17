@@ -1,25 +1,33 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: max
+# description
+description: 3D Studio MAX
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [3] libgsf
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
-magic: 
+magic: [0]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [5]
 # Progress bar updates
-progress: 
+progress: [5]
 # Container format
-container: 
+container: [5]
 # Object grouping
 grouping: 
 # Object transformation
 transformation: 
 # Vertex data
-vertex: 
+vertex: [3]
 # Normal data
 normal: 
 # Face data
-face: 
+face: [3]
 # Face colors
 color: 
 # Face transparency

@@ -1,15 +1,23 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: md2
+# description
+description: Quake 2 models
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [0]
 # Progress bar updates
-progress: 
+progress: [0]
 # Container format
-container: 
+container: [5]
 # Object grouping
 grouping: 
 # Object transformation
@@ -25,7 +33,7 @@ color:
 # Face transparency
 alpha: 
 # Texture images
-teximage: 
+teximage: [4]
 # Texture coordinates (UV)
 texuv: 
 # Texture mapping parameters

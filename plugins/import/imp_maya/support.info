@@ -1,15 +1,23 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: mb
+# description
+description: Maya
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [5]
 # Progress bar updates
-progress: 
+progress: [5]
 # Container format
-container: 
+container: [3] only binary, no ASCII
 # Object grouping
 grouping: 
 # Object transformation

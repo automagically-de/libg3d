@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: acf
+# description
+description: 
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [3] airfoil data in $AIRFOIL_DIR
 # libmagic detector
 magic: [0] binary with no magic
 # G3DStream support

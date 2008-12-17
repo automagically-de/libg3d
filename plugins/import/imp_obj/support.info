@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: obj
+# description
+description: 
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [0] text format w/o magic
 # G3DStream support

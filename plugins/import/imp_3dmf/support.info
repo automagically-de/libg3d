@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: 3mf, 3dmf, b3d
+# description
+description: 
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [5]
 # G3DStream support
@@ -7,7 +15,7 @@ stream: [5]
 # Works without seeking
 seekfree: [0]
 # Progress bar updates
-progress: 
+progress: [0]
 # Container format
 container: [3] ASCII files not supported
 # Object grouping

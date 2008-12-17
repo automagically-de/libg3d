@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: lcd
+# description
+description: LeoCAD
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [3] LeoCAD parts library in $LEOCAD_LIB
 # libmagic detector
 magic: [5]
 # G3DStream support
@@ -7,7 +15,7 @@ stream: [5]
 # Works without seeking
 seekfree: [0] some data at end of file has to be read first
 # Progress bar updates
-progress: 
+progress: [0]
 # Container format
 container: [4] some versions may be unsupported
 # Object grouping

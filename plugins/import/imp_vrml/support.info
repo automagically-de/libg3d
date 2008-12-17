@@ -1,9 +1,17 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: vrml, iv
+# description
+description: VRMLv1, Inventor
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [3] flex
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
-magic: 
+magic: [4] VRML, not Inventor
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
 seekfree: 
 # Progress bar updates

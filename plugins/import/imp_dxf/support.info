@@ -1,32 +1,40 @@
 # supported file types (extensions)
 filetypes: dxf
+# description
+description: 
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [3]
 # G3DStream support
 stream: [5]
 # Works without seeking
-seekfree: [3] not yet, should be possible
+seekfree: [0] not yet, should be possible
 # Progress bar updates
 progress: [5]
 # Container format
 container: [5]
 # Object grouping
-grouping: 
+grouping: [4]
 # Object transformation
 transformation: 
 # Vertex data
-vertex: [3] 3DFACE works, POLYLINE not
+vertex: [4]
 # Normal data
-normal: 
+normal: [0]
 # Face data
-face: [3] 3DFACE works, POLYLINE not
+face: [4]
 # Face colors
-color: 
+color: [4]
 # Face transparency
-alpha: 
+alpha: [0]
 # Texture images
-teximage: 
+teximage: [0]
 # Texture coordinates (UV)
-texuv: 
+texuv: [0]
 # Texture mapping parameters
-texmap: 
+texmap: [0]

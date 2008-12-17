@@ -1,11 +1,19 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: test
+# description
+description: plugin to test some concepts and routines in libg3d, not loading any files
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
-magic: 
+magic: [0] 
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [5] not file-based
 # Progress bar updates
 progress: 
 # Container format

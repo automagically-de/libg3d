@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: ase
+# description
+description: 
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [5]
 # G3DStream support
@@ -7,7 +15,7 @@ stream: [5]
 # Works without seeking
 seekfree: [5]
 # Progress bar updates
-progress: 
+progress: [5]
 # Container format
 container: [5]
 # Object grouping
@@ -25,7 +33,7 @@ color:
 # Face transparency
 alpha: 
 # Texture images
-teximage: 
+teximage: [3] partly
 # Texture coordinates (UV)
 texuv: 
 # Texture mapping parameters

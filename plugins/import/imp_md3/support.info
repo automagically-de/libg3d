@@ -1,32 +1,40 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: md3
+# description
+description:
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
-magic: 
+magic: [5]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [0] may be possible
 # Progress bar updates
-progress: 
+progress: [0]
 # Container format
-container: 
+container: [5]
 # Object grouping
-grouping: 
+grouping: [5]
 # Object transformation
-transformation: 
+transformation: [5]
 # Vertex data
-vertex: 
+vertex: [5]
 # Normal data
-normal: 
+normal: [5]
 # Face data
-face: 
+face: [5]
 # Face colors
-color: 
+color: [0]
 # Face transparency
 alpha: 
 # Texture images
-teximage: 
+teximage: [3] some guessing
 # Texture coordinates (UV)
-texuv: 
+texuv: [5]
 # Texture mapping parameters
 texmap: 

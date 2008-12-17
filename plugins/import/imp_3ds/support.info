@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: 3ds, prj
+# description
+description: 
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [5]
 # G3DStream support

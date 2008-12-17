@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: osm
+# description
+description: OpenStreetMap
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [3] libxml2
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [5]
 # G3DStream support
@@ -7,7 +15,7 @@ stream: [5]
 # Works without seeking
 seekfree: [5]
 # Progress bar updates
-progress: 
+progress: [0]
 # Container format
 container: [5]
 # Object grouping

@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: dat, mpd, ldr
+# description
+description: LDraw
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [3] LDraw parts library in $LDRAWDIR
 # libmagic detector
 magic: [3] partly, .dat has no real magic
 # G3DStream support
@@ -7,23 +15,23 @@ stream: [5]
 # Works without seeking
 seekfree: [5]
 # Progress bar updates
-progress: 
+progress: [3] bigger jumps
 # Container format
 container: [5]
 # Object grouping
 grouping: 
 # Object transformation
-transformation: 
+transformation: [5]
 # Vertex data
-vertex: 
+vertex: [5]
 # Normal data
 normal: 
 # Face data
-face: 
+face: [5]
 # Face colors
-color: 
+color: [5]
 # Face transparency
-alpha: 
+alpha: [5]
 # Texture images
 teximage: 
 # Texture coordinates (UV)

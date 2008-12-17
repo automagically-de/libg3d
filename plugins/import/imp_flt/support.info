@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: flt
+# description
+description: OpenFlight
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [4]
 # G3DStream support

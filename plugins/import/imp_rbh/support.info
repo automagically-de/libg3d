@@ -1,9 +1,17 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: rbh
+# description
+description: Discworld Noir, VERY experimental
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
-magic: 
+magic: [0]
 # G3DStream support
-stream: 
+stream: [0]
 # Works without seeking
 seekfree: 
 # Progress bar updates

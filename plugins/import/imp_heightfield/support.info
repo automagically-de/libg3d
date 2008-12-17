@@ -1,5 +1,13 @@
 # supported file types (extensions)
-filetypes: (many image file types)
+filetypes: bmp, sgi, dds, (gdk-pixbuf supported types)
+# description
+description: Height field
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [4] gdk-pixbuf for more image types
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [0] no static list possible
 # G3DStream support
@@ -7,19 +15,19 @@ stream: [5]
 # Works without seeking
 seekfree: [5]
 # Progress bar updates
-progress: 
+progress: [5]
 # Container format
 container: [5] handled by image plugins
 # Object grouping
-grouping: 
+grouping: [3] just one mesh
 # Object transformation
 transformation: 
 # Vertex data
-vertex: 
+vertex: [5]
 # Normal data
-normal: 
+normal:
 # Face data
-face: 
+face: [5]
 # Face colors
 color: [0] no external color information possible yet
 # Face transparency

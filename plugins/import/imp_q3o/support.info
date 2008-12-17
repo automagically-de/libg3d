@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: q3o, q3s
+# description
+description: Quick3D
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [5]
 # G3DStream support
@@ -7,7 +15,7 @@ stream: [5]
 # Works without seeking
 seekfree: [5]
 # Progress bar updates
-progress: 
+progress: [0]
 # Container format
 container: [5]
 # Object grouping

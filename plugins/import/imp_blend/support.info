@@ -1,11 +1,19 @@
 # supported file types (extensions)
 filetypes: blend
+# description
+description: 
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [5]
 # G3DStream support
 stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [0]
 # Progress bar updates
 progress: 
 # Container format

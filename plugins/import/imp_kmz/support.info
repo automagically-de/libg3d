@@ -1,5 +1,13 @@
 # supported file types (extensions)
 filetypes: kmz
+# description
+description: Google Earth container, models handled by COLLADA plugin (imp_dae)
+# built without EXPERIMENTAL
+stable: [5]
+# depends on libraries except glib
+dependencies: [3] libxml2, libgsf
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
 magic: [5]
 # G3DStream support

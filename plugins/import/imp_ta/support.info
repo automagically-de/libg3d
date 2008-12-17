@@ -1,32 +1,40 @@
 # supported file types (extensions)
-filetypes: 
+filetypes: 3do
+# description
+description: Total Annihilation
+# built without EXPERIMENTAL
+stable: [0]
+# depends on libraries except glib
+dependencies: [5]
+# depends on external data files at runtime
+depdata: [5]
 # libmagic detector
-magic: 
+magic: [0]
 # G3DStream support
-stream: 
+stream: [5]
 # Works without seeking
-seekfree: 
+seekfree: [0]
 # Progress bar updates
-progress: 
+progress: [0]
 # Container format
-container: 
+container: [3] .3do works, .ufo not
 # Object grouping
-grouping: 
+grouping: [5]
 # Object transformation
-transformation: 
+transformation: [5]
 # Vertex data
-vertex: 
+vertex: [5]
 # Normal data
 normal: 
 # Face data
-face: 
+face: [5]
 # Face colors
-color: 
+color: [4]
 # Face transparency
-alpha: 
+alpha: [0]
 # Texture images
-teximage: 
+teximage: [0]
 # Texture coordinates (UV)
-texuv: 
+texuv: [0]
 # Texture mapping parameters
-texmap: 
+texmap: [0]

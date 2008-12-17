@@ -25,6 +25,7 @@ for my $dirname (@{$plugins->{DIRS}}) {
 	# don't use hash keys as it may shuffle the items
 	open INFO, ">$infofile" or die "could not write to $infofile";
 	foreach(@{$template->{template_order}}) {
+		next if /^--/;
 		my $i = ${$template->{template}}{$_};
 		print INFO "# $i\n";
 		print INFO $_.": ";

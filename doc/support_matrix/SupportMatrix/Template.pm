@@ -16,7 +16,11 @@ sub new {
 	open TMPL, "<$tmpl_dir/type.tmpl" or die "could not open template";
 
 	while(readline TMPL) {
-		next if /^(\s*$|#|--)/;
+		next if /^(\s*$|#)/;
+		if(/^--/) {
+			push @{$self->{template_order}}, "--";
+			next;
+		}
 		split /:\s*/, $_, 2;
 		${$self->{template}}{$_[0]} = $_[1];
 		chomp ${$self->{template}}{$_[0]};

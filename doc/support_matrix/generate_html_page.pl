@@ -14,6 +14,8 @@ print HTML <<EOD;
 		<style>
 		<!--
 table { border: 1px solid black; width: 100%; border-collapse: collapse; }
+tr.topline { border-top: 2px solid black; }
+tr.default { }
 td    { border: 1px solid gray; margin: 2px; }
 th    { text-align: right; background-color: #BBB; font-weight: normal; }
 		//-->
@@ -27,6 +29,7 @@ EOD
 my $plugins = SupportMatrix::Plugins->new();
 my $template = SupportMatrix::Template->new();
 my %infos = ();
+my $class = "default";
 
 for my $d (@{$plugins->{DIRS}}) {
 	$infos{$d} = SupportMatrix::Info->new($d);
@@ -51,7 +54,12 @@ my @colors = (
 
 for my $o (@{$template->{template_order}}) {
 	next if $o =~ /filetypes/;
-	print HTML "<tr><th id=\"th-$_\">".${$template->{template}}{$o}."</th>\n";
+	if($o =~ /^--$/) {
+		$class="topline";
+		next;
+	}
+	print HTML "<tr class=\"$class\"><th id=\"th-$_\">".
+		${$template->{template}}{$o}."</th>\n";
 	for my $d (@{$plugins->{DIRS}}) {
 		my $style = undef;
 		my $info = \%{$infos{$d}->{INFO}};
@@ -62,6 +70,7 @@ for my $o (@{$template->{template_order}}) {
 		}
 		$text =~ s/^$/&nbsp;/;
 		print HTML "<td style=\"$style\">$text</td>\n";
+		$class="default";
 	}
 	print HTML "</tr>\n";
 }

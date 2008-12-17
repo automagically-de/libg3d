@@ -8,6 +8,7 @@ my $import_dir = "../../plugins/import";
 sub new {
 	my $class = shift;
 	my $self = {};
+	my @dirs;
 
 	$self->{PLUGIN_DIR} = $import_dir;
 	$self->{DIRS} = [];
@@ -17,9 +18,13 @@ sub new {
 		next unless /^imp_/;
 		my $dirname = "$import_dir/$_";
 		next unless -d $dirname;
-		push @{$self->{DIRS}}, $dirname;
+		push @dirs, $dirname;
 	}
 	closedir DIR;
+
+	foreach (sort @dirs) {
+		push @{$self->{DIRS}}, $_;
+	}
 
 	bless $self, $class;
 	return $self;

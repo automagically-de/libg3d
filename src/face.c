@@ -34,7 +34,7 @@ void g3d_face_free(G3DFace *face)
 }
 
 gboolean g3d_face_get_normal(G3DFace *face, G3DObject *object,
-	gfloat *nx, gfloat *ny, gfloat *nz)
+	G3DVector *nx, G3DVector *ny, G3DVector *nz)
 {
 	guint32 n = face->vertex_count - 1;
 

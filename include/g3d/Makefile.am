@@ -16,5 +16,6 @@ g3dinclude_HEADERS = \
 	iff.h \
 	primitive.h \
 	vector.h \
-	matrix.h
+	matrix.h \
+	quat.h
 

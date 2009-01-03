@@ -23,7 +23,7 @@
 #ifndef _G3D_MATRIX_H
 #define _G3D_MATRIX_H
 
-#include <glib.h>
+#include <g3d/types.h>
 
 G_BEGIN_DECLS
 
@@ -34,7 +34,7 @@ G_BEGIN_DECLS
  *
  * Matrices in libg3d have the following layout:
  *
- * gfloat matrix[16]:
+ * G3DMatrix matrix[16]:
  *
  * matrix[col * 4 + row] = f;
  */
@@ -47,7 +47,30 @@ G_BEGIN_DECLS
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_matrix_identity(gfloat *matrix);
+gboolean g3d_matrix_identity(G3DMatrix *matrix);
+
+/**
+ * g3d_matrix_new:
+ *
+ * Create a new matrix. It is also set to the identity matrix.
+ *
+ * Returns: the new matrix
+ */
+static inline G3DMatrix *g3d_matrix_new(void) {
+	G3DMatrix *matrix = g_new(G3DMatrix, 16);
+	g3d_matrix_identity(matrix);
+	return matrix;
+}
+
+/**
+ * g3d_matrix_free:
+ * @matrix: the matrix to free
+ *
+ * Free the memory allocated by a matrix.
+ */
+static inline void g3d_matrix_free(G3DMatrix *matrix) {
+	g_free(matrix);
+}
 
 /**
  * g3d_matrix_multiply:
@@ -59,7 +82,7 @@ gboolean g3d_matrix_identity(gfloat *matrix);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_matrix_multiply(gfloat *m1, gfloat *m2, gfloat *rm);
+gboolean g3d_matrix_multiply(G3DMatrix *m1, G3DMatrix *m2, G3DMatrix *rm);
 
 /**
  * g3d_matrix_translate:
@@ -72,7 +95,8 @@ gboolean g3d_matrix_multiply(gfloat *m1, gfloat *m2, gfloat *rm);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_matrix_translate(gfloat x, gfloat y, gfloat z, gfloat *rm);
+gboolean g3d_matrix_translate(G3DFloat x, G3DFloat y, G3DFloat z,
+	G3DMatrix *rm);
 
 /**
  * g3d_matrix_rotate:
@@ -86,8 +110,8 @@ gboolean g3d_matrix_translate(gfloat x, gfloat y, gfloat z, gfloat *rm);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_matrix_rotate(gfloat angle, gfloat ax, gfloat ay, gfloat az,
-	gfloat *rm);
+gboolean g3d_matrix_rotate(G3DFloat angle, G3DFloat ax, G3DFloat ay,
+	G3DFloat az, G3DMatrix *rm);
 
 /**
  * g3d_matrix_rotate_xyz
@@ -100,7 +124,8 @@ gboolean g3d_matrix_rotate(gfloat angle, gfloat ax, gfloat ay, gfloat az,
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_matrix_rotate_xyz(gfloat rx, gfloat ry, gfloat rz, gfloat *rm);
+gboolean g3d_matrix_rotate_xyz(G3DFloat rx, G3DFloat ry, G3DFloat rz,
+	G3DMatrix *rm);
 
 /**
  * g3d_matrix_scale:
@@ -113,7 +138,7 @@ gboolean g3d_matrix_rotate_xyz(gfloat rx, gfloat ry, gfloat rz, gfloat *rm);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_matrix_scale(gfloat x, gfloat y, gfloat z, gfloat *rm);
+gboolean g3d_matrix_scale(G3DFloat x, G3DFloat y, G3DFloat z, G3DMatrix *rm);
 
 /**
  * g3d_matrix_transpose:
@@ -123,7 +148,7 @@ gboolean g3d_matrix_scale(gfloat x, gfloat y, gfloat z, gfloat *rm);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_matrix_transpose(gfloat *matrix);
+gboolean g3d_matrix_transpose(G3DMatrix *matrix);
 
 /**
  * g3d_matrix_determinant:
@@ -133,7 +158,7 @@ gboolean g3d_matrix_transpose(gfloat *matrix);
  *
  * Returns: the determinant.
  */
-gfloat g3d_matrix_determinant(gfloat *matrix);
+G3DFloat g3d_matrix_determinant(G3DMatrix *matrix);
 
 /**
  * g3d_matrix_dump:
@@ -143,7 +168,7 @@ gfloat g3d_matrix_determinant(gfloat *matrix);
  *
  * Returns: TRUE if matrix is dumped, FALSE else
  */
-gboolean g3d_matrix_dump(gfloat *matrix);
+gboolean g3d_matrix_dump(G3DMatrix *matrix);
 
 G_END_DECLS
 

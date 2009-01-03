@@ -20,6 +20,7 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <g3d/types.h>
 #include <g3d/stream.h>
 
 gint32 g3d_stream_read_int8(G3DStream *stream)
@@ -68,10 +69,10 @@ static void g3d_stream_read_bytes_swap(G3DStream *stream, guint8 *buf, gsize n)
 		buf[i] = g3d_stream_read_int8(stream);
 }
 
-gfloat g3d_stream_read_float_be(G3DStream *stream)
+G3DFloat g3d_stream_read_float_be(G3DStream *stream)
 {
 	union {
-		gfloat f;
+		G3DFloat f;
 		guint8 u[4];
 	} u;
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
@@ -82,10 +83,10 @@ gfloat g3d_stream_read_float_be(G3DStream *stream)
 	return u.f;
 }
 
-gfloat g3d_stream_read_float_le(G3DStream *stream)
+G3DFloat g3d_stream_read_float_le(G3DStream *stream)
 {
 	union {
-		gfloat f;
+		G3DFloat f;
 		guint8 u[4];
 	} u;
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
@@ -95,10 +96,10 @@ gfloat g3d_stream_read_float_le(G3DStream *stream)
 #endif
 	return u.f;
 }
-gdouble g3d_stream_read_double_be(G3DStream *stream)
+G3DDouble g3d_stream_read_double_be(G3DStream *stream)
 {
 	union {
-		gdouble f;
+		G3DDouble f;
 		guint8 u[8];
 	} u;
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
@@ -109,10 +110,10 @@ gdouble g3d_stream_read_double_be(G3DStream *stream)
 	return u.f;
 }
 
-gdouble g3d_stream_read_double_le(G3DStream *stream)
+G3DDouble g3d_stream_read_double_le(G3DStream *stream)
 {
 	union {
-		gdouble f;
+		G3DDouble f;
 		guint8 u[8];
 	} u;
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN

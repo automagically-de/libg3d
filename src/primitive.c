@@ -32,7 +32,7 @@
 #include <g3d/primitive.h>
 #include <g3d/face.h>
 
-G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
+G3DObject *g3d_primitive_cube(G3DFloat width, G3DFloat height, G3DFloat depth,
 	G3DMaterial *material)
 {
 	g_warning("g3d_primitive_cube is deprecated - please update your "
@@ -40,12 +40,12 @@ G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
 	return g3d_primitive_box(width, height, depth, material);
 }
 
-G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
+G3DObject *g3d_primitive_box(G3DFloat width, G3DFloat height, G3DFloat depth,
 	G3DMaterial *material)
 {
 	G3DObject *object;
 	G3DFace *face;
-	gfloat nx, ny, nz;
+	G3DVector nx, ny, nz;
 	gint32 faces[6][4] = {
 		{ 0, 1, 2, 3 },
 		{ 4, 5, 6, 7 },
@@ -58,7 +58,7 @@ G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
 	object = g_new0(G3DObject, 1);
 
 	object->vertex_count = 8;
-	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+	object->vertex_data = g_new0(G3DVector, object->vertex_count * 3);
 
 	object->vertex_data[0 * 3 + 0] = -(width / 2);
 	object->vertex_data[0 * 3 + 1] = -(height / 2);
@@ -97,9 +97,9 @@ G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
 		face = g_new0(G3DFace, 1);
 		face->vertex_count = 4;
 		face->vertex_indices = g_new0(guint32, 4);
-		face->normals = g_new0(gfloat, 4 * 3);
+		face->normals = g_new0(G3DVector, 4 * 3);
 		face->tex_vertex_count = 4;
-		face->tex_vertex_data = g_new0(gfloat, 4 * 2);
+		face->tex_vertex_data = g_new0(G3DVector, 4 * 2);
 		for(j = 0; j < 4; j ++) {
 			face->vertex_indices[j] = faces[i][j];
 		}
@@ -131,7 +131,7 @@ G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
 	return object;
 }
 
-G3DObject *g3d_primitive_cylinder(gfloat radius, gfloat height,
+G3DObject *g3d_primitive_cylinder(G3DFloat radius, G3DFloat height,
 	guint32 sides, gboolean top, gboolean bottom, G3DMaterial *material)
 {
 	G3DObject *object;
@@ -145,7 +145,7 @@ G3DObject *g3d_primitive_cylinder(gfloat radius, gfloat height,
 
 	/* vertices */
 	object->vertex_count = sides * 2 + 2;
-	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+	object->vertex_data = g_new0(G3DVector, object->vertex_count * 3);
 
 	/* 2 rings */
 	for(i = 0; i < sides; i ++)
@@ -194,7 +194,7 @@ G3DObject *g3d_primitive_cylinder(gfloat radius, gfloat height,
 
 		/* normals */
 		face->flags |= G3D_FLAG_FAC_NORMALS;
-		face->normals = g_new0(gfloat, 4 * 3);
+		face->normals = g_new0(G3DVector, 4 * 3);
 
 		face->normals[0 * 3 + 0] =
 		face->normals[1 * 3 + 0] =
@@ -278,7 +278,7 @@ G3DObject *g3d_primitive_cylinder(gfloat radius, gfloat height,
 	return object;
 }
 
-G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
+G3DObject *g3d_primitive_tube(G3DFloat r_in, G3DFloat r_out, G3DFloat height,
 	guint32 sides, gboolean top, gboolean bottom, G3DMaterial *material)
 {
 	G3DObject *object;
@@ -292,7 +292,7 @@ G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
 
 	/* vertices */
 	object->vertex_count = sides * 4;
-	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+	object->vertex_data = g_new0(G3DVector, object->vertex_count * 3);
 
 	/*
 	 * outer lower     0
@@ -354,7 +354,7 @@ G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
 
 			/* normals */
 			face->flags |= G3D_FLAG_FAC_NORMALS;
-			face->normals = g_new0(gfloat, 4 * 3);
+			face->normals = g_new0(G3DVector, 4 * 3);
 
 			face->normals[0 * 3 + 0] =
 			face->normals[1 * 3 + 0] =
@@ -431,7 +431,7 @@ G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
 	return object;
 }
 
-G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
+G3DObject *g3d_primitive_sphere(G3DFloat radius, guint32 vseg, guint32 hseg,
 	G3DMaterial *material)
 {
 	G3DObject *object;
@@ -445,7 +445,7 @@ G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 
 	object = g_new0(G3DObject, 1);
 	object->vertex_count = (vseg - 1) * hseg + 2;
-	object->vertex_data = g_new0(gfloat, 3 * object->vertex_count);
+	object->vertex_data = g_new0(G3DVector, 3 * object->vertex_count);
 
 	for(sv = 1; sv < vseg; sv ++)
 	{
@@ -534,7 +534,7 @@ G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
 	{
 		face = (G3DFace *)flist->data;
 		face->flags |= G3D_FLAG_FAC_NORMALS;
-		face->normals = g_new0(gfloat, face->vertex_count * 3);
+		face->normals = g_new0(G3DVector, face->vertex_count * 3);
 		for(i = 0; i < face->vertex_count; i ++)
 		{
 			face->normals[i * 3 + 0] =
@@ -563,13 +563,14 @@ G3DObject *g3d_primitive_box_strip_2d(guint32 vcnt, gdouble *vdata,
 	G3DObject *object;
 	G3DFace *face;
 	gint32 i, index;
-	gfloat *normals, normal[3], r;
+	G3DVector *normals, normal[3];
+	G3DFloat r;
 
 	/* create object & helpers */
 	object = g_new0(G3DObject, 1);
-	normals = g_new0(gfloat, 3 * vcnt);
+	normals = g_new0(G3DVector, 3 * vcnt);
 	object->vertex_count = vcnt * 4;
-	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+	object->vertex_data = g_new0(G3DVector, object->vertex_count * 3);
 
 	/* generate normals */
 	for(i = 0; i < vcnt; i ++) {
@@ -689,7 +690,7 @@ G3DObject *g3d_primitive_mesh(guint32 m, guint32 n, gboolean wrap_m,
 
 	object = g_new0(G3DObject, 1);
 	object->vertex_count = m * n;
-	object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+	object->vertex_data = g_new0(G3DVector, object->vertex_count * 3);
 
 	for(y = 0; y < (n - 1); y ++) {
 		for(x = 0; x < (m - 1); x ++) {

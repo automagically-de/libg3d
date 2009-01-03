@@ -25,22 +25,22 @@
 #include <glib.h>
 #include <g3d/vector.h>
 
-gboolean g3d_matrix_identity(gfloat *matrix)
+gboolean g3d_matrix_identity(G3DMatrix *matrix)
 {
-	static gfloat identity[16] = {
+	static G3DMatrix identity[16] = {
 		1.0, 0.0, 0.0, 0.0,
 		0.0, 1.0, 0.0, 0.0,
 		0.0, 0.0, 1.0, 0.0,
 		0.0, 0.0, 0.0, 1.0 };
 
-	memcpy(matrix, identity, sizeof(gfloat) * 16);
+	memcpy(matrix, identity, sizeof(G3DMatrix) * 16);
 	return TRUE;
 }
 
-gboolean g3d_matrix_multiply(gfloat *m1, gfloat *m2, gfloat *rm)
+gboolean g3d_matrix_multiply(G3DMatrix *m1, G3DMatrix *m2, G3DMatrix *rm)
 {
 	guint32 i, j;
-	gfloat matrix[16];
+	G3DMatrix matrix[16];
 
 	for(i = 0; i < 4; i ++)
 		for(j = 0; j < 4; j ++)
@@ -58,12 +58,12 @@ gboolean g3d_matrix_multiply(gfloat *m1, gfloat *m2, gfloat *rm)
 				m2[j * 4 + 3] * m1[3 * 4 + i];
 #endif
 
-	memcpy(rm, matrix, 16 * sizeof(gfloat));
+	memcpy(rm, matrix, 16 * sizeof(G3DMatrix));
 	return TRUE;
 }
 
-gboolean g3d_matrix_rotate(gfloat angle, gfloat ax, gfloat ay, gfloat az,
-	gfloat *rm)
+gboolean g3d_matrix_rotate(G3DFloat angle, G3DVector ax, G3DVector ay,
+	G3DVector az, G3DMatrix *rm)
 {
 	g3d_vector_unify(&ax, &ay, &az);
 	g3d_matrix_identity(rm);
@@ -97,9 +97,10 @@ gboolean g3d_matrix_rotate(gfloat angle, gfloat ax, gfloat ay, gfloat az,
 	return TRUE;
 }
 
-gboolean g3d_matrix_rotate_xyz(gfloat rx, gfloat ry, gfloat rz, gfloat *rm)
+gboolean g3d_matrix_rotate_xyz(G3DFloat rx, G3DFloat ry, G3DFloat rz,
+	G3DMatrix *rm)
 {
-	gfloat matrix[16];
+	G3DMatrix matrix[16];
 
 	g3d_matrix_identity(rm);
 
@@ -115,7 +116,8 @@ gboolean g3d_matrix_rotate_xyz(gfloat rx, gfloat ry, gfloat rz, gfloat *rm)
 	return TRUE;
 }
 
-gboolean g3d_matrix_translate(gfloat x, gfloat y, gfloat z, gfloat *rm)
+gboolean g3d_matrix_translate(G3DVector x, G3DVector y, G3DVector z,
+	G3DMatrix *rm)
 {
 	guint32 i;
 
@@ -137,9 +139,9 @@ gboolean g3d_matrix_translate(gfloat x, gfloat y, gfloat z, gfloat *rm)
 	return TRUE;
 }
 
-gboolean g3d_matrix_scale(gfloat x, gfloat y, gfloat z, gfloat *rm)
+gboolean g3d_matrix_scale(G3DVector x, G3DVector y, G3DVector z, G3DMatrix *rm)
 {
-	gfloat sm[16];
+	G3DMatrix sm[16];
 
 	g3d_matrix_identity(sm);
 	sm[0] = x;
@@ -151,12 +153,12 @@ gboolean g3d_matrix_scale(gfloat x, gfloat y, gfloat z, gfloat *rm)
 	return TRUE;
 }
 
-gboolean g3d_matrix_transpose(gfloat *matrix)
+gboolean g3d_matrix_transpose(G3DMatrix *matrix)
 {
-	gfloat tmp[16];
+	G3DMatrix tmp[16];
 	gint32 i, j;
 
-	memcpy(tmp, matrix, 16 * sizeof(gfloat));
+	memcpy(tmp, matrix, 16 * sizeof(G3DMatrix));
 
 	for(i = 0; i < 4; i ++)
 		for(j = 0; j < 4; j ++)
@@ -165,14 +167,14 @@ gboolean g3d_matrix_transpose(gfloat *matrix)
 	return TRUE;
 }
 
-static gfloat det2x2(gfloat a1, gfloat a2, gfloat b1, gfloat b2)
+static G3DFloat det2x2(G3DFloat a1, G3DFloat a2, G3DFloat b1, G3DFloat b2)
 {
 	return a1 * b2 - a2 * b1;
 }
 
-static gfloat det3x3(gfloat a1, gfloat a2, gfloat a3,
-	gfloat b1, gfloat b2, gfloat b3,
-	gfloat c1, gfloat c2, gfloat c3)
+static G3DFloat det3x3(G3DFloat a1, G3DFloat a2, G3DFloat a3,
+	G3DFloat b1, G3DFloat b2, G3DFloat b3,
+	G3DFloat c1, G3DFloat c2, G3DFloat c3)
 {
 	return
 		a1 * det2x2(b2, b3, c2, c3) -
@@ -180,12 +182,12 @@ static gfloat det3x3(gfloat a1, gfloat a2, gfloat a3,
 		c1 * det2x2(a2, a3, b2, b3);
 }
 
-gfloat g3d_matrix_determinant(gfloat *matrix)
+G3DFloat g3d_matrix_determinant(G3DMatrix *matrix)
 {
-	gfloat a1, a2, a3, a4;
-	gfloat b1, b2, b3, b4;
-	gfloat c1, c2, c3, c4;
-	gfloat d1, d2, d3, d4;
+	G3DFloat a1, a2, a3, a4;
+	G3DFloat b1, b2, b3, b4;
+	G3DFloat c1, c2, c3, c4;
+	G3DFloat d1, d2, d3, d4;
 #if 0
 	a1 = matrix[0 * 4 + 0];
 	a2 = matrix[0 * 4 + 1];
@@ -234,7 +236,7 @@ gfloat g3d_matrix_determinant(gfloat *matrix)
 		d1 * det3x3(a2, a3, a4, b2, b3, b4, c2, c3, c4);
 }
 
-gboolean g3d_matrix_dump(gfloat *matrix)
+gboolean g3d_matrix_dump(G3DMatrix *matrix)
 {
 #if DEBUG > 0
 	gint32 row;

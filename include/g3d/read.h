@@ -23,6 +23,8 @@
 #ifndef __G3D_READ_H__
 #define __G3D_READ_H__
 
+#ifndef G3D_DISABLE_DEPRECATED
+
 #include <stdio.h>
 #include <glib.h>
 
@@ -96,7 +98,7 @@ gint32 g3d_read_int32_le(FILE *f);
  *
  * Returns: The read value, 0 in case of error
  */
-gfloat g3d_read_float_be(FILE *f);
+G3DFloat g3d_read_float_be(FILE *f);
 
 /**
  * g3d_read_float_le:
@@ -106,7 +108,7 @@ gfloat g3d_read_float_be(FILE *f);
  *
  * Returns: The read value, 0 in case of error
  */
-gfloat g3d_read_float_le(FILE *f);
+G3DFloat g3d_read_float_le(FILE *f);
 
 /**
  * g3d_read_double_be:
@@ -116,7 +118,7 @@ gfloat g3d_read_float_le(FILE *f);
  *
  * Returns: The read value, 0 in case of error
  */
-gdouble g3d_read_double_be(FILE *f);
+G3DDouble g3d_read_double_be(FILE *f);
 
 /**
  * g3d_read_double_le:
@@ -127,7 +129,7 @@ gdouble g3d_read_double_be(FILE *f);
  *
  * Returns: The read value, 0 in case of error
  */
-gdouble g3d_read_double_le(FILE *f);
+G3DDouble g3d_read_double_le(FILE *f);
 
 /**
  * g3d_read_cstr:
@@ -142,5 +144,7 @@ gdouble g3d_read_double_le(FILE *f);
 gint32 g3d_read_cstr(FILE *f, gchar *buffer, gint32 max_len);
 
 G_END_DECLS
+
+#endif /* G3D_DISABLE_DEPRECATED */
 
 #endif /* __G3D_READ_H__ */

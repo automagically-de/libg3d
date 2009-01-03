@@ -70,7 +70,7 @@ void g3d_context_free(G3DContext *context);
  * Returns: TRUE on success, FALSE else
  */
 gboolean g3d_context_set_bgcolor(G3DContext *context,
-	gfloat r, gfloat g, gfloat b, gfloat a);
+	G3DFloat r, G3DFloat g, G3DFloat b, G3DFloat a);
 
 /**
  * g3d_context_update_interface:
@@ -94,7 +94,7 @@ gboolean g3d_context_update_interface(G3DContext *context);
  * Returns: TRUE on success, FALSE else
  */
 gboolean g3d_context_update_progress_bar(G3DContext *context,
-	gfloat percentage, gboolean visibility);
+	G3DFloat percentage, gboolean visibility);
 
 /**
  * g3d_context_set_set_bgcolor_func:

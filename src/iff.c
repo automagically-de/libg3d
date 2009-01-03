@@ -410,14 +410,14 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 
 		if(global->stream) {
 			g3d_context_update_progress_bar(global->context,
-				(gfloat)g3d_stream_tell(global->stream) /
-				(gfloat)g3d_stream_size(global->stream), TRUE);
+				(G3DFloat)g3d_stream_tell(global->stream) /
+				(G3DFloat)g3d_stream_size(global->stream), TRUE);
 		}
 #ifndef G3D_DISABLE_DEPRECATED
 		else {
 			fpos = ftell(global->f);
 			g3d_context_update_progress_bar(global->context,
-				((gfloat)fpos / (gfloat)global->max_fpos), TRUE);
+				((G3DFloat)fpos / (G3DFloat)global->max_fpos), TRUE);
 		}
 #endif
 	} /* nb >= 8/6 */

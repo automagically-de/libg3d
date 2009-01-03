@@ -29,7 +29,7 @@
  * @include: g3d/vector.h
  */
 
-#include <glib.h>
+#include <g3d/types.h>
 
 G_BEGIN_DECLS
 
@@ -49,9 +49,9 @@ G_BEGIN_DECLS
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_vector_normal(gfloat ax, gfloat ay, gfloat az,
-	gfloat bx, gfloat by, gfloat bz,
-	gfloat *nx, gfloat *ny, gfloat *nz);
+gboolean g3d_vector_normal(G3DFloat ax, G3DFloat ay, G3DFloat az,
+	G3DFloat bx, G3DFloat by, G3DFloat bz,
+	G3DFloat *nx, G3DFloat *ny, G3DFloat *nz);
 
 /**
  * g3d_vector_unify:
@@ -63,7 +63,7 @@ gboolean g3d_vector_normal(gfloat ax, gfloat ay, gfloat az,
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_vector_unify(gfloat *nx, gfloat *ny, gfloat *nz);
+gboolean g3d_vector_unify(G3DFloat *nx, G3DFloat *ny, G3DFloat *nz);
 
 /**
  * g3d_vector_transform:
@@ -76,7 +76,8 @@ gboolean g3d_vector_unify(gfloat *nx, gfloat *ny, gfloat *nz);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_vector_transform(gfloat *x, gfloat *y, gfloat *z, gfloat *matrix);
+gboolean g3d_vector_transform(G3DFloat *x, G3DFloat *y, G3DFloat *z,
+	G3DMatrix *matrix);
 
 G_END_DECLS
 

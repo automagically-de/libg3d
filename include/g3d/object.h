@@ -65,7 +65,7 @@ gdouble g3d_object_radius(G3DObject *object);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_object_scale(G3DObject *object, gfloat scale);
+gboolean g3d_object_scale(G3DObject *object, G3DFloat scale);
 
 /**
  * g3d_object_transform:
@@ -76,7 +76,7 @@ gboolean g3d_object_scale(G3DObject *object, gfloat scale);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_object_transform(G3DObject *object, gfloat *matrix);
+gboolean g3d_object_transform(G3DObject *object, G3DMatrix *matrix);
 
 /**
  * g3d_object_transform_normals:
@@ -87,7 +87,7 @@ gboolean g3d_object_transform(G3DObject *object, gfloat *matrix);
  *
  * Returns: TRUE on success, FALSE else
  */
-gboolean g3d_object_transform_normals(G3DObject *object, gfloat *matrix);
+gboolean g3d_object_transform_normals(G3DObject *object, G3DMatrix *matrix);
 
 /**
  * g3d_object_duplicate:

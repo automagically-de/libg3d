@@ -48,7 +48,7 @@ G_BEGIN_DECLS
  * Returns: the box object
  */
 
-G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
+G3DObject *g3d_primitive_box(G3DFloat width, G3DFloat height, G3DFloat depth,
 	G3DMaterial *material);
 
 #ifndef G3D_DISABLE_DEPRECATED
@@ -64,7 +64,7 @@ G3DObject *g3d_primitive_box(gfloat width, gfloat height, gfloat depth,
  *
  * Returns: the box object
  */
-G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
+G3DObject *g3d_primitive_cube(G3DFloat width, G3DFloat height, G3DFloat depth,
 	G3DMaterial *material);
 #endif
 
@@ -81,7 +81,7 @@ G3DObject *g3d_primitive_cube(gfloat width, gfloat height, gfloat depth,
  *
  * Returns: cylinder object
  */
-G3DObject *g3d_primitive_cylinder(gfloat radius, gfloat height,
+G3DObject *g3d_primitive_cylinder(G3DFloat radius, G3DFloat height,
 	guint32 sides, gboolean top, gboolean bottom, G3DMaterial *material);
 
 /**
@@ -98,7 +98,7 @@ G3DObject *g3d_primitive_cylinder(gfloat radius, gfloat height,
  *
  * Returns: tube object
  */
-G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
+G3DObject *g3d_primitive_tube(G3DFloat r_in, G3DFloat r_out, G3DFloat height,
 	guint32 sides, gboolean top, gboolean bottom, G3DMaterial *material);
 
 /**
@@ -112,7 +112,7 @@ G3DObject *g3d_primitive_tube(gfloat r_in, gfloat r_out, gfloat height,
  *
  * Returns: sphere object
  */
-G3DObject *g3d_primitive_sphere(gfloat radius, guint32 vseg, guint32 hseg,
+G3DObject *g3d_primitive_sphere(G3DFloat radius, guint32 vseg, guint32 hseg,
 	G3DMaterial *material);
 
 /**

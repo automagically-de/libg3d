@@ -197,8 +197,8 @@ gboolean g3d_texture_prepare(G3DImage *texture)
 				texture->width * 4);
 
 		/* calculate scaling factor */
-		texture->tex_scale_u = ((gfloat)texture->width / (gfloat)nw);
-		texture->tex_scale_v = ((gfloat)texture->height / (gfloat)nh);
+		texture->tex_scale_u = ((G3DFloat)texture->width / (G3DFloat)nw);
+		texture->tex_scale_v = ((G3DFloat)texture->height / (G3DFloat)nh);
 
 #if DEBUG > 0
 		g_debug("texture scaling factor for '%s' set to %.2f,%.2f",

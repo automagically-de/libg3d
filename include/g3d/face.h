@@ -56,7 +56,7 @@ void g3d_face_free(G3DFace *face);
  * Returns: TRUE on success, FALSE else
  */
 gboolean g3d_face_get_normal(G3DFace *face, G3DObject *object,
-	gfloat *nx, gfloat *ny, gfloat *nz);
+	G3DFloat *nx, G3DFloat *ny, G3DFloat *nz);
 
 /**
  * g3d_face_new_tri:

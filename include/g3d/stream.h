@@ -224,7 +224,7 @@ gint32 g3d_stream_read_int32_le(G3DStream *stream);
  *
  * Returns: The read value, 0 in case of error
  */
-gfloat g3d_stream_read_float_be(G3DStream *stream);
+G3DFloat g3d_stream_read_float_be(G3DStream *stream);
 
 /**
  * g3d_stream_read_float_le:
@@ -234,7 +234,7 @@ gfloat g3d_stream_read_float_be(G3DStream *stream);
  *
  * Returns: The read value, 0 in case of error
  */
-gfloat g3d_stream_read_float_le(G3DStream *stream);
+G3DFloat g3d_stream_read_float_le(G3DStream *stream);
 
 /**
  * g3d_stream_read_double_be:
@@ -244,7 +244,7 @@ gfloat g3d_stream_read_float_le(G3DStream *stream);
  *
  * Returns: The read value, 0 in case of error
  */
-gdouble g3d_stream_read_double_be(G3DStream *stream);
+G3DDouble g3d_stream_read_double_be(G3DStream *stream);
 
 /**
  * g3d_stream_read_double_le:
@@ -255,7 +255,7 @@ gdouble g3d_stream_read_double_be(G3DStream *stream);
  *
  * Returns: The read value, 0 in case of error
  */
-gdouble g3d_stream_read_double_le(G3DStream *stream);
+G3DDouble g3d_stream_read_double_le(G3DStream *stream);
 
 /**
  * g3d_stream_read_cstr:

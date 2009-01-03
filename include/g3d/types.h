@@ -43,6 +43,23 @@ typedef gint64 goffset;
 #endif
 
 /*****************************************************************************
+ * basic types
+ *****************************************************************************/
+
+#if 0
+#define G3D_FLOAT_IS_DOUBLE TRUE
+typedef gdouble G3DFloat;
+#else
+#define G3D_FLOAT_IS_DOUBLE FALSE
+typedef gfloat G3DFloat;
+#endif
+typedef gfloat G3DSingle;
+typedef gdouble G3DDouble;
+typedef G3DFloat G3DVector;
+typedef G3DFloat G3DMatrix;
+typedef G3DFloat G3DQuat;
+
+/*****************************************************************************
  * G3DImage
  *****************************************************************************/
 
@@ -96,8 +113,8 @@ typedef struct {
 
 	guint32 tex_id;
 	G3DTexEnv tex_env;
-	gfloat tex_scale_u;
-	gfloat tex_scale_v;
+	G3DFloat tex_scale_u;
+	G3DFloat tex_scale_v;
 } G3DImage;
 
 /*****************************************************************************
@@ -129,9 +146,9 @@ typedef struct {
 
 typedef struct {
 	gchar *name;
-	gfloat r, g, b, a;
-	gfloat shininess;
-	gfloat specular[4];
+	G3DFloat r, g, b, a;
+	G3DFloat shininess;
+	G3DFloat specular[4];
 	guint32 flags;
 
 	G3DImage *tex_image;
@@ -160,7 +177,7 @@ typedef struct {
  * @vertex_indices: indices of vertices in #G3DObject
  * @material: material to use for surface
  * @flags: flags
- * @normals: optional normal array (one vector - 3 #gfloat values - for each
+ * @normals: optional normal array (one vector - 3 #G3DVector values - for each
  *   vertex)
  * @tex_image: optional texture image
  * @tex_vertex_count: number of texture vertices, should be 0 or match
@@ -177,11 +194,11 @@ typedef struct {
 
 	guint32 flags;
 
-	gfloat *normals;
+	G3DVector *normals;
 
 	G3DImage *tex_image;
 	guint32 tex_vertex_count;
-	gfloat *tex_vertex_data;
+	G3DVector *tex_vertex_data;
 } G3DFace;
 
 /*****************************************************************************
@@ -196,7 +213,7 @@ typedef struct {
  * A three-dimensional matrix transformation object.
  */
 typedef struct {
-	gfloat matrix[16];
+	G3DMatrix matrix[16];
 	guint32 flags;
 } G3DTransformation;
 
@@ -233,24 +250,24 @@ typedef struct {
 
 	/* vertices */
 	guint32 vertex_count;
-	gfloat *vertex_data;
+	G3DVector *vertex_data;
 
 	/*< private >*/
 	/* FIXME: texture stuff: temporary storage, should be in G3DFace items */
 	guint32 tex_vertex_count;
-	gfloat *tex_vertex_data;
+	G3DVector *tex_vertex_data;
 	G3DImage *tex_image;
 
 	/*< private >*/
 	/* some fields to speed up rendering, should not be used by plugins */
 	/* FIXME: remove from API (replace with user_data pointer?) */
-	gfloat *_normals;
+	G3DVector *_normals;
 	G3DMaterial **_materials;
 	guint32  _num_faces;
 	guint32 *_indices;
 	guint32 *_flags;
 	guint32 *_tex_images;
-	gfloat *_tex_coords;
+	G3DVector *_tex_coords;
 } G3DObject;
 
 /*****************************************************************************
@@ -269,8 +286,8 @@ typedef struct {
  *
  * Returns: TRUE on success, FALSE else.
  */
-typedef gboolean (* G3DSetBgColorFunc)(gfloat r, gfloat g, gfloat b, gfloat a,
-	gpointer user_data);
+typedef gboolean (* G3DSetBgColorFunc)(G3DFloat r, G3DFloat g, G3DFloat b,
+	G3DFloat a,	gpointer user_data);
 
 /**
  * G3DUpdateInterfaceFunc:
@@ -293,7 +310,7 @@ typedef gboolean (* G3DUpdateInterfaceFunc)(gpointer user_data);
  *
  * Returns: TRUE on success, FALSE else.
  */
-typedef gboolean (* G3DUpdateProgressBarFunc)(gfloat percentage,
+typedef gboolean (* G3DUpdateProgressBarFunc)(G3DFloat percentage,
 	gboolean show, gpointer user_data);
 
 /*< private >*/

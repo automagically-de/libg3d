@@ -13,7 +13,8 @@ libg3d_la_SOURCES = \
 	iff.c \
 	primitive.c \
 	vector.c \
-	matrix.c
+	matrix.c \
+	quat.c
 
 INCLUDES = -I$(top_srcdir)/include -I$(top_builddir)/include
 

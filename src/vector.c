@@ -21,11 +21,11 @@
 */
 
 #include <math.h>
-#include <glib.h>
+#include <g3d/types.h>
 
-gboolean g3d_vector_normal(gfloat ax, gfloat ay, gfloat az,
-	gfloat bx, gfloat by, gfloat bz,
-	gfloat *nx, gfloat *ny, gfloat *nz)
+gboolean g3d_vector_normal(G3DVector ax, G3DVector ay, G3DVector az,
+	G3DVector bx, G3DVector by, G3DVector bz,
+	G3DVector *nx, G3DVector *ny, G3DVector *nz)
 {
 	*nx = ay * bz - az * by;
 	*ny = az * bx - ax * bz;
@@ -34,15 +34,14 @@ gboolean g3d_vector_normal(gfloat ax, gfloat ay, gfloat az,
 	return TRUE;
 }
 
-gboolean g3d_vector_unify(gfloat *nx, gfloat *ny, gfloat *nz)
+gboolean g3d_vector_unify(G3DVector *nx, G3DVector *ny, G3DVector *nz)
 {
-	gfloat r;
+	G3DFloat r;
 
 	r = sqrt(*nx * *nx + *ny * *ny + *nz * *nz);
 	if(r == 0.0F)
 		*nx = *ny = *nz = 0.0F;
-	else
-	{
+	else {
 		*nx /= r;
 		*ny /= r;
 		*nz /= r;
@@ -51,9 +50,10 @@ gboolean g3d_vector_unify(gfloat *nx, gfloat *ny, gfloat *nz)
 	return TRUE;
 }
 
-gboolean g3d_vector_transform(gfloat *x, gfloat *y, gfloat *z, gfloat *matrix)
+gboolean g3d_vector_transform(G3DVector *x, G3DVector *y, G3DVector *z,
+	G3DMatrix *matrix)
 {
-	gfloat vector[4], result[4];
+	G3DVector vector[4], result[4];
 	guint32 i, k;
 
 	vector[0] = *x;
@@ -61,8 +61,7 @@ gboolean g3d_vector_transform(gfloat *x, gfloat *y, gfloat *z, gfloat *matrix)
 	vector[2] = *z;
 	vector[3] = 1.0;
 
-	for(i = 0; i < 4; i ++)
-	{
+	for(i = 0; i < 4; i ++) {
 		result[i] = 0.0;
 
 		for(k = 0; k < 4; k ++)

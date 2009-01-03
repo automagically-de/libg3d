@@ -56,7 +56,7 @@ void g3d_context_free(G3DContext *context)
 /* callback wrappers - to be called from libg3d plugins */
 
 gboolean g3d_context_set_bgcolor(G3DContext *context,
-	gfloat r, gfloat g, gfloat b, gfloat a)
+	G3DFloat r, G3DFloat g, G3DFloat b, G3DFloat a)
 {
 	if(context->set_bgcolor_func)
 		return context->set_bgcolor_func(r, g, b, a,
@@ -74,7 +74,7 @@ gboolean g3d_context_update_interface(G3DContext *context)
 }
 
 gboolean g3d_context_update_progress_bar(G3DContext *context,
-	gfloat percentage, gboolean visibility)
+	G3DFloat percentage, gboolean visibility)
 {
 	if(context->update_progress_bar_func)
 		return context->update_progress_bar_func(

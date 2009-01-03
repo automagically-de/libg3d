@@ -34,6 +34,29 @@
 G_BEGIN_DECLS
 
 /**
+ * g3d_vector_new:
+ * @size: number of items in one vector
+ * @n: number of vectors to allocate
+ *
+ * Allocate memory for a number of vectors.
+ *
+ * Returns: newly allocated vectors
+ */
+static inline G3DVector *g3d_vector_new(guint32 size, guint32 n) {
+	return g_new0(G3DVector, size * n);
+}
+
+/**
+ * g3d_vector_free:
+ * @vector: vector to free
+ *
+ * Free memory allocated for vector.
+ */
+static inline void g3d_vector_free(G3DVector *vector) {
+	g_free(vector);
+}
+
+/**
  * g3d_vector_normal:
  * @ax: x component first vector
  * @ay: y component first vector

@@ -187,7 +187,7 @@ G3DObject *g3d_object_duplicate(G3DObject *object)
 
 	/* vertices */
 	new->vertex_count = object->vertex_count;
-	new->vertex_data = g_new0(G3DVector, new->vertex_count * 3);
+	new->vertex_data = g3d_vector_new(3, new->vertex_count);
 	memcpy(new->vertex_data, object->vertex_data,
 		new->vertex_count * 3 * sizeof(G3DVector));
 
@@ -207,7 +207,7 @@ G3DObject *g3d_object_duplicate(G3DObject *object)
 		face->flags = oface->flags;
 		if(face->flags & G3D_FLAG_FAC_NORMALS)
 		{
-			face->normals = g_new0(G3DVector, face->vertex_count * 3);
+			face->normals = g3d_vector_new(3, face->vertex_count);
 			memcpy(face->normals, oface->normals,
 				face->vertex_count * 3 * sizeof(G3DVector));
 		}
@@ -215,8 +215,7 @@ G3DObject *g3d_object_duplicate(G3DObject *object)
 		{
 			face->tex_image = oface->tex_image;
 			face->tex_vertex_count = oface->tex_vertex_count;
-			face->tex_vertex_data = g_new0(G3DVector,
-				face->tex_vertex_count * 2);
+			face->tex_vertex_data = g3d_vector_new(2, face->tex_vertex_count);
 			memcpy(face->tex_vertex_data, oface->tex_vertex_data,
 				face->tex_vertex_count * 2 * sizeof(G3DVector));
 		}
@@ -300,12 +299,12 @@ gboolean g3d_object_optimize(G3DObject *object)
 		fitem = fitem->next;
 	}
 
-	object->_normals = g_new0(G3DVector, object->_num_faces * 9);
+	object->_normals = g3d_vector_new(3, 3 * object->_num_faces);
 	object->_materials = g_new0(G3DMaterial *, object->_num_faces);
 	object->_flags = g_new0(guint32, object->_num_faces);
 	object->_indices = g_new0(guint32, object->_num_faces * 3);
 	object->_tex_images = g_new0(guint32, object->_num_faces);
-	object->_tex_coords = g_new0(G3DVector, object->_num_faces * 6);
+	object->_tex_coords = g3d_vector_new(2, object->_num_faces * 3);
 
 	/* copy faces */
 	fitem = object->faces;

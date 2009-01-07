@@ -294,6 +294,7 @@ gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 gboolean dae_cb_node(DaeGlobalData *global, DaeLocalData *local)
 {
 	G3DObject *object, *pobject;
+	G3DMatrix matrix[16];
 	gchar *name;
 
 	name = dae_xml_get_attr(local->node, "name");
@@ -321,6 +322,12 @@ gboolean dae_cb_node(DaeGlobalData *global, DaeLocalData *local)
 #endif
 			g_free(object->transformation);
 			object->transformation = NULL;
+		}
+
+		if(!pobject) {
+			g3d_matrix_identity(matrix);
+			g3d_matrix_rotate(-90.0 * G_PI / 180.0, 1.0, 0.0, 0.0, matrix);
+			g3d_object_transform(object, matrix);
 		}
 		return TRUE;
 	}

@@ -64,4 +64,7 @@ gboolean g3d_quat_trackball(G3DQuat *q, G3DFloat x1, G3DFloat y1,
  */
 gboolean g3d_quat_to_matrix(G3DQuat *q, G3DMatrix *matrix);
 
+gboolean g3d_quat_to_rotation_xyz(G3DQuat *q, G3DFloat *rx, G3DFloat *ry,
+	G3DFloat *rz);
+
 #endif /* _G3D_QUAT_H */

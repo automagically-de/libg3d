@@ -367,3 +367,11 @@ G3DObject *g3d_model_get_object_by_name(G3DModel *model, const gchar *name)
 	return objects_get_by_name(model->objects, name);
 }
 
+gboolean g3d_model_transform(G3DModel *model, G3DMatrix *matrix)
+{
+	GSList *oitem;
+
+	for(oitem = model->objects; oitem != NULL; oitem = oitem->next)
+		g3d_object_transform(oitem->data, matrix);
+	return TRUE;
+}

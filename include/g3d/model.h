@@ -150,6 +150,17 @@ void g3d_model_free(G3DModel *model);
  */
 G3DObject *g3d_model_get_object_by_name(G3DModel *model, const gchar *name);
 
+/**
+ * g3d_model_transform:
+ * @model: the model
+ * @matrix: transformation matrix
+ *
+ * Transform all toplevel objects in model with matrix.
+ *
+ * Returns: TRUE on success, FALSE else
+ */
+gboolean g3d_model_transform(G3DModel *model, G3DMatrix *matrix);
+
 G_END_DECLS
 
 #endif /* __G3D_MODEL_H__ */

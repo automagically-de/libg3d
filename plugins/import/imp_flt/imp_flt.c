@@ -24,6 +24,8 @@
 #include <g3d/context.h>
 #include <g3d/stream.h>
 #include <g3d/material.h>
+#include <g3d/model.h>
+#include <g3d/matrix.h>
 
 #include "imp_flt_opcodes.h"
 
@@ -40,6 +42,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	gpointer level_object = NULL;
 	gchar *pad;
 	gfloat prev_pcnt = 0.0, pcnt;
+	G3DMatrix rmatrix[16];
 
 	gd = g_new0(FltGlobalData, 1);
 	gd->context = context;
@@ -111,6 +114,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		g_free(gd->texture_palette);
 	}
 	g_free(gd);
+
+	g3d_matrix_identity(rmatrix);
+	g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, rmatrix);
+	g3d_model_transform(model, rmatrix);
 
 	return TRUE;
 }

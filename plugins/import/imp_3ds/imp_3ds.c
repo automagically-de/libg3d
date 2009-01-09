@@ -28,6 +28,7 @@
 #include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
+#include <g3d/matrix.h>
 
 #include "imp_3ds.h"
 #include "imp_3ds_chunks.h"
@@ -39,6 +40,7 @@
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer plugin_data)
 {
+	G3DMatrix rmatrix[16];
 	gint32 nbytes, magic;
 	gboolean retval;
 	x3ds_global_data global;
@@ -67,6 +69,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	parent->nb = nbytes;
 
 	retval = x3ds_read_ctnr(&global, parent);
+
+	g3d_matrix_identity(rmatrix);
+	g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, rmatrix);
+	g3d_model_transform(model, rmatrix);
 
 	g_free(parent);
 

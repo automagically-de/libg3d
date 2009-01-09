@@ -26,6 +26,8 @@
 
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/model.h>
+#include <g3d/object.h>
 #include <g3d/iff.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
@@ -49,6 +51,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	GHashTable *cardata;
 	gchar *value;
 	gfloat x, y, z;
+	G3DMatrix matrix[16];
+	gboolean rval = FALSE;
 
 	if(g_strcasecmp(stream->uri + strlen(stream->uri) - 3, "car") == 0)
 	{
@@ -68,9 +72,9 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		if(value != NULL)
 		{
 			joe_parse_vertex(value, &x, &y, &z);
-			object->transformation = g_new0(G3DTransformation, 1);
-			g3d_matrix_identity(object->transformation->matrix);
-			g3d_matrix_translate(y, x, z, object->transformation->matrix);
+			g3d_matrix_identity(matrix);
+			g3d_matrix_translate(y, x, z, matrix);
+			g3d_object_transform(object, matrix);
 		}
 
 		object = joe_load_object(context, "wheel_front.joe", model);
@@ -78,9 +82,9 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		if(value != NULL)
 		{
 			joe_parse_vertex(value, &x, &y, &z);
-			object->transformation = g_new0(G3DTransformation, 1);
-			g3d_matrix_identity(object->transformation->matrix);
-			g3d_matrix_translate(y, x, z, object->transformation->matrix);
+			g3d_matrix_identity(matrix);
+			g3d_matrix_translate(y, x, z, matrix);
+			g3d_object_transform(object, matrix);
 		}
 
 		object = joe_load_object(context, "wheel_rear.joe", model);
@@ -89,9 +93,9 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		if(value != NULL)
 		{
 			joe_parse_vertex(value, &x, &y, &z);
-			object->transformation = g_new0(G3DTransformation, 1);
-			g3d_matrix_identity(object->transformation->matrix);
-			g3d_matrix_translate(y, x, z, object->transformation->matrix);
+			g3d_matrix_identity(matrix);
+			g3d_matrix_translate(y, x, z, matrix);
+			g3d_object_transform(object, matrix);
 		}
 
 		object = joe_load_object(context, "wheel_rear.joe", model);
@@ -99,22 +103,25 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		if(value != NULL)
 		{
 			joe_parse_vertex(value, &x, &y, &z);
-			object->transformation = g_new0(G3DTransformation, 1);
-			g3d_matrix_identity(object->transformation->matrix);
-			g3d_matrix_translate(y, x, z, object->transformation->matrix);
+			g3d_matrix_identity(matrix);
+			g3d_matrix_translate(y, x, z, matrix);
+			g3d_object_transform(object, matrix);
 		}
 
 		joe_destroy_car(cardata);
-
-		return TRUE;
+		rval = TRUE;
 	}
 	else
 	{
 		/* .joe file */
-		return (joe_load_object(context, stream->uri, model) != NULL);
+		rval = (joe_load_object(context, stream->uri, model) != NULL);
 	}
 
-	return TRUE;
+	g3d_matrix_identity(matrix);
+	g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, matrix);
+	g3d_model_transform(model, matrix);
+
+	return rval;
 }
 
 gchar *plugin_description(void)

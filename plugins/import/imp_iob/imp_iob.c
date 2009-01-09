@@ -27,9 +27,11 @@
 
 #include <g3d/types.h>
 #include <g3d/context.h>
+#include <g3d/model.h>
 #include <g3d/material.h>
 #include <g3d/stream.h>
 #include <g3d/iff.h>
+#include <g3d/matrix.h>
 
 #include "imp_iob_chunks.h"
 
@@ -39,6 +41,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DIffGlobal *global;
 	G3DIffLocal *local;
 	guint32 id, len;
+	G3DMatrix rmatrix[16];
 
 	if(!g3d_iff_check(stream, &id, &len) ||
 		(id != G3D_IFF_MKID('T','D','D','D'))) {
@@ -57,6 +60,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	local->nb = len;
 
 	g3d_iff_read_ctnr(global, local, iob_chunks, G3D_IFF_PAD2);
+
+	g3d_matrix_identity(rmatrix);
+	g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, rmatrix);
+	g3d_model_transform(model, rmatrix);
 
 	g_free(local);
 	g_free(global);

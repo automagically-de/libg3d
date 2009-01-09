@@ -30,16 +30,19 @@
 #include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
+#include <g3d/model.h>
+#include <g3d/matrix.h>
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model)
 {
 	gchar line[2048], tmp[128], *s;
 	guint32 i, j, a, b, c, ab, bc, ca, mtlid, glid = 0, tvertcnt = 0, lnum = 0;
-	gfloat x, y, z, *tverts = NULL;
+	G3DVector x, y, z, *tverts = NULL;
 	G3DObject *object = NULL;
 	G3DMaterial *material;
 	G3DFace *face = NULL;
+	G3DMatrix rmatrix[16];
 
 	setlocale(LC_NUMERIC, "C");
 
@@ -231,6 +234,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		tvertcnt = 0;
 	}
 	g3d_context_update_progress_bar(context, 0.0, FALSE);
+
+	g3d_matrix_identity(rmatrix);
+	g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, rmatrix);
+	g3d_model_transform(model, rmatrix);
 
 	return TRUE;
 }

@@ -27,6 +27,7 @@
 #include <g3d/types.h>
 #include <g3d/context.h>
 #include <g3d/material.h>
+#include <g3d/model.h>
 #include <g3d/vector.h>
 #include <g3d/matrix.h>
 #include <g3d/stream.h>
@@ -40,6 +41,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 {
 	gchar header[32];
 	gboolean file_is_ascii, file_is_be;
+	G3DMatrix rmatrix[16];
 
 	if(g3d_stream_read(stream, header, 32) != 32) {
 		g_warning("COB: could not read header");
@@ -67,6 +69,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	}
 
 	cob_read_file_bin(stream, model, file_is_be, context);
+
+	g3d_matrix_identity(rmatrix);
+	g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, rmatrix);
+	g3d_model_transform(model, rmatrix);
 
 	return TRUE;
 }

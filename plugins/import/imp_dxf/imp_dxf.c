@@ -27,6 +27,8 @@
 #include <g3d/types.h>
 #include <g3d/stream.h>
 #include <g3d/material.h>
+#include <g3d/model.h>
+#include <g3d/matrix.h>
 
 #include "imp_dxf.h"
 #include "imp_dxf_section.h"
@@ -41,6 +43,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DObject *object;
 	G3DMaterial *material;
 	DxfGlobalData *global;
+	G3DMatrix rmatrix[16];
 
 	global = g_new0(DxfGlobalData, 1);
 	global->context = context;
@@ -71,6 +74,9 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		int retval = dxf_read_section(global, object);
 		if(retval != TRUE) {
 			if(retval == 0xE0F) {
+				g3d_matrix_identity(rmatrix);
+				g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, rmatrix);
+				g3d_model_transform(model, rmatrix);
 				dxf_cleanup(global);
 				return TRUE;
 			}
@@ -80,7 +86,11 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		}
 	}
 
+	g3d_matrix_identity(rmatrix);
+	g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, rmatrix);
+	g3d_model_transform(model, rmatrix);
 	dxf_cleanup(global);
+
 	return TRUE;
 }
 

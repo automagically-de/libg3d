@@ -28,6 +28,7 @@
 
 #include <g3d/types.h>
 #include <g3d/context.h>
+#include <g3d/model.h>
 #include <g3d/read.h>
 #include <g3d/vector.h>
 #include <g3d/matrix.h>
@@ -413,9 +414,10 @@ static gboolean leocad_load_lcd(G3DStream *stream, G3DModel *model,
 	LeoCadLibrary *library, G3DContext *context)
 {
 	gchar magic[32];
-	gfloat version;
+	G3DFloat version;
 	guint32 i, count;
-	gfloat r, g, b;
+	G3DFloat r, g, b;
+	G3DMatrix rmatrix[16];
 
 	g3d_stream_read(stream, magic, 32);
 	if(strncmp(magic, "LeoCAD", 6) != 0) {
@@ -481,5 +483,10 @@ static gboolean leocad_load_lcd(G3DStream *stream, G3DModel *model,
 		/* load piece */
 		leocad_load_lcd_piece(stream, model, library, version);
 	}
+
+	g3d_matrix_identity(rmatrix);
+	g3d_matrix_rotate_xyz(G_PI * -90.0 / 180, 0.0, 0.0, rmatrix);
+	g3d_model_transform(model, rmatrix);
+
 	return TRUE;
 }

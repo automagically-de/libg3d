@@ -32,6 +32,8 @@
 
 #include <g3d/stream.h>
 
+#include "stream_gsf_class.h"
+
 typedef struct {
 	GsfInput *input_container;
 	GsfInfile *infile_msole;
@@ -114,6 +116,45 @@ static GsfInput *stream_gsf_chdir(GsfInput *input, gchar *dirname)
 }
 
 /*****************************************************************************/
+
+G3DStream *g3d_stream_open_gzip_from_stream(G3DStream *stream)
+{
+	G3DStreamGsf *sg;
+	GsfInput *source;
+	GError *error = NULL;
+	guint32 flags = 0;
+
+	source = g3d_gsf_input_stream_new(stream);
+	if(source == NULL)
+		return NULL;
+
+	sg = g_new0(G3DStreamGsf, 1);
+	sg->input_container = source;
+
+	sg->input_subfile = gsf_input_gzip_new(source, &error);
+	if(error) {
+		g_warning("failed to read gzipped data from %s: %s", stream->uri,
+			error->message);
+		g_object_unref(sg->input_container);
+		g_error_free(error);
+		g_free(sg);
+	}
+
+	sg->uri = g_strdup_printf("%s#gzip@0x%08x", stream->uri,
+		(guint32)g3d_stream_tell(stream));
+
+	flags |= (1 << G3D_STREAM_READABLE);
+	flags |= (1 << G3D_STREAM_SEEKABLE);
+
+	return g3d_stream_new_custom(flags, sg->uri,
+		g3d_stream_gsf_read, NULL,
+		g3d_stream_gsf_seek, g3d_stream_gsf_tell,
+		g3d_stream_gsf_size, g3d_stream_gsf_eof,
+		g3d_stream_gsf_close, sg);
+}
+
+
+/*****************************************************************************/
 /* Zip stuff                                                                 */
 
 static G3DStream *g3d_stream_open_zip_from_input(GsfInput *input,
@@ -189,19 +230,10 @@ G3DStream *g3d_stream_open_zip_from_stream(G3DStream *stream,
 	const gchar *subfile)
 {
 	GsfInput *input;
-    GError *error = NULL;
 
-	/* FIXME: generic way to read from G3DStream?
-	 *   GsfInput:   nope
-	 *   GIOChannel: nope
-	 */
-	input = gsf_input_stdio_new(stream->uri, &error);
-	if(error != NULL) {
-		g_warning("error opening stream uri as file '%s': %s", stream->uri,
-			error->message);
-		g_error_free(error);
+	input = g3d_gsf_input_stream_new(stream);
+	if(!input)
 		return NULL;
-	}
 
 	return g3d_stream_open_zip_from_input(input, subfile);
 }
@@ -303,19 +335,10 @@ G3DStream *g3d_stream_open_structured_file_from_stream(G3DStream *stream,
 	const gchar *subfile)
 {
 	GsfInput *input;
-    GError *error = NULL;
 
-	/* FIXME: generic way to read from G3DStream?
-	 *   GsfInput:   nope
-	 *   GIOChannel: nope
-	 */
-	input = gsf_input_stdio_new(stream->uri, &error);
-	if(error != NULL) {
-		g_warning("error opening stream uri as file '%s': %s", stream->uri,
-			error->message);
-		g_error_free(error);
+	input = g3d_gsf_input_stream_new(stream);
+	if(!input)
 		return NULL;
-	}
 
 	return g3d_stream_open_structured_file_from_input(input, subfile);
 }

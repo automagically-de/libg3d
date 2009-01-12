@@ -36,5 +36,5 @@ libg3d_la_LIBADD = \
 if HAVE_LIBGSF
 libg3d_la_CFLAGS += @LIBGSF_CFLAGS@
 libg3d_la_LIBADD += @LIBGSF_LIBS@
-libg3d_la_SOURCES += stream_gsf.c
+libg3d_la_SOURCES += stream_gsf.c stream_gsf_class.c stream_gsf_class.h
 endif

@@ -419,6 +419,17 @@ G3DStream *g3d_stream_open_file(const gchar *filename, const gchar *mode);
 G3DStream *g3d_stream_from_buffer(guint8 *buffer, gsize size,
 	const gchar *title, gboolean free_buffer);
 #ifdef HAVE_LIBGSF
+
+/**
+ * g3d_stream_open_gzip_from_stream:
+ * @stream: stream to read from
+ *
+ * Reads data from a gzip-compressed stream.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error.
+ */
+G3DStream *g3d_stream_open_gzip_from_stream(G3DStream *stream);
+
 /**
  * g3d_stream_open_structured_file:
  * @filename: name of container file

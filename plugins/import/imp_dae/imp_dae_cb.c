@@ -276,6 +276,14 @@ gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 #endif
 	} else {
 		imgstream = g3d_stream_open_file(filename, "rb");
+		if(imgstream == NULL) {
+			/* if opened from unpacked doc.kml, textures are found in
+			 * ../images/, so strip leading ../ */
+			subfile = filename;
+			while(strncmp(subfile, "../", 3) == 0)
+				subfile += 3;
+			imgstream = g3d_stream_open_file(subfile, "rb");
+		}
 	}
 
 	if(imgstream != NULL) {

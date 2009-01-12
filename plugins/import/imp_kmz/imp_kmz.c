@@ -47,7 +47,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DStream *stream_dockml, *stream_model;
 	gchar *daename;
 	xmlDocPtr xmldoc;
-	gboolean retval = FALSE;
+	gboolean retval = FALSE, from_zip = TRUE;
 
 	setlocale(LC_NUMERIC, "C");
 
@@ -55,8 +55,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	stream_dockml = g3d_stream_open_zip_from_stream(stream, "doc.kml");
 	if(stream_dockml == NULL) {
-		g_warning("KMZ: failed to read 'doc.kml' from '%s'", stream->uri);
-		return FALSE;
+		g_debug("KMZ: failed to read 'doc.kml' from '%s', trying to "
+			"use input stream as 'doc.kml'", stream->uri);
+		stream_dockml = stream;
+		from_zip = FALSE;
 	}
 
 	xmldoc = xmlReadIO(kml_stream_read_cb, NULL,
@@ -69,21 +71,29 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 #if DEBUG > 1
 			g_debug("KMZ: loading '%s' from '%s'", daename, filename);
 #endif
-			stream_model = g3d_stream_open_zip_from_stream(stream, daename);
+			if(from_zip)
+				stream_model = g3d_stream_open_zip_from_stream(stream,
+					daename);
+			else
+				stream_model = g3d_stream_open_file(daename, "r");
+
 			if(stream_model != NULL) {
 				retval = g3d_plugins_load_model_from_stream(context,
 					stream_model, model);
 				g3d_stream_close(stream_model);
 			} else {
-				g_warning("KMZ: failed to find '%s' in '%s'", daename,
-					stream->uri);
+				g_warning("KMZ: failed to find '%s'%s%s%s", daename,
+					from_zip ? " in '" : "",
+					from_zip ? stream->uri : "",
+					from_zip ? "'" : "");
 			}
 		}
 
 		xmlFreeDoc(xmldoc);
 	}
 
-	g3d_stream_close(stream_dockml);
+	if(from_zip)
+		g3d_stream_close(stream_dockml);
 	xmlCleanupParser();
 
 	return retval;
@@ -96,7 +106,7 @@ gchar *plugin_description(void)
 
 gchar **plugin_extensions(void)
 {
-	return g_strsplit("kmz", ":", 0);
+	return g_strsplit("kmz:kml:zip", ":", 0);
 }
 
 /*****************************************************************************/

@@ -1,4 +1,5 @@
 SUBDIRS = \
+	imp_3dm \
 	imp_3dmf \
 	imp_3ds \
 	imp_ac3d \

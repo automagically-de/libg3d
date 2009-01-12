@@ -147,6 +147,7 @@ AC_OUTPUT(
 	plugins/Makefile
 	plugins/image/Makefile
 	plugins/import/Makefile
+	plugins/import/imp_3dm/Makefile
 	plugins/import/imp_3dmf/Makefile
 	plugins/import/imp_3ds/Makefile
 	plugins/import/imp_ac3d/Makefile

@@ -136,6 +136,9 @@ static gboolean dae_load_source(DaeLibrary *lib, gchar *id,
 	gint i;
 
 	snode = dae_library_lookup(lib, "source", id + 1);
+#if DEBUG > 0
+	g_debug("DAE: source '%s': %p", id + 1, (void *)snode);
+#endif
 	if(snode == NULL)
 		return FALSE;
 
@@ -144,6 +147,9 @@ static gboolean dae_load_source(DaeLibrary *lib, gchar *id,
 		return FALSE;
 
 	scnt = dae_xml_get_attr(fnode, "count");
+#if DEBUG > 0
+	g_debug("DAE: float_array count=\"%s\"", scnt);
+#endif
 	if(scnt == NULL)
 		return FALSE;
 	*nsrc = atoi(scnt);
@@ -290,7 +296,7 @@ gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 		material->tex_image = g3d_texture_load_from_stream(global->context,
 			global->model, imgstream);
 		if(material->tex_image) {
-			material->tex_image->tex_env = G3D_TEXENV_REPLACE;
+			material->tex_image->tex_env = G3D_TEXENV_DECAL;
 		}
 		g3d_stream_close(imgstream);
 		return TRUE;
@@ -397,8 +403,8 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 	scnt = dae_xml_get_attr(local->node, "count");
 	g_return_val_if_fail(scnt != NULL, FALSE);
 	count = atoi(scnt);
-	g_return_val_if_fail(count != 0, FALSE);
 	g_free(scnt);
+	g_return_val_if_fail(count != 0, FALSE);
 
 	pnode = dae_xml_get_child_by_tagname(local->node, "p");
 	vnode = dae_xml_get_child_by_tagname(local->node, "vcount");
@@ -451,6 +457,13 @@ gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 					switch(input->semantic) {
 						case SEM_VERTEX:
 							face->vertex_indices[j] = tmp;
+							if(face->vertex_indices[j] >= object->vertex_count)
+							{
+								g_warning("polylist: [%s] face[%d] (%d) >= %d",
+									object->name, j, face->vertex_indices[j],
+									object->vertex_count);
+								face->vertex_indices[j] = 0;
+							}
 							break;
 						case SEM_NORMAL:
 							if(flags & G3D_FLAG_FAC_NORMALS) {
@@ -703,6 +716,12 @@ gboolean dae_cb_triangles(DaeGlobalData *global, DaeLocalData *local)
 				switch(input->semantic) {
 					case SEM_VERTEX:
 						face->vertex_indices[j] = tmp;
+						if(face->vertex_indices[j] >= object->vertex_count) {
+							g_warning("triangles: [%s] face[%d] (%d) >= %d",
+								object->name, j, face->vertex_indices[j],
+								object->vertex_count);
+							face->vertex_indices[j] = 0;
+						}
 						break;
 					case SEM_NORMAL:
 						if(flags & G3D_FLAG_FAC_NORMALS) {
@@ -765,16 +784,25 @@ gboolean dae_cb_vertices__input(DaeGlobalData *global, DaeLocalData *local)
 
 	/* get 'source' node, skip leading '#' from 'source' attribute */
 	snode = dae_library_lookup(global->lib, "source", sid + 1);
+#if DEBUG > 0
+	g_debug("DAE: looking up source '%s' from library: %p", sid + 1,
+		(void *)snode);
+#endif
 	g_return_val_if_fail(snode != NULL, FALSE);
 
-	g_free(sem);
-	g_free(sid);
+	if(sem)
+		g_free(sem);
+	if(sid)
+		g_free(sid);
 
 	/* TODO: check technique_common/accessor */
 
 	fanode = dae_xml_get_child_by_tagname(snode, "float_array");
 	if(fanode) {
 		cnt = dae_xml_get_attr(fanode, "count");
+#if DEBUG > 0
+		g_debug("DAE: float_array count=\"%s\"", cnt);
+#endif
 		g_return_val_if_fail(cnt != NULL, FALSE);
 
 		object->vertex_count = atoi(cnt);

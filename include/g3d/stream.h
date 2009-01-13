@@ -418,6 +418,16 @@ G3DStream *g3d_stream_open_file(const gchar *filename, const gchar *mode);
  */
 G3DStream *g3d_stream_from_buffer(guint8 *buffer, gsize size,
 	const gchar *title, gboolean free_buffer);
+
+#ifdef HAVE_ZLIB
+
+/**
+ * g3d_stream_zlib_inflate_stream:
+ */
+G3DStream *g3d_stream_zlib_inflate_stream(G3DStream *stream, gsize dcmp_size);
+
+#endif /* HAVE_ZLIB */
+
 #ifdef HAVE_LIBGSF
 
 /**

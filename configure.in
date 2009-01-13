@@ -118,7 +118,10 @@ else
 fi
 AC_SUBST(Z_CFLAGS)
 AC_SUBST(Z_LIBS)
-AC_DEFINE([HAVE_ZLIB], 1, [have zlib])
+if test "$with_zlib" = "yes"; then
+	AC_DEFINE([HAVE_ZLIB], 1, [have zlib])
+fi
+AM_CONDITIONAL([HAVE_ZLIB], test "$with_zlib" = "yes")
 
 # Debug level (verbosity & optimization)
 AC_MSG_CHECKING([for debug level])

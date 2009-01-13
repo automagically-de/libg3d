@@ -38,3 +38,8 @@ libg3d_la_CFLAGS += @LIBGSF_CFLAGS@
 libg3d_la_LIBADD += @LIBGSF_LIBS@
 libg3d_la_SOURCES += stream_gsf.c stream_gsf_class.c stream_gsf_class.h
 endif
+if HAVE_ZLIB
+libg3d_la_CFLAGS += @Z_CFLAGS@
+libg3d_la_LIBADD += @Z_LIBS@
+libg3d_la_SOURCES += stream_zlib.c
+endif

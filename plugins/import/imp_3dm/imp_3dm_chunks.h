@@ -11,16 +11,16 @@ static TdmChunkInfo tdm_chunks[] = {
 	{ 0x00027FF9, FALSE, FALSE, "ON class userdata header",  NULL },
 	{ 0x00027FFA, TRUE,  FALSE, "OpenNURBS class",           NULL },
 	{ 0x00027FFB, FALSE, FALSE, "OpenNURBS class UUID",      NULL },
-	{ 0x00027FFC, FALSE, FALSE, "OpenNURBS class data",      NULL },
+	{ 0x00027FFC, FALSE, FALSE, "OpenNURBS class data",    tdm_cb_0x00027ffc },
 	{ 0x00027FFD, FALSE, FALSE, "OpenNURBS class userdata",  NULL },
 	{ 0x00027FFF, FALSE, TRUE,  "OpenNURBS class end",       NULL },
 
 	{ 0x02000061, FALSE, FALSE, "light record attributes",   NULL },
 	{ 0x0200006F, FALSE, TRUE,  "light record end",          NULL },
 
-	{ 0x02000071, FALSE, FALSE, "object record type",        NULL },
+	{ 0x02000071, FALSE, FALSE, "object record type",      tdm_cb_0x02000071 },
 	{ 0x02000072, FALSE, FALSE, "object record attributes",  NULL },
-	{ 0x0200007F, FALSE, TRUE,  "object record end",         NULL },
+	{ 0x0200007F, FALSE, TRUE,  "object record end",       tdm_cb_0x0200007f },
 
 	{ 0x10000010, TRUE,  FALSE, "material table",            NULL },
 	{ 0x10000011, TRUE,  FALSE, "layer table",               NULL },
@@ -68,7 +68,7 @@ static TdmChunkInfo tdm_chunks[] = {
 
 	{ 0x20000060, TRUE,  FALSE, "light record",              NULL },
 
-	{ 0x20000070, TRUE,  FALSE, "object record",             NULL },
+	{ 0x20000070, TRUE,  FALSE, "object record",           tdm_cb_0x20000070 },
 
 	{ 0x20000073, FALSE, FALSE, "group record",              NULL },
 	{ 0x20000074, FALSE, FALSE, "font record",               NULL },

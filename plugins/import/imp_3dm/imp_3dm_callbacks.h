@@ -7,7 +7,10 @@ typedef struct {
 	guint32 tcode;
 	guint32 len;
 	guint32 data;
-	G3DObject *object;
+	guint32 level;
+	guint16 major_version;
+	guint16 minor_version;
+	gpointer object;
 } TdmLocal;
 
 typedef gboolean (* TdmCallback)(TdmGlobal *, TdmLocal *);
@@ -19,5 +22,18 @@ typedef struct {
 	const gchar *description;
 	TdmCallback callback;
 } TdmChunkInfo;
+
+typedef struct {
+	guint32 code;
+	const gchar *description;
+	TdmCallback callback;
+} TdmObjectTypeInfo;
+
+gboolean tdm_cb_0x00027ffc(TdmGlobal *global, TdmLocal *local);
+gboolean tdm_cb_0x02000071(TdmGlobal *global, TdmLocal *local);
+gboolean tdm_cb_0x0200007f(TdmGlobal *global, TdmLocal *local);
+gboolean tdm_cb_0x20000070(TdmGlobal *global, TdmLocal *local);
+
+gboolean tdm_cb_o_0x00000020(TdmGlobal *global, TdmLocal *local);
 
 #endif /* _IMP_3DM_CALLBACKS_H */

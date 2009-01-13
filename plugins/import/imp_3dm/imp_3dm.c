@@ -114,12 +114,36 @@ static gboolean tdm_read_container(TdmGlobal *global, gpointer object,
 		chunkinfo = tdm_get_chunk_info(tcode & 0x7FFF7FFF);
 
 #if DEBUG > 0
-		g_debug("\\%s[0x%08x] %s (%d bytes @ 0x%08x)", debug_pad(level), tcode,
+		g_debug("\\%s[0x%08x][%c%c%c] %s (%d bytes @ 0x%08x)",
+			debug_pad(level), tcode,
+			(chunkinfo && chunkinfo->container) ? 'c' : ' ',
+			(chunkinfo && chunkinfo->endofcnt) ? 'e' : ' ',
+			(chunkinfo && chunkinfo->callback) ? 'f' : ' ',
 			chunkinfo ? chunkinfo->description : "unknown chunk",
 			(tcode & TCODE_DATA) ? 0 : len,
 			(guint32)off);
 #endif
+		if(chunkinfo && chunkinfo->endofcnt)
+			return TRUE;
+
+#if DEBUG > 0
+		if(tcode & TCODE_DATA)
+			g_debug("|%sdata: 0x%08x", debug_pad(level + 1), len);
+#endif
+
 		if(chunkinfo) {
+			if(chunkinfo->callback) {
+				local = g_new0(TdmLocal, 1);
+				local->tcode = tcode;
+				local->len = (tcode & TCODE_DATA) ? 0 : len;
+				local->data = (tcode & TCODE_DATA) ? len : 0;
+				local->level = level;
+				local->object = object;
+				chunkinfo->callback(global, local);
+				len = local->len;
+				object = local->object;
+				g_free(local);
+			}
 			if(chunkinfo->container) {
 				if(!tdm_read_container(global, object, len, level + 1))
 					return FALSE;
@@ -130,26 +154,10 @@ static gboolean tdm_read_container(TdmGlobal *global, gpointer object,
 					nb -= 4;
 				}
 			}
-			if(chunkinfo->endofcnt)
-				return TRUE;
 		}
 
-		if(tcode & TCODE_DATA) {
-#if DEBUG > 0
-			g_debug("|%sdata: 0x%08x", debug_pad(level + 1), len);
-#endif
+		if(tcode & TCODE_DATA)
 			continue;
-		}
-
-		if(chunkinfo && chunkinfo->callback) {
-			local = g_new0(TdmLocal, 1);
-			local->tcode = tcode;
-			local->len = (tcode & TCODE_DATA) ? 0 : len;
-			local->data = (tcode & TCODE_DATA) ? len : 0;
-			chunkinfo->callback(global, local);
-			len = local->len;
-			g_free(local);
-		}
 
 		if(len > 0)
 			g3d_stream_skip(global->stream, len);

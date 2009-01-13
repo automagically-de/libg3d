@@ -1,33 +1,7 @@
 #ifndef _IMP_3DM_CALLBACKS_H
 #define _IMP_3DM_CALLBACKS_H
 
-#include "imp_3dm.h"
-
-typedef struct {
-	guint32 tcode;
-	guint32 len;
-	guint32 data;
-	guint32 level;
-	guint16 major_version;
-	guint16 minor_version;
-	gpointer object;
-} TdmLocal;
-
-typedef gboolean (* TdmCallback)(TdmGlobal *, TdmLocal *);
-
-typedef struct {
-	guint32 tcode;
-	gboolean container;
-	gboolean endofcnt;
-	const gchar *description;
-	TdmCallback callback;
-} TdmChunkInfo;
-
-typedef struct {
-	guint32 code;
-	const gchar *description;
-	TdmCallback callback;
-} TdmObjectTypeInfo;
+#include "imp_3dm_types.h"
 
 gboolean tdm_cb_0x00027ffc(TdmGlobal *global, TdmLocal *local);
 gboolean tdm_cb_0x02000071(TdmGlobal *global, TdmLocal *local);

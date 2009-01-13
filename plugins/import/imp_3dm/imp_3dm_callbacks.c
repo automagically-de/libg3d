@@ -8,13 +8,10 @@
 #include <g3d/vector.h>
 #include <g3d/material.h>
 
+#include "imp_3dm_types.h"
 #include "imp_3dm_callbacks.h"
+#include "imp_3dm_object.h"
 #include "imp_3dm_object_types.h"
-
-typedef struct {
-	guint32 otype;
-	G3DObject *object;
-} TdmObjectRecord;
 
 static TdmObjectTypeInfo *tdm_otype_get_info(guint32 code)
 {
@@ -119,11 +116,6 @@ gboolean tdm_cb_o_0x00000020(TdmGlobal *global, TdmLocal *local)
 	gint32 i, j;
 	guint32 vcount, fcount, isize, csize, crc;
 	guint8 c;
-	G3DStream *stream;
-#ifdef HAVE_ZLIB
-	G3DStream *zstream = NULL;
-	goffset o_start = 0, o_end;
-#endif
 
 	if(!tdm_read_chunk_version(global, local))
 		return FALSE;
@@ -255,50 +247,12 @@ gboolean tdm_cb_o_0x00000020(TdmGlobal *global, TdmLocal *local)
 		c = g3d_stream_read_int8(global->stream);
 		local->len -= 1;
 
-		if(c) {
-			/* compressed data */
-#ifndef HAVE_ZLIB
-			g_warning("no zlib support, unable to read deflated data");
-			return TRUE;
-#else
-			o_start = g3d_stream_tell(global->stream);
-#if DEBUG > 0
-			g_debug("opening deflated data @ 0x%08x", (guint32)o_start);
-#endif
-			g3d_stream_read_int32_le(global->stream); /* tcode */
-			csize = g3d_stream_read_int32_le(global->stream) - 4; /* size */
-			zstream = g3d_stream_zlib_inflate_stream(global->stream, csize);
-			stream = zstream;
-#endif /* HAVE_ZLIB */
-		} else {
-			/* uncompressed data */
-			stream = global->stream;
-		}
-
 		obj->object->vertex_count = vcount;
 		obj->object->vertex_data = g3d_vector_new(3, vcount);
-		for(i = 0; i < vcount; i ++) {
-			for(j = 0; j < 3; j ++) {
-				obj->object->vertex_data[i * 3 + j] =
-					g3d_stream_read_float_le(stream);
-				if(!c)
-					local->len -= 4;
-			}
-#if DEBUG > 0
-			g_debug("vertex %04d: %f, %f, %f", i,
-				obj->object->vertex_data[i * 3 + 0],
-				obj->object->vertex_data[i * 3 + 1],
-				obj->object->vertex_data[i * 3 + 2]);
-#endif
-		}
-
-		if(c) {
-#ifdef HAVE_ZLIB
-			g3d_stream_close(zstream);
-			o_end = g3d_stream_tell(global->stream);
-			local->len -= (o_end - o_start);
-#endif /* HAVE_ZLIB */
-		}
+		if(c)
+			tdm_object_read_vertex_data_compressed(global, local);
+		else
+			tdm_object_read_vertex_data_uncompressed(global, local);
 	} /* vcount > 0 */
 
 	return TRUE;

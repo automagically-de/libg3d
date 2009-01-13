@@ -26,5 +26,6 @@ typedef struct {
 } BlendSdna;
 
 BlendSdna *blend_sdna_read_dna1(G3DStream *stream, guint32 flags, gint32 len);
+gboolean blend_sdna_dump_struct(BlendSdna *sdna, guint32 sdnanr);
 
 #endif /* _IMP_BLEND_SDNA_H */

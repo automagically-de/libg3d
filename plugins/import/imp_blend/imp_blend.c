@@ -112,6 +112,11 @@ static gboolean blend_read_file(G3DContext *context, G3DStream *stream,
 			blend_from_id(code, 2), blend_from_id(code, 3),
 			len, old, sdnanr, nr);
 
+#if DEBUG > 0
+		if(sdna)
+			blend_sdna_dump_struct(sdna, sdnanr);
+#endif
+
 		if(len == 0)
 			return FALSE;
 
@@ -129,6 +134,9 @@ static gboolean blend_read_file(G3DContext *context, G3DStream *stream,
 				}
 				/* rewind stream to really read content */
 				g3d_stream_seek(stream, HEADER_SIZE, G_SEEK_SET);
+				break;
+			case MKID('D','A','T','A'):
+				g3d_stream_skip(stream, len);
 				break;
 			default:
 				g3d_stream_skip(stream, len);

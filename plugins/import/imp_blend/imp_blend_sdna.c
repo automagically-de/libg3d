@@ -126,6 +126,8 @@ BlendSdna *blend_sdna_read_dna1(G3DStream *stream, guint32 flags, gint32 len)
 						sprop->type = sdna->type_names[t];
 						sprop->tsize = sdna->type_sizes[t];
 						sprop->ptr = (sprop->name[0] == '*');
+						sstruct->properties = g_slist_append(
+							sstruct->properties, sprop);
 #if DEBUG > 1
 						g_debug("\t%-16s %-24s; /* %d */",
 							sprop->type, sprop->name, sprop->tsize);
@@ -145,3 +147,24 @@ BlendSdna *blend_sdna_read_dna1(G3DStream *stream, guint32 flags, gint32 len)
 	return sdna;
 }
 
+gboolean blend_sdna_dump_struct(BlendSdna *sdna, guint32 sdnanr)
+{
+	BlendSdnaStruct *sstruct;
+	BlendSdnaProperty *sprop;
+	GSList *pitem;
+
+	if(sdnanr < 10)
+		return TRUE;
+
+	g_return_val_if_fail(sdnanr < g_slist_length(sdna->structs), FALSE);
+
+	sstruct = g_slist_nth_data(sdna->structs, sdnanr);
+	g_debug("| struct %s {", sstruct->name);
+	for(pitem = sstruct->properties; pitem != NULL; pitem = pitem->next) {
+		sprop = pitem->data;
+		g_debug("| \t%-16s %-24s;", sprop->type, sprop->name);
+	}
+	g_debug("| };");
+
+	return TRUE;
+}

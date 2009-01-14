@@ -88,9 +88,9 @@ gchar **plugin_extensions(void)
 static gboolean blend_read_file(G3DContext *context, G3DStream *stream,
 	G3DModel *model, guint32 flags)
 {
-	guint32 code, len, old, sdnanr, nr, x1;
-	gint32 i;
+	guint32 code, len, old, sdnanr, nr;
 	BlendSdna *sdna = NULL;
+	const BlendSdnaStruct *sstruct;
 
 	while(TRUE) {
 		code = blend_read_uint(stream, flags);
@@ -113,8 +113,16 @@ static gboolean blend_read_file(G3DContext *context, G3DStream *stream,
 			len, old, sdnanr, nr);
 
 #if DEBUG > 0
-		if(sdna)
+		if(sdna) {
+#if DEBUG > 0
 			blend_sdna_dump_struct(sdna, sdnanr);
+#else
+			sstruct = blend_sdna_get_struct_by_id(sdna, sdnanr);
+			if(sstruct) {
+				g_debug("| %s (%d)", sstruct->name, sstruct->size);
+			}
+#endif
+		}
 #endif
 
 		if(len == 0)
@@ -143,5 +151,7 @@ static gboolean blend_read_file(G3DContext *context, G3DStream *stream,
 				break;
 		}
 	}
-	return FALSE;
+
+	blend_sdna_cleanup(sdna);
+	return TRUE;
 }

@@ -110,13 +110,9 @@ BlendSdna *blend_sdna_read_dna1(G3DStream *stream, guint32 flags, gint32 len)
 					n2 = blend_read_short(stream, flags);
 					len -= 4;
 					sstruct = g_new0(BlendSdnaStruct, 1);
-					sstruct->name = sdna->type_names[i + 10];
-					sstruct->size = sdna->type_sizes[i + 10];
+					sstruct->name = sdna->type_names[t];
+					sstruct->size = sdna->type_sizes[t];
 					sdna->structs = g_slist_append(sdna->structs, sstruct);
-#if DEBUG > 1
-					g_debug("/* %d */\nstruct %s { /* %d */",
-						i, sstruct->name, sstruct->size);
-#endif
 					for(j = 0; j < n2; j ++) {
 						t = blend_read_short(stream, flags);
 						nn = blend_read_short(stream, flags);
@@ -128,14 +124,7 @@ BlendSdna *blend_sdna_read_dna1(G3DStream *stream, guint32 flags, gint32 len)
 						sprop->ptr = (sprop->name[0] == '*');
 						sstruct->properties = g_slist_append(
 							sstruct->properties, sprop);
-#if DEBUG > 1
-						g_debug("\t%-16s %-24s; /* %d */",
-							sprop->type, sprop->name, sprop->tsize);
-#endif
 					}
-#if DEBUG > 1
-					g_debug("};");
-#endif
 				}
 				break;
 			default:
@@ -147,19 +136,84 @@ BlendSdna *blend_sdna_read_dna1(G3DStream *stream, guint32 flags, gint32 len)
 	return sdna;
 }
 
+static void blend_sdna_struct_free(BlendSdnaStruct *sstruct)
+{
+	GSList *item, *next;
+	BlendSdnaProperty *sprop;
+
+	g_free(sstruct->name);
+	item = sstruct->properties;
+	while(item) {
+		sprop = item->data;
+		next = item->next;
+		g_free(sprop->name);
+		g_free(sprop->type);
+		g_free(sprop);
+		g_slist_free_1(item);
+		item = next;
+	}
+	g_free(sstruct);
+}
+
+void blend_sdna_cleanup(BlendSdna *sdna)
+{
+	gint32 i;
+	GSList *item, *next;
+	BlendSdnaStruct *sstruct;
+
+	g_return_if_fail(sdna != NULL);
+
+	/* names */
+	for(i = 0; i < sdna->n_names; i ++)
+		g_free(sdna->names[i]);
+	g_free(sdna->names);
+	/* types */
+	for(i = 0; i < sdna->n_types; i ++)
+		g_free(sdna->type_names[i]);
+	g_free(sdna->type_names);
+	g_free(sdna->type_sizes);
+	/* structs */
+	item = sdna->structs;
+	while(item) {
+		sstruct = item->data;
+		next = item->next;
+		blend_sdna_struct_free(sstruct);
+		g_slist_free_1(next);
+		item = next;
+	}
+	/* sdna */
+	g_free(sdna);
+}
+
+const BlendSdnaStruct *blend_sdna_get_struct_by_id(BlendSdna *sdna,
+	guint32 sdnanr)
+{
+	g_return_val_if_fail(sdnanr < g_slist_length(sdna->structs), NULL);
+
+	if(sdnanr < 10)
+		return NULL;
+
+	return g_slist_nth_data(sdna->structs, sdnanr);
+}
+
+const BlendSdnaStruct *blend_sdna_get_struct_by_name(BlendSdna *sdna,
+	const gchar *name)
+{
+	/* TODO */
+	return NULL;
+}
+
 gboolean blend_sdna_dump_struct(BlendSdna *sdna, guint32 sdnanr)
 {
-	BlendSdnaStruct *sstruct;
+	const BlendSdnaStruct *sstruct;
 	BlendSdnaProperty *sprop;
 	GSList *pitem;
 
-	if(sdnanr < 10)
-		return TRUE;
-
-	g_return_val_if_fail(sdnanr < g_slist_length(sdna->structs), FALSE);
-
+	sstruct = blend_sdna_get_struct_by_id(sdna, sdnanr);
+	if(!sstruct)
+		return FALSE;
 	sstruct = g_slist_nth_data(sdna->structs, sdnanr);
-	g_debug("| struct %s {", sstruct->name);
+	g_debug("| struct %s { /* %d */", sstruct->name, sstruct->size);
 	for(pitem = sstruct->properties; pitem != NULL; pitem = pitem->next) {
 		sprop = pitem->data;
 		g_debug("| \t%-16s %-24s;", sprop->type, sprop->name);

@@ -6,10 +6,11 @@
 #include "imp_blend_types.h"
 
 typedef struct {
-	const gchar *name;
+	gchar *name;
 	const gchar *tname;
 	guint32 tid;
 	gsize tsize;
+	gsize nitems;
 	gboolean ptr;
 } BlendSdnaProperty;
 
@@ -42,10 +43,10 @@ typedef struct {
 	gchar *name;
 	BlendSdnaPropType type;
 	BlendSdnaProperty *sprop;
-	guint32 uval;   /* unsigned integer value */
-	gint32 ival;    /* signed integer value */
-	G3DFloat fval;  /* floating point value */
-	guint32 pval;   /* pointer value */
+	guint32    *uval; /* unsigned integer value */
+	gint32     *ival; /* signed integer value */
+	G3DFloat   *fval; /* floating point value */
+	guint32    *pval; /* pointer value */
 	BlendSdnaData *structval; /* struct value */
 } BlendSdnaPropData;
 

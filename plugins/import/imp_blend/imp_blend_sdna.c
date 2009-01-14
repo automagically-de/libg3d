@@ -20,6 +20,9 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <string.h>
+#include <stdlib.h>
+
 #include <g3d/debug.h>
 
 #include "imp_blend_def.h"
@@ -28,6 +31,24 @@
 #include "imp_blend_read.h"
 
 #define BLEND_DEBUG_STRUCT 0
+
+static gboolean sdna_prop_check_array(BlendSdnaProperty *sprop)
+{
+	gchar *ob;
+	guint32 n;
+
+	while(TRUE) {
+		ob = strrchr(sprop->name, '[');
+		if(ob == NULL)
+			return TRUE;
+		n = atoi(ob + 1);
+		if(n == 0)
+			return FALSE;
+		sprop->nitems *= n;
+		*ob = '\0';
+	}
+	return FALSE;
+}
 
 BlendSdna *blend_sdna_read_dna1(G3DStream *stream, guint32 flags, gint32 len)
 {
@@ -123,11 +144,13 @@ BlendSdna *blend_sdna_read_dna1(G3DStream *stream, guint32 flags, gint32 len)
 						nn = blend_read_short(stream, flags);
 						len -= 4;
 						sprop = g_new0(BlendSdnaProperty, 1);
-						sprop->name = sdna->names[nn];
+						sprop->name = g_strdup(sdna->names[nn]);
 						sprop->tname = sdna->type_names[t];
 						sprop->tid = t;
 						sprop->tsize = sdna->type_sizes[t];
 						sprop->ptr = (sprop->name[0] == '*');
+						sprop->nitems = 1;
+						sdna_prop_check_array(sprop);
 						sstruct->properties = g_slist_append(
 							sstruct->properties, sprop);
 					}
@@ -151,6 +174,7 @@ static void blend_sdna_struct_free(BlendSdnaStruct *sstruct)
 	while(item) {
 		sprop = item->data;
 		next = item->next;
+		g_free(sprop->name);
 		g_free(sprop);
 		g_slist_free_1(item);
 		item = next;
@@ -201,6 +225,64 @@ const BlendSdnaStruct *blend_sdna_get_struct_by_name(BlendSdna *sdna,
 	return NULL;
 }
 
+static inline void sdna_data_read_basic_types(BlendSdna *sdna,
+	BlendSdnaPropData *spdata, BlendGlobal *global, gsize *r)
+{
+	switch(spdata->type) {
+		case T_CHAR:
+			spdata->ival = g_new0(gint32, spdata->sprop->nitems);
+			spdata->ival[0] = g3d_stream_read_int8(global->stream);
+			(*r) -= 1;
+			break;
+		case T_UCHAR:
+			spdata->uval = g_new0(guint32, spdata->sprop->nitems);
+			spdata->uval[0] = g3d_stream_read_int8(global->stream);
+			(*r) -= 1;
+			break;
+		case T_SHORT: /* FIXME: BE/LE */
+			spdata->ival = g_new0(gint32, spdata->sprop->nitems);
+			spdata->ival[0] = g3d_stream_read_int16_le(global->stream);
+			(*r) -= 2;
+			break;
+		case T_USHORT:
+			spdata->uval = g_new0(guint32, spdata->sprop->nitems);
+			spdata->uval[0] = g3d_stream_read_int16_le(global->stream);
+			(*r) -= 2;
+			break;
+		case T_INT: /* FIXME: 32/64 bit */
+			spdata->ival = g_new0(gint32, spdata->sprop->nitems);
+			spdata->ival[0] = g3d_stream_read_int32_le(global->stream);
+			(*r) -= 4;
+			break;
+		case T_LONG:
+			spdata->ival = g_new0(gint32, spdata->sprop->nitems);
+			spdata->ival[0] = g3d_stream_read_int32_le(global->stream);
+			(*r) -= 4;
+			break;
+		case T_ULONG:
+			spdata->uval = g_new0(guint32, spdata->sprop->nitems);
+			spdata->uval[0] = g3d_stream_read_int32_le(global->stream);
+			(*r) -= 4;
+			break;
+		case T_FLOAT:
+			spdata->fval = g_new0(G3DFloat, spdata->sprop->nitems);
+			spdata->fval[0] = g3d_stream_read_float_le(global->stream);
+			(*r) -= 4;
+			break;
+		case T_DOUBLE:
+			spdata->fval = g_new0(G3DFloat, spdata->sprop->nitems);
+			spdata->fval[0] = g3d_stream_read_double_le(global->stream);
+			(*r) -= 8;
+			break;
+		case T_VOID:
+			g_warning("SDNA: non-pointer void type");
+			break;
+		case T_STRUCT:
+			/* handled elsewhere */
+			break;
+	}
+}
+
 BlendSdnaData *blend_sdna_data_read(BlendSdna *sdna,
 	const BlendSdnaStruct *sstruct, BlendGlobal *global, gsize *r,
 	guint32 level)
@@ -229,91 +311,59 @@ BlendSdnaData *blend_sdna_data_read(BlendSdna *sdna,
 		spdata->type = (sprop->tid < 10) ? sprop->tid : 0xFF;
 
 		if(sprop->ptr) {
-			spdata->pval = g3d_stream_read_int32_le(global->stream);
+			spdata->pval = g_new0(guint32, 1);
+			spdata->pval[0] = g3d_stream_read_int32_le(global->stream);
 			(*r) -= 4;
 #if DEBUG > BLEND_DEBUG_STRUCT
-			g_debug("|%s  %-10s %-10s; /* len = %d */",
+			g_debug("|%s  %-10s %-10s = 0x%08x; /* len = %d */",
 				debug_pad(level * 2),
-				sprop->tname, sprop->name, *r);
+				sprop->tname, sprop->name, spdata->pval[0], *r);
 #endif
 			continue;
 		}
-		switch(spdata->type) {
-			case T_CHAR:
-				spdata->ival = g3d_stream_read_int8(global->stream);
-				(*r) -= 1;
-				break;
-			case T_UCHAR:
-				spdata->uval = g3d_stream_read_int8(global->stream);
-				(*r) -= 1;
-				break;
-			case T_SHORT: /* FIXME: BE/LE */
-				spdata->ival = g3d_stream_read_int16_le(global->stream);
-				(*r) -= 2;
-				break;
-			case T_USHORT:
-				spdata->uval = g3d_stream_read_int16_le(global->stream);
-				(*r) -= 2;
-				break;
-			case T_INT: /* FIXME: 32/64 bit */
-				spdata->ival = g3d_stream_read_int32_le(global->stream);
-				(*r) -= 4;
-				break;
-			case T_LONG:
-				spdata->ival = g3d_stream_read_int32_le(global->stream);
-				(*r) -= 4;
-				break;
-			case T_ULONG:
-				spdata->uval = g3d_stream_read_int32_le(global->stream);
-				(*r) -= 4;
-				break;
-			case T_FLOAT:
-				spdata->fval = g3d_stream_read_float_le(global->stream);
-				(*r) -= 4;
-				break;
-			case T_DOUBLE:
-				spdata->fval = g3d_stream_read_double_le(global->stream);
-				(*r) -= 8;
-				break;
-			case T_VOID:
-				g_warning("SDNA: non-pointer void type");
-				break;
-			case T_STRUCT:
+
+		if(spdata->type == T_STRUCT) {
+			return sdata;
 #if DEBUG > BLEND_DEBUG_STRUCT
-				g_debug("|%s  %-10s %-10s = /* len = %d */",
-					debug_pad(level * 2),
-					sprop->tname, sprop->name, *r);
+			g_debug("|%s  %-10s %-10s = /* len = %d */",
+				debug_pad(level * 2),
+				sprop->tname, sprop->name, *r);
 #endif
-				substruct = blend_sdna_get_struct_by_id(sdna, sprop->tid);
+			substruct = blend_sdna_get_struct_by_id(sdna, sprop->tid);
+			if(substruct)
 				spdata->structval = blend_sdna_data_read(sdna, substruct,
 					global, r, level + 1);
-				break;
-		} /* switch(spdata->type) */
+		} else {
+			sdna_data_read_basic_types(sdna, spdata, global, r);
+		}
 #if DEBUG > 0
 		switch(spdata->type) {
 			case T_CHAR:
 			case T_SHORT:
 			case T_INT:
 			case T_LONG:
-				g_debug("|%s  %-10s %-10s = %i; /* len = %d */",
+				g_debug("|%s  %-10s %-10s [%d] = %i; /* len = %d */",
 					debug_pad(level * 2),
 					sprop->tname, sprop->name,
-					spdata->ival, *r);
+					sprop->nitems,
+					spdata->ival[0], *r);
 				break;
 			case T_UCHAR:
 			case T_USHORT:
 			case T_ULONG:
-				g_debug("|%s  %-10s %-10s = %u; /* len = %d */;",
+				g_debug("|%s  %-10s %-10s [%d] = %u; /* len = %d */;",
 					debug_pad(level * 2),
 					sprop->tname, sprop->name,
-					spdata->uval, *r);
+					sprop->nitems,
+					spdata->uval[0], *r);
 				break;
 			case T_FLOAT:
 			case T_DOUBLE:
-				g_debug("|%s  %-10s %-10s = %f; /* len = %d */",
+				g_debug("|%s  %-10s %-10s [%d] = %f; /* len = %d */",
 					debug_pad(level * 2),
 					sprop->tname, sprop->name,
-					spdata->fval, *r);
+					sprop->nitems,
+					spdata->fval[0], *r);
 				break;
 			case T_STRUCT:
 				break;

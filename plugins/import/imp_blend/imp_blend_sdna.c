@@ -30,8 +30,6 @@
 #include "imp_blend_sdna.h"
 #include "imp_blend_read.h"
 
-#define BLEND_DEBUG_STRUCT 0
-
 static gboolean sdna_prop_check_array(BlendSdnaProperty *sprop)
 {
 	gchar *ob;

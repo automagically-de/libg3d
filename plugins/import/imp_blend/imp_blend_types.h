@@ -70,6 +70,7 @@ typedef struct {
 	guint32 id;
 	guint32 len;
 	G3DObject *object;
+	G3DObject *grpobject;
 	guint32 object_id;
 	guint32 ndata;
 	BlendSdnaData **data;

@@ -234,13 +234,6 @@ const BlendSdnaStruct *blend_sdna_get_struct_by_tid(BlendSdna *sdna,
 	return NULL;
 }
 
-const BlendSdnaStruct *blend_sdna_get_struct_by_name(BlendSdna *sdna,
-	const gchar *name)
-{
-	/* TODO */
-	return NULL;
-}
-
 static inline void sdna_data_read_basic_types(BlendSdna *sdna,
 	BlendSdnaPropData *spdata, BlendGlobal *global, gsize *r)
 {
@@ -312,6 +305,19 @@ static inline void sdna_data_read_basic_types(BlendSdna *sdna,
 	}
 }
 
+BlendSdnaPropData *blend_sdna_get_property(BlendSdnaData *sdata,
+	const gchar *name, BlendSdnaPropType type)
+{
+	BlendSdnaPropData *spdata;
+
+	spdata = g_hash_table_lookup(sdata->prophash, name);
+	if(!spdata)
+		return NULL;
+	if(spdata->type != type)
+		return NULL;
+	return spdata;
+}
+
 BlendSdnaData *blend_sdna_data_read(BlendSdna *sdna,
 	const BlendSdnaStruct *sstruct, BlendGlobal *global, gsize *r,
 	guint32 level)
@@ -369,44 +375,6 @@ BlendSdnaData *blend_sdna_data_read(BlendSdna *sdna,
 		} else {
 			sdna_data_read_basic_types(sdna, spdata, global, r);
 		}
-#if DEBUG > BLEND_DEBUG_STRUCT
-		switch(spdata->type) {
-			case T_CHAR:
-			case T_SHORT:
-			case T_INT:
-			case T_LONG:
-				g_debug("|%s  %-10s %-10s [%d] = %i; /* len = %d */",
-					debug_pad(level * 2),
-					sprop->tname, sprop->name,
-					sprop->nitems,
-					spdata->ival[0], *r);
-				break;
-			case T_UCHAR:
-			case T_USHORT:
-			case T_ULONG:
-				g_debug("|%s  %-10s %-10s [%d] = %u; /* len = %d */;",
-					debug_pad(level * 2),
-					sprop->tname, sprop->name,
-					sprop->nitems,
-					spdata->uval[0], *r);
-				break;
-			case T_FLOAT:
-			case T_DOUBLE:
-				g_debug("|%s  %-10s %-10s [%d] = %f; /* len = %d */",
-					debug_pad(level * 2),
-					sprop->tname, sprop->name,
-					sprop->nitems,
-					spdata->fval[0], *r);
-				break;
-			case T_STRUCT:
-				break;
-			default:
-				g_debug("|%s  %-10s %-10s; /* len = %d */",
-					debug_pad(level * 2),
-					sprop->tname, sprop->name, *r);
-				break;
-		}
-#endif
 	} /* properties */
 
 #if DEBUG > BLEND_DEBUG_STRUCT
@@ -418,6 +386,62 @@ BlendSdnaData *blend_sdna_data_read(BlendSdna *sdna,
 
 void blend_sdna_data_free(BlendSdnaData *sdata)
 {
+	/* TODO: free BlendSdnaPropData nodes */
+	g_hash_table_destroy(sdata->prophash);
+	g_free(sdata);
+}
+
+/*****************************************************************************/
+/* debugging code                                                            */
+
+#if DEBUG > 0
+
+static void blend_sdna_dump_spdata_cb(gpointer key, gpointer value,
+	gpointer user_data)
+{
+	BlendSdnaPropData *spdata = value;
+	guint32 *levelp = user_data;
+
+#define DUMP_FORMAT "|%s %-10s %-10s [%03d]"
+#define DUMP_ARGS debug_pad(*levelp), \
+	spdata->sprop->tname, spdata->name, spdata->sprop->nitems
+
+	if(spdata->sprop->ptr) {
+		g_debug(DUMP_FORMAT " = 0x%08x;", DUMP_ARGS, spdata->pval[0]);
+		return;
+	}
+	switch(spdata->type) {
+		case T_CHAR:
+		case T_SHORT:
+		case T_INT:
+		case T_LONG:
+			g_debug(DUMP_FORMAT " = %i;", DUMP_ARGS, spdata->ival[0]);
+			break;
+		case T_UCHAR:
+		case T_USHORT:
+		case T_ULONG:
+			g_debug(DUMP_FORMAT " = %u;", DUMP_ARGS, spdata->uval[0]);
+			break;
+		case T_FLOAT:
+		case T_DOUBLE:
+			g_debug(DUMP_FORMAT " = %f;", DUMP_ARGS, spdata->fval[0]);
+			break;
+		case T_STRUCT:
+			g_debug(DUMP_FORMAT " =", DUMP_ARGS);
+			blend_sdna_dump_data(spdata->structval, *levelp + 1);
+			break;
+		default:
+			g_debug(DUMP_FORMAT ";", DUMP_ARGS);
+			break;
+	}
+}
+
+gboolean blend_sdna_dump_data(BlendSdnaData *sdata, guint32 level)
+{
+	g_debug("|%s{ /* %s */", debug_pad(level), sdata->sstruct->name);
+	g_hash_table_foreach(sdata->prophash, blend_sdna_dump_spdata_cb, &level);
+	g_debug("|%s},", debug_pad(level));
+	return TRUE;
 }
 
 gboolean blend_sdna_dump_struct(BlendSdna *sdna, guint32 sdnanr)
@@ -439,3 +463,5 @@ gboolean blend_sdna_dump_struct(BlendSdna *sdna, guint32 sdnanr)
 
 	return TRUE;
 }
+
+#endif

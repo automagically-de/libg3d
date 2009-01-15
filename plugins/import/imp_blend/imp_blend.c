@@ -93,13 +93,16 @@ gchar **plugin_extensions(void)
 
 /*****************************************************************************/
 
-static inline const BlendChunkInfo *blend_get_chunk_info(guint32 code)
+static inline const BlendChunkInfo *blend_get_chunk_info(guint32 code,
+	guint32 oid)
 {
 	gint32 i;
 
 	for(i = 0; blend_chunks[i].code != 0; i ++)
-		if(blend_chunks[i].code == code)
+		if((blend_chunks[i].code == code) && (blend_chunks[i].oid == oid))
 			return &(blend_chunks[i]);
+	if(oid != 0)
+		return blend_get_chunk_info(code, 0);
 	return NULL;
 }
 
@@ -111,6 +114,7 @@ static gboolean blend_read_file(BlendGlobal *global)
 	const BlendSdnaStruct *sstruct;
 	gint i;
 	G3DObject *object = NULL;
+	G3DObject *grpobject = NULL;
 	guint32 object_id = 0;
 
 	while(TRUE) {
@@ -128,7 +132,7 @@ static gboolean blend_read_file(BlendGlobal *global)
 			continue;
 		}
 
-		cinfo = blend_get_chunk_info(code);
+		cinfo = blend_get_chunk_info(code, (code == ID_DATA) ? object_id : 0);
 		if(cinfo == NULL)
 			g_warning("unknown chunk: %c%c%c%c",
 				blend_from_id(code, 0), blend_from_id(code, 1),
@@ -144,9 +148,8 @@ static gboolean blend_read_file(BlendGlobal *global)
 			return FALSE;
 
 		/* on non-DATA nodes a new object starts */
-		if(code != MKID('D','A','T','A')) {
+		if(code != ID_DATA) {
 			object_id = code;
-			object = NULL;
 		}
 
 		local = g_new0(BlendLocal, 1);
@@ -168,6 +171,7 @@ static gboolean blend_read_file(BlendGlobal *global)
 		}
 
 		local->object = object;
+		local->grpobject = grpobject;
 		local->object_id = object_id;
 		local->len = len;
 
@@ -176,9 +180,12 @@ static gboolean blend_read_file(BlendGlobal *global)
 				return FALSE;
 
 		len = local->len;
+		object = local->object;
+		grpobject = local->grpobject;
 
 		for(i = 0; i < local->ndata; i ++)
-			blend_sdna_data_free(local->data[i]);
+			if(local->data[i])
+				blend_sdna_data_free(local->data[i]);
 		g_free(local->data);
 		g_free(local);
 

@@ -21,6 +21,12 @@ BlendSdnaData *blend_sdna_data_read(BlendSdna *sdna,
 	guint32 level);
 void blend_sdna_data_free(BlendSdnaData *sdata);
 
+BlendSdnaPropData *blend_sdna_get_property(BlendSdnaData *sdata,
+	const gchar *name, BlendSdnaPropType type);
+
+#if DEBUG > 0
+gboolean blend_sdna_dump_data(BlendSdnaData *sdata, guint32 level);
 gboolean blend_sdna_dump_struct(BlendSdna *sdna, guint32 sdnanr);
+#endif
 
 #endif /* _IMP_BLEND_SDNA_H */

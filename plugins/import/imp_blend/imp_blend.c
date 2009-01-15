@@ -126,10 +126,13 @@ static gboolean blend_read_file(BlendGlobal *global)
 
 #if DEBUG > 0
 		if(sdna) {
-			sstruct = blend_sdna_get_struct_by_id(sdna, sdnanr);
-			if(sstruct) {
-				g_debug("|struct %s /* %d */", sstruct->name, sstruct->size);
-				blend_sdna_data_read(sdna, sstruct, global, &len, 0);
+			for(i = 0; i < nr; i ++) {
+				sstruct = blend_sdna_get_struct_by_id(sdna, sdnanr);
+				if(sstruct) {
+					g_debug("|struct %s /* %d */",
+						sstruct->name, sstruct->size);
+					blend_sdna_data_read(sdna, sstruct, global, &len, 0);
+				}
 			}
 		}
 #endif
@@ -147,7 +150,7 @@ static gboolean blend_read_file(BlendGlobal *global)
 					g_warning("Blend: failed to read DNA1, giving up...");
 					return FALSE;
 				}
-#if DEBUG > 0
+#if DEBUG > 2
 				for(i = 0; i < sdna->n_types; i ++)
 					g_debug("| type %04i: %s", i, sdna->type_names[i]);
 #endif

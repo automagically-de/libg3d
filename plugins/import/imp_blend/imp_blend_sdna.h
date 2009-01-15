@@ -16,6 +16,7 @@ typedef struct {
 
 typedef struct {
 	const gchar *name;
+	guint32 tid;
 	gsize size;
 	GSList *properties;
 } BlendSdnaStruct;

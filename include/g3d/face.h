@@ -69,7 +69,7 @@ gboolean g3d_face_get_normal(G3DFace *face, G3DObject *object,
  *
  * Returns: a new face
  */
-static inline G3DFace *g3d_face_new_tri(G3DMaterial *material,
+_G3D_STATIC_INLINE G3DFace *g3d_face_new_tri(G3DMaterial *material,
 	guint32 i1, guint32 i2, guint32 i3)
 {
 	G3DFace *face;

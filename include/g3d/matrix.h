@@ -56,7 +56,7 @@ gboolean g3d_matrix_identity(G3DMatrix *matrix);
  *
  * Returns: the new matrix
  */
-static inline G3DMatrix *g3d_matrix_new(void) {
+_G3D_STATIC_INLINE G3DMatrix *g3d_matrix_new(void) {
 	G3DMatrix *matrix = g_new(G3DMatrix, 16);
 	g3d_matrix_identity(matrix);
 	return matrix;
@@ -68,7 +68,7 @@ static inline G3DMatrix *g3d_matrix_new(void) {
  *
  * Free the memory allocated by a matrix.
  */
-static inline void g3d_matrix_free(G3DMatrix *matrix) {
+_G3D_STATIC_INLINE void g3d_matrix_free(G3DMatrix *matrix) {
 	g_free(matrix);
 }
 

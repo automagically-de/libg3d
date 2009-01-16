@@ -27,6 +27,16 @@
  * SECTION:vector
  * @short_description: Vector manipulation and calculation
  * @include: g3d/vector.h
+ *
+ * A vector is a one-dimensional array of floating point data.
+ *
+ * Declare it as statically as:
+ *
+ * G3DVector vector[3];
+ *
+ * or allocate it dynamically with:
+ *
+ * G3DVector *vector = g3d_vector_new(3, 1);
  */
 
 #include <g3d/types.h>
@@ -42,7 +52,7 @@ G_BEGIN_DECLS
  *
  * Returns: newly allocated vectors
  */
-static inline G3DVector *g3d_vector_new(guint32 size, guint32 n) {
+_G3D_STATIC_INLINE G3DVector *g3d_vector_new(guint32 size, guint32 n) {
 	return g_new0(G3DVector, size * n);
 }
 
@@ -52,7 +62,7 @@ static inline G3DVector *g3d_vector_new(guint32 size, guint32 n) {
  *
  * Free memory allocated for vector.
  */
-static inline void g3d_vector_free(G3DVector *vector) {
+_G3D_STATIC_INLINE void g3d_vector_free(G3DVector *vector) {
 	g_free(vector);
 }
 

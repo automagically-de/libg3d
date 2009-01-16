@@ -423,8 +423,14 @@ G3DStream *g3d_stream_from_buffer(guint8 *buffer, gsize size,
 
 /**
  * g3d_stream_zlib_inflate_stream:
+ * @stream: a parent stream
+ * @cmp_size: the compressed size of the deflated part
+ *
+ * Opens a new stream to decompress zlib-deflated parts of a stream.
+ *
+ * Returns: a newly allocated #G3DStream or NULL in case of an error
  */
-G3DStream *g3d_stream_zlib_inflate_stream(G3DStream *stream, gsize dcmp_size);
+G3DStream *g3d_stream_zlib_inflate_stream(G3DStream *stream, gsize cmp_size);
 
 #endif /* HAVE_ZLIB */
 

@@ -42,10 +42,34 @@ G_BEGIN_DECLS
 typedef gint64 goffset;
 #endif
 
+/* supposed to trick gtk-doc not to ignore these functions - not really... */
+#define _G3D_STATIC_INLINE static inline
+
 /*****************************************************************************
  * basic types
  *****************************************************************************/
 
+/**
+ * SECTION:types
+ * @short_description: Basic types
+ * @include: g3d/types.h
+ *
+ * Some basic type abstractions used in libg3d.
+ */
+
+/**
+ * G3DFloat:
+ *
+ * Default floating point type. If used consistently in the library (not the
+ * case at the moment) this type can be switched between single and double
+ * precision at compile-time.
+ */
+/**
+ * G3D_FLOAT_IS_DOUBLE
+ *
+ * A flag indicating type of #G3DFloat. It is TRUE if #G3DFloat is double and
+ * FALSE if #G3DFloat is single precision.
+ */
 #if 0
 #define G3D_FLOAT_IS_DOUBLE TRUE
 typedef gdouble G3DFloat;
@@ -53,10 +77,35 @@ typedef gdouble G3DFloat;
 #define G3D_FLOAT_IS_DOUBLE FALSE
 typedef gfloat G3DFloat;
 #endif
+/**
+ * G3DSingle:
+ *
+ * Single-precision floating point number.
+ */
 typedef gfloat G3DSingle;
+/**
+ * G3DDouble:
+ *
+ * Double-precision floating point number.
+ */
 typedef gdouble G3DDouble;
+/**
+ * G3DVector
+ *
+ * Vector element type.
+ */
 typedef G3DFloat G3DVector;
+/**
+ * G3DMatrix:
+ *
+ * Matrix element type.
+ */
 typedef G3DFloat G3DMatrix;
+/**
+ * G3DQuat
+ *
+ * Quaternion element type.
+ */
 typedef G3DFloat G3DQuat;
 
 /*****************************************************************************

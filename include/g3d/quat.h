@@ -24,6 +24,20 @@
 
 #include <g3d/types.h>
 
+/**
+ * SECTION:quat
+ * @short_description: quaternion helpers
+ * @include: g3d/quat.h
+ */
+
+/**
+ * g3d_quat_normalize:
+ * @q: a quaternion
+ *
+ * normalize the quaternion to a length of 1.0.
+ *
+ * Returns: TRUE on success, FALSE else
+ */
 gboolean g3d_quat_normalize(G3DQuat *q);
 
 /**
@@ -50,6 +64,21 @@ gboolean g3d_quat_rotate(G3DQuat *q, G3DVector *axis, G3DFloat angle);
  */
 gboolean g3d_quat_add(G3DQuat *qr, G3DQuat *q1, G3DQuat *q2);
 
+/**
+ * g3d_quat_trackball:
+ * @q: resulting quaternion
+ * @x1: x value of first point
+ * @y1: y value of first point
+ * @x2: x value of second point
+ * @y2: y value of second point
+ * @r: radius of virtual trackball, usually 0.8
+ *
+ * Emulate a virtual trackball movement and return rotation as quaternion.
+ * The x and y values of the starting and end point of the movement have
+ * to be in the range -1.0 .. 1.0.
+ *
+ * Returns: TRUE on success, FALSE else
+ */
 gboolean g3d_quat_trackball(G3DQuat *q, G3DFloat x1, G3DFloat y1,
 	G3DFloat x2, G3DFloat y2, G3DFloat r);
 
@@ -64,6 +93,18 @@ gboolean g3d_quat_trackball(G3DQuat *q, G3DFloat x1, G3DFloat y1,
  */
 gboolean g3d_quat_to_matrix(G3DQuat *q, G3DMatrix *matrix);
 
+/**
+ * g3d_quat_to_rotation_xyz:
+ * @q: a quaternion
+ * @rx: rotation around x axis
+ * @ry: rotation around y axis
+ * @rz: rotation around z axis
+ *
+ * Calculate the rotation around the three coordinate axes from a given
+ * quaternion.
+ *
+ * Returns: TRUE on success, FALSE else
+ */
 gboolean g3d_quat_to_rotation_xyz(G3DQuat *q, G3DFloat *rx, G3DFloat *ry,
 	G3DFloat *rz);
 

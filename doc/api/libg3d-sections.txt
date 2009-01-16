@@ -1,4 +1,12 @@
 <SECTION>
+<FILE>types</FILE>
+G3DSingle
+G3DDouble
+G3DFloat
+G3D_FLOAT_IS_DOUBLE
+</SECTION>
+
+<SECTION>
 <FILE>context</FILE>
 G3DContext
 g3d_context_new
@@ -30,6 +38,7 @@ g3d_model_load
 g3d_model_load_full
 g3d_model_check
 g3d_model_center
+g3d_model_transform
 g3d_model_clear
 g3d_model_free
 g3d_model_get_object_by_name
@@ -56,6 +65,7 @@ G3D_FLAG_MAT_TWOSIDE
 G3D_FLAG_FAC_NORMALS
 G3D_FLAG_FAC_TEXMAP
 G3DFace
+g3d_face_new_tri
 g3d_face_get_normal
 g3d_face_free
 </SECTION>
@@ -115,7 +125,9 @@ g3d_stream_open_structured_file
 g3d_stream_open_structured_file_from_stream
 g3d_stream_open_zip
 g3d_stream_open_zip_from_stream
+g3d_stream_open_gzip_from_stream
 g3d_stream_from_buffer
+g3d_stream_zlib_inflate_stream
 g3d_stream_new_custom
 
 g3d_stream_close
@@ -126,6 +138,7 @@ g3d_stream_size
 g3d_stream_eof
 g3d_stream_is_seekable
 g3d_stream_get_uri
+g3d_stream_line
 
 g3d_stream_read
 g3d_stream_read_line
@@ -199,6 +212,7 @@ g3d_read_cstr
 g3d_primitive_cube
 g3d_primitive_box
 g3d_primitive_box_strip_2d
+g3d_primitive_mesh
 g3d_primitive_cylinder
 g3d_primitive_tube
 g3d_primitive_sphere
@@ -206,6 +220,9 @@ g3d_primitive_sphere
 
 <SECTION>
 <FILE>matrix</FILE>
+G3DMatrix
+g3d_matrix_new
+g3d_matrix_free
 g3d_matrix_identity
 g3d_matrix_multiply
 g3d_matrix_translate
@@ -219,9 +236,21 @@ g3d_matrix_dump
 
 <SECTION>
 <FILE>vector</FILE>
+G3DVector
+g3d_vector_new
+g3d_vector_free
 g3d_vector_normal
 g3d_vector_unify
 g3d_vector_transform
 </SECTION>
 
-
+<SECTION>
+<FILE>quat</FILE>
+G3DQuat
+g3d_quat_add
+g3d_quat_normalize
+g3d_quat_rotate
+g3d_quat_to_matrix
+g3d_quat_to_rotation_xyz
+g3d_quat_trackball
+</SECTION>

@@ -23,7 +23,7 @@ static const BlendChunkInfo blend_chunks[] = {
 	{ MKID2('C','A'),        0, "camera",                   NULL },
 	{ MKID2('I','M'),        0, "image",                    NULL },
 	{ MKID2('L','A'),        0, "lamp",                     NULL },
-	{ MKID2('M','A'),        0, "material",                 NULL },
+	{ MKID2('M','A'),        0, "material",                 blend_cb_MA },
 	{ MKID2('M','E'),        0, "mesh",                     blend_cb_ME },
 	{ MKID2('O','B'),        0, "object",                   blend_cb_OB },
 	{ MKID2('S','C'),        0, "scene",                    NULL },

@@ -97,6 +97,36 @@ static gchar *get_name_from_id(BlendSdnaData *sdata)
 	return name;
 }
 
+static G3DFloat get_float(BlendSdnaData *sdata, const gchar *var)
+{
+	BlendSdnaPropData *spdata;
+	spdata = blend_sdna_get_property(sdata, var, T_FLOAT);
+	if(spdata)
+		return spdata->fval[0];
+	return 0.0;
+}
+
+/* material */
+gboolean blend_cb_MA(BlendGlobal *global, BlendLocal *local)
+{
+	G3DMaterial *material;
+
+	g_return_val_if_fail(local->data[0] != NULL, FALSE);
+
+#if DEBUG > 0
+	blend_sdna_dump_data(local->data[0], 0);
+#endif
+
+	material = g3d_material_new();
+	material->name = get_name_from_id(local->data[0]);
+	global->model->materials = g_slist_append(global->model->materials,
+		material);
+	material->r = get_float(local->data[0], "r");
+	material->g = get_float(local->data[0], "g");
+	material->b = get_float(local->data[0], "b");
+	return TRUE;
+}
+
 /* mesh */
 gboolean blend_cb_ME(BlendGlobal *global, BlendLocal *local)
 {
@@ -130,6 +160,17 @@ gboolean blend_cb_ME(BlendGlobal *global, BlendLocal *local)
 	object->transformation = g_new0(G3DTransformation, 1);
 	g3d_matrix_identity(object->transformation->matrix);
 
+	/* rotation */
+	spdata = blend_sdna_get_property(local->data[0], "rot", T_FLOAT);
+	if(spdata) {
+		for(i = 0; i < 3; i ++)
+			v[i] = spdata->fval[i];
+		g3d_matrix_rotate_xyz(v[0], v[1], v[2],
+			object->transformation->matrix);
+#if DEBUG > 0
+		g_debug("ME: rotate %f, %f, %f", v[0], v[1], v[2]);
+#endif
+	}
 	/* size */
 	spdata = blend_sdna_get_property(local->data[0], "size", T_FLOAT);
 	if(spdata) {
@@ -171,3 +212,5 @@ gboolean blend_cb_OB(BlendGlobal *global, BlendLocal *local)
 
 	return TRUE;
 }
+
+

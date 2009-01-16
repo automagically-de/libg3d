@@ -239,9 +239,9 @@ gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local)
 	G3DMaterial *material = (G3DMaterial *)local->user_data;
 	G3DStream *imgstream = NULL;
 	xmlNodePtr n1, n2;
-	gchar *siid = NULL, *filename;
+	gchar *siid = NULL, *filename, *subfile;
 #ifdef HAVE_LIBGSF
-	gchar *container, *subfile, *pipe;
+	gchar *container, *pipe;
 #endif
 
 	g_return_val_if_fail(material != NULL, FALSE);

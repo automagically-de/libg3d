@@ -3,6 +3,7 @@
 	[x] ./configure; make; make install
 	[x] ./configure --enable-experimental; make; make install
 	[x] ./configure --enable-debug; make; make install
+	[ ] build without HAVE_LIBGSF
 * Testing "stable" plugins (LD_LIBRARY_PATH=/tmp/test-build/lib g3dviewer)
 	[x] 3dmf
 	[x] 3ds

@@ -5,8 +5,8 @@ AC_CONFIG_AUX_DIR(config)
 # versioning stuff
 m4_define([g3d_major_version], [0])
 m4_define([g3d_minor_version], [0])
-m4_define([g3d_micro_version], [7])
-m4_define([g3d_interface_age], [7])
+m4_define([g3d_micro_version], [8])
+m4_define([g3d_interface_age], [8])
 m4_define([g3d_version],
 	[g3d_major_version.g3d_minor_version.g3d_micro_version])
 m4_define([g3d_binary_age],

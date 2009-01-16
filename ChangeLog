@@ -1,3 +1,7 @@
+Changes since version 0.0.7:
+	* imp_dae: build fix for !HAVE_LIBGSF case
+	* general: LGPL boilerplates and copyright years updated
+
 Changes since version 0.0.6:
 	* doc: API documentation updated
 	* plugins: converted to G3DStream interface

@@ -31,6 +31,20 @@
 * Tagging VCS
 	[x] git tag libg3d-0.0.7
 	[x] svn copy $REPO/trunk $REPO/tags/libg3d-0.0.7 -m "* tagging 0.0.7"
+* Uploading
+	[x] make dist; cp $TARBALL $WEB/files
+	[x] gpg --armor --output $TARBALL.asc --detach-sig $TARBALL
+	[x] cp ChangeLog $WEB/files/ChangeLog.libg3d
+	[x] updating API doc (./cp_api.sh)
+	[x] cp $TARBALL* upload-libg3d/
+	[x] ./upload-libg3d.sh
+* Announcing
+	[x] updating $WEBSRC/src/g3dviewer/index.html
+	[x] updating $WEBSRC/lib/news
+	[x] libg3d-devel@gna.org
+	[x] news on gna!
+	[x] updating freshmeat.net
+
 
 -------------------------------------------------------------------------------
 [x] successful

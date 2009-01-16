@@ -4,7 +4,7 @@ libg3d 0.0.7 "now or never"
 While there was a constant flow of changes and additions in the source code
 repository it has been over a year since the last "official" release.
 
-The 0.0.7 release introduces a log of changes, most notably an abstraction
+The 0.0.7 release introduces a lot of changes, most notably an abstraction
 of the input stream, a lot of new and updated plugins, a handful of bug
 fixes and some general improvements. Check the ChangeLog for some more
 detailed information or just try it out.

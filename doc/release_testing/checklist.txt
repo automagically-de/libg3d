@@ -29,8 +29,8 @@
 	[x] ChangeLog up-to-date
 	[x] Release Notes written
 * Tagging VCS
-	[ ] git
-	[ ] svn
+	[x] git tag libg3d-0.0.7
+	[x] svn copy $REPO/trunk $REPO/tags/libg3d-0.0.7 -m "* tagging 0.0.7"
 
 -------------------------------------------------------------------------------
 [x] successful

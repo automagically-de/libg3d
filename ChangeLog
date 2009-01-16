@@ -1,6 +1,8 @@
 Changes since version 0.0.6:
 	* doc: API documentation updated
 	* plugins: converted to G3DStream interface
+	* plugins: the models loaded by some plugins are rotated to fit
+		a common coordinate system (y axis pointing up)
 	* img_bmp: fixed wrong colors
 	* imp_flt: some improvements
 	* imp_ldraw: LDraw plugin, usable
@@ -8,7 +10,8 @@ Changes since version 0.0.6:
 	* imp_dxf: mostly rewritten, now supports POLYLINE entries
 	* imp_kmz: G**gle Earth plugin, mostly usable
 	* imp_acf: experimental X-Plane 6/7 plugin, usable to some degree
-	* imp_blend: experimental Blender plugin, not usable
+	* imp_blend: experimental Blender plugin, not really usable
+	* imp_3dm: experimental OpenNURBS plugin, not really usable
 	* imp_c4d: experimental Cinema 4D plugin, not usable
 	* imp_skp: experimental SketchUp plugin, not usable
 	* imp_vrml2: experimental VRML 97 plugin w/o using flex, not usable

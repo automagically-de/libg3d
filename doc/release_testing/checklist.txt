@@ -1,0 +1,38 @@
+* Building
+	[x] ./configure --enable-gtk-doc; make dist
+	[x] ./configure; make; make install
+	[x] ./configure --enable-experimental; make; make install
+	[x] ./configure --enable-debug; make; make install
+* Testing "stable" plugins (LD_LIBRARY_PATH=/tmp/test-build/lib g3dviewer)
+	[x] 3dmf
+	[x] 3ds
+	[x] ac3d
+	[x] ar
+	[x] ase
+	[x] cob
+	[x] dae
+	[x] glb
+	[x] heightfield
+	[x] iob
+	[x] joe
+	[x] kmz
+	[x] ldraw
+	[x] leocad
+	[x] lwo
+	[x] md2
+	[x] md3
+	[x] nff
+	[x] obj
+	[x] q3o
+	[x] vrml
+* Release Notes
+	[x] ChangeLog up-to-date
+	[x] Release Notes written
+* Tagging VCS
+	[ ] git
+	[ ] svn
+
+-------------------------------------------------------------------------------
+[x] successful
+[-] failed
+[ ] not tested

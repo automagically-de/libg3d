@@ -28,6 +28,7 @@
 * Release Notes
 	[x] ChangeLog up-to-date
 	[x] Release Notes written
+	[ ] all files have LGPL boilerplate
 * Tagging VCS
 	[x] git tag libg3d-0.0.7
 	[x] svn copy $REPO/trunk $REPO/tags/libg3d-0.0.7 -m "* tagging 0.0.7"

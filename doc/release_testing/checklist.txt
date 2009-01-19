@@ -3,7 +3,7 @@
 	[x] ./configure; make; make install
 	[x] ./configure --enable-experimental; make; make install
 	[x] ./configure --enable-debug; make; make install
-	[ ] build without HAVE_LIBGSF
+	[x] build without HAVE_LIBGSF
 * Testing "stable" plugins (LD_LIBRARY_PATH=/tmp/test-build/lib g3dviewer)
 	[x] 3dmf
 	[x] 3ds
@@ -29,14 +29,15 @@
 * Release Notes
 	[x] ChangeLog up-to-date
 	[x] Release Notes written
-	[ ] all files have LGPL boilerplate
+	[x] all files have LGPL boilerplate
 * Tagging VCS
 	[x] git tag libg3d-0.0.7
 	[x] svn copy $REPO/trunk $REPO/tags/libg3d-0.0.7 -m "* tagging 0.0.7"
 * Uploading
-	[x] make dist; cp $TARBALL $WEB/files
+	[x] make dist; cp $TARBALL $WEBSRC/src/files
 	[x] gpg --armor --output $TARBALL.asc --detach-sig $TARBALL
-	[x] cp ChangeLog $WEB/files/ChangeLog.libg3d
+	[x] cp ChangeLog $WEBSRC/src/files/ChangeLog.libg3d
+	[x] cp doc/support_matrix/matrix.html $WEBSRC/src/g3dviewer/
 	[x] updating API doc (./cp_api.sh)
 	[x] cp $TARBALL* upload-libg3d/
 	[x] ./upload-libg3d.sh

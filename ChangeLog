@@ -1,6 +1,7 @@
 Changes since version 0.0.7:
 	* imp_dae: build fix for !HAVE_LIBGSF case
 	* general: LGPL boilerplates and copyright years updated
+	* doc: API documentation updated
 
 Changes since version 0.0.6:
 	* doc: API documentation updated

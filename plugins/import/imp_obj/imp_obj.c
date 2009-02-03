@@ -29,6 +29,7 @@
 #include <g3d/context.h>
 #include <g3d/types.h>
 #include <g3d/material.h>
+#include <g3d/face.h>
 #include <g3d/stream.h>
 
 #define OBJ_USE_GROUPING 0
@@ -161,8 +162,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						face->vertex_count = num_v - 1;
 
 						/* next one if # of vertices < 3 */
-						if(face->vertex_count < 3)
+						if(face->vertex_count < 3) {
+							g3d_face_free(face);
 							continue;
+						}
 
 						/* calculate object-local vertex offset, indices
 						 * in .obj files are absolute */
@@ -176,6 +179,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 #endif
 						if(object == NULL) {
 							g_warning("error: face before object");
+							g3d_face_free(face);
 							return FALSE;
 						}
 

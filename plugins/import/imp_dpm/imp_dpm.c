@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <g3d/types.h>
+#include <g3d/object.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
 #include <g3d/stream.h>
@@ -136,7 +137,12 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 		/* read triangles */
 		/* TODO */
+
+		g_free(normals);
 	}
+
+	/* FIXME: insert object into model instead */
+	g3d_object_free(object);
 
 	return TRUE;
 }

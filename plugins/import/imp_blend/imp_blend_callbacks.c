@@ -43,6 +43,9 @@ gboolean blend_cb_DATA_ME(BlendGlobal *global, BlendLocal *local)
 
 	/* all structs in one DATA chunk have the same type */
 	if(strcmp(local->data[0]->sstruct->name, "MVert") == 0) {
+#if DEBUG > 0
+		g_debug("| MVert");
+#endif
 		local->object->vertex_count = local->ndata;
 		local->object->vertex_data = g3d_vector_new(3,
 			local->object->vertex_count);
@@ -53,6 +56,9 @@ gboolean blend_cb_DATA_ME(BlendGlobal *global, BlendLocal *local)
 					local->object->vertex_data[i * 3 + j] = spdata->fval[j];
 		}
 	} else if(strcmp(local->data[0]->sstruct->name, "MFace") == 0) {
+#if DEBUG > 0
+		g_debug("| MFace");
+#endif
 		for(i = 0; i < local->ndata; i ++) {
 			face = g_new0(G3DFace, 1);
 			face->vertex_count = 4;

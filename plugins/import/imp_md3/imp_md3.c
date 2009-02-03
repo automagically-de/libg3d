@@ -311,12 +311,12 @@ gboolean md3_read_mesh(G3DStream *stream, G3DContext *context, G3DModel *model)
 		/* FIXME: the normals don't look right... */
 		r = g3d_stream_read_int8(stream); /* rho */
 		s = g3d_stream_read_int8(stream); /* sigma */
-		rho = r * 2 * M_PI / 256.0;
-		sigma = s * 2 * M_PI / 256.0;
+		rho = r * G_PI / 128.0;
+		sigma = s * G_PI / 128.0;
 
-		normals[i * 3 + 0] = - cos(sigma) * sin(rho);
-		normals[i * 3 + 1] = - cos(sigma) * sin(rho);
-		normals[i * 3 + 2] = - cos(rho);
+		normals[i * 3 + 0] = cos(sigma) * sin(rho);
+		normals[i * 3 + 1] = sin(sigma) * sin(rho);
+		normals[i * 3 + 2] = cos(rho);
 
 		g3d_vector_unify(
 			&(normals[i * 3 + 0]),

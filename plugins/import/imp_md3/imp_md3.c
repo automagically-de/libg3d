@@ -253,6 +253,7 @@ gboolean md3_read_mesh(G3DStream *stream, G3DContext *context, G3DModel *model)
 	if((nvertex == 0) || (ntris == 0)) {
 		g_warning("MD3: %u vertices, %u triangles", nvertex, ntris);
 		g3d_stream_seek(stream, off_start + mlength, G_SEEK_SET);
+		g3d_object_free(object);
 		return FALSE;
 	}
 

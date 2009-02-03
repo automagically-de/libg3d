@@ -32,6 +32,7 @@
 #include <g3d/stream.h>
 #include <g3d/material.h>
 #include <g3d/texture.h>
+#include <g3d/face.h>
 #include <g3d/debug.h>
 
 #define AC3D_FLAG_ACC    0x01
@@ -119,6 +120,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			g_debug("\\(0) Object (line %d)", rowcnt);
 			ac3d_read_object(stream, context, model, buffer, transform, flags,
 				&(model->objects), &rowcnt, 1);
+			g_free(transform);
 		}
 		else
 		{
@@ -330,8 +332,10 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 						/* normal face */
 						for(i = 0; i < face->vertex_count; i ++)
 						{
-							if(!g3d_stream_read_line(stream, buffer, 2048))
+							if(!g3d_stream_read_line(stream, buffer, 2048)) {
+								g3d_face_free(face);
 								return 0;
+							}
 							*rowcnt += 1;
 
 							if(sscanf(buffer, "%u %f %f",
@@ -350,16 +354,13 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 
 							face->tex_vertex_data[i * 2 + 0] += texoffu;
 							face->tex_vertex_data[i * 2 + 1] += texoffv;
-
-#if 0
-							face->tex_coords[i * 2 + 0] *= texscaleu;
-							face->tex_coords[i * 2 + 1] *= texscalev;
-#endif
 						}
 
 						if(face->material && (face->vertex_count >= 3))
 							object->faces =
 								g_slist_prepend(object->faces, face);
+						else
+							g3d_face_free(face);
 
 					} /* not .acc */
 					else

@@ -64,6 +64,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 		if(opcode == 0) {
 			/* end of file or error */
+			g_free(ld);
 			break;
 		}
 

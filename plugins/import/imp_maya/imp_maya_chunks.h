@@ -54,8 +54,8 @@ static G3DIffChunkInfo maya_chunks[] = {
 	{ "DSPL", "layer ?",                           1, NULL }, /* FOR4 */
 	{ "FINF", "file information",                  0, maya_cb_STR_ },
 	{ "FDFL", "flare ?",                           1, NULL }, /* FOR4 */
-	{ "FLGS", "flags",                             0, NULL },
-	{ "FLT2", "float 2",                           0, NULL },
+	{ "FLGS", "flags",                             0, maya_cb_FLGS },
+	{ "FLT2", "float 2",                           0, maya_cb_FLT2 },
 	{ "FLT3", "float 3",                           0, maya_cb_FLT3 },
 	{ "FMPT", "unknown",                           1, NULL }, /* FOR4 */
 	{ "FNLD", "unknown",                           1, NULL }, /* FOR4 */

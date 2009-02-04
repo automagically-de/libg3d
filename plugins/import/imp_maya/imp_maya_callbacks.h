@@ -32,6 +32,8 @@ gboolean maya_cb_DBL2(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean maya_cb_DBL3(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean maya_cb_DBLE(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean maya_cb_DMSH(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_FLGS(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean maya_cb_FLT2(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean maya_cb_FLT3(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean maya_cb_MATR(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean maya_cb_MESH(G3DIffGlobal *global, G3DIffLocal *local);

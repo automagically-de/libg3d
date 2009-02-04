@@ -28,6 +28,7 @@ gboolean blend_cb_DATA_ME(BlendGlobal *global, BlendLocal *local);
 
 gboolean blend_cb_DNA1(BlendGlobal *global, BlendLocal *local);
 
+gboolean blend_cb_CU(BlendGlobal *global, BlendLocal *local);
 gboolean blend_cb_MA(BlendGlobal *global, BlendLocal *local);
 gboolean blend_cb_ME(BlendGlobal *global, BlendLocal *local);
 gboolean blend_cb_OB(BlendGlobal *global, BlendLocal *local);

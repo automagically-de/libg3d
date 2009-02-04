@@ -38,10 +38,12 @@ typedef struct {
 #define ID_DATA MKID('D','A','T','A')
 
 static const BlendChunkInfo blend_chunks[] = {
+	{ ID_DATA, MKID2('C','U'),  "curve data",               NULL },
 	{ ID_DATA, MKID2('M','E'),  "mesh data",                blend_cb_DATA_ME },
 	{ ID_DATA,               0, "struct data",              NULL },
 
 	{ MKID2('C','A'),        0, "camera",                   NULL },
+	{ MKID2('C','U'),        0, "curve",                    blend_cb_CU },
 	{ MKID2('I','M'),        0, "image",                    NULL },
 	{ MKID2('L','A'),        0, "lamp",                     NULL },
 	{ MKID2('M','A'),        0, "material",                 blend_cb_MA },

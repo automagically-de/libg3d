@@ -150,6 +150,15 @@ static G3DFloat get_float(BlendSdnaData *sdata, const gchar *var)
 	return 0.0;
 }
 
+/* curve */
+gboolean blend_cb_CU(BlendGlobal *global, BlendLocal *local)
+{
+#if DEBUG > 0
+	blend_sdna_dump_data(local->data[0], 0);
+#endif
+	return TRUE;
+}
+
 /* material */
 gboolean blend_cb_MA(BlendGlobal *global, BlendLocal *local)
 {

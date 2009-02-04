@@ -38,6 +38,7 @@ gboolean blend_cb_DATA_ME(BlendGlobal *global, BlendLocal *local)
 	BlendSdnaPropData *spdata;
 	gint32 i, j;
 	static const gchar *v[] = { "v1", "v2", "v3", "v4" };
+	BlendSdnaPropType vtype = T_INT;
 
 	if((local->ndata == 0) || (local->data[0] == NULL))
 		return TRUE;
@@ -45,7 +46,7 @@ gboolean blend_cb_DATA_ME(BlendGlobal *global, BlendLocal *local)
 
 	/* all structs in one DATA chunk have the same type */
 	if(strcmp(local->data[0]->sstruct->name, "MVert") == 0) {
-#if DEBUG > 0
+#if DEBUG > 2
 		g_debug("| MVert");
 #endif
 		local->object->vertex_count = local->ndata;
@@ -65,8 +66,9 @@ gboolean blend_cb_DATA_ME(BlendGlobal *global, BlendLocal *local)
 			local->object->transformation = NULL;
 		}
 	} else if(strcmp(local->data[0]->sstruct->name, "MFace") == 0) {
-#if DEBUG > 0
+#if DEBUG > 2
 		g_debug("| MFace");
+		blend_sdna_dump_data(local->data[0], 0);
 #endif
 		for(i = 0; i < local->ndata; i ++) {
 			face = g_new0(G3DFace, 1);
@@ -75,13 +77,19 @@ gboolean blend_cb_DATA_ME(BlendGlobal *global, BlendLocal *local)
 			face->material = g_slist_nth_data(local->object->materials, 0);
 			local->object->faces = g_slist_prepend(local->object->faces, face);
 			for(j = 0; j < 4; j ++) {
-				spdata = blend_sdna_get_property(local->data[i], v[j], T_INT);
+				spdata = blend_sdna_get_property(local->data[i], v[j], vtype);
+				if((spdata == NULL) && vtype == T_INT) {
+					vtype = T_USHORT;
+					spdata = blend_sdna_get_property(local->data[i], v[j],
+						vtype);
+				}
 				if(spdata)
-					face->vertex_indices[j] = spdata->ival[0];
+					face->vertex_indices[j] = (vtype == T_USHORT) ?
+						spdata->uval[0] : spdata->ival[0];
 			}
 			if(face->vertex_indices[3] == 0)
 				face->vertex_count = 3;
-#if DEBUG > 0
+#if DEBUG > 2
 			g_debug("MFace: %03i (%02i, %02i, %02i, %02i)", i,
 				face->vertex_indices[0], face->vertex_indices[1],
 				face->vertex_indices[2], face->vertex_indices[3]);
@@ -90,7 +98,7 @@ gboolean blend_cb_DATA_ME(BlendGlobal *global, BlendLocal *local)
 			/* TODO */
 		}
 	} else {
-#if DEBUG > 0
+#if DEBUG > 2
 		for(i = 0; i < local->ndata; i ++)
 			blend_sdna_dump_data(local->data[i], 0);
 #endif
@@ -149,7 +157,7 @@ gboolean blend_cb_MA(BlendGlobal *global, BlendLocal *local)
 
 	g_return_val_if_fail(local->data[0] != NULL, FALSE);
 
-#if DEBUG > 0
+#if DEBUG > 2
 	blend_sdna_dump_data(local->data[0], 0);
 #endif
 
@@ -177,8 +185,8 @@ static inline void blend_get_rot(BlendSdnaData *sdata, G3DMatrix *m)
 		for(i = 0; i < 3; i ++)
 			v[i] = spdata->fval[i];
 		g3d_matrix_rotate_xyz(v[0], v[1], v[2], m);
-#if DEBUG > 0
-		g_debug("ME: rotate %f, %f, %f", v[0], v[1], v[2]);
+#if DEBUG > 2
+		g_debug("rotate %f, %f, %f", v[0], v[1], v[2]);
 #endif
 	}
 }
@@ -194,7 +202,7 @@ static inline void blend_get_loc(BlendSdnaData *sdata, G3DMatrix *m)
 		for(i = 0; i < 3; i ++)
 			v[i] = spdata->fval[i];
 		g3d_matrix_translate(v[0], v[1], v[2], m);
-#if DEBUG > 0
+#if DEBUG > 2
 		g_debug("translate %f, %f, %f", v[0], v[1], v[2]);
 #endif
 	}
@@ -211,7 +219,7 @@ static inline void blend_get_scl(BlendSdnaData *sdata, G3DMatrix *m)
 		for(i = 0; i < 3; i ++)
 			v[i] = spdata->fval[i];
 		g3d_matrix_scale(v[0], v[1], v[2], m);
-#if DEBUG > 0
+#if DEBUG > 2
 		g_debug("scale %f, %f, %f", v[0], v[1], v[2]);
 #endif
 	}
@@ -233,7 +241,7 @@ gboolean blend_cb_ME(BlendGlobal *global, BlendLocal *local)
 
 	g_return_val_if_fail(local->data[0] != NULL, FALSE);
 
-#if DEBUG > 0
+#if DEBUG > 2
 	blend_sdna_dump_data(local->data[0], 0);
 #endif
 
@@ -274,7 +282,7 @@ gboolean blend_cb_ME(BlendGlobal *global, BlendLocal *local)
 	blend_get_trans(local->data[0], object->transformation->matrix);
 #endif
 	if(parent && parent->transformation) {
-#if DEBUG > 0
+#if DEBUG > 2
 		g_debug("parent matrix:");
 		g3d_matrix_dump(parent->transformation->matrix);
 		g_debug("object matrix:");
@@ -282,7 +290,7 @@ gboolean blend_cb_ME(BlendGlobal *global, BlendLocal *local)
 #endif
 		g3d_matrix_multiply(parent->transformation->matrix,
 			object->transformation->matrix, object->transformation->matrix);
-#if DEBUG > 0
+#if DEBUG > 2
 		g_debug("resulting object matrix");
 		g3d_matrix_dump(object->transformation->matrix);
 #endif
@@ -296,6 +304,7 @@ gboolean blend_cb_OB(BlendGlobal *global, BlendLocal *local)
 {
 	G3DObject *object;
 	BlendSdnaPropData *spdata;
+	gint32 i;
 
 	g_return_val_if_fail(local->data[0] != NULL, FALSE);
 
@@ -317,7 +326,14 @@ gboolean blend_cb_OB(BlendGlobal *global, BlendLocal *local)
 
 	object->transformation = g_new0(G3DTransformation, 1);
 	g3d_matrix_identity(object->transformation->matrix);
+#if 0
 	blend_get_trans(local->data[0], object->transformation->matrix);
+#endif
+	spdata = blend_sdna_get_property(local->data[0], "obmat", T_FLOAT);
+	if(spdata) {
+		for(i = 0; i < 16; i ++)
+			object->transformation->matrix[i] = spdata->fval[i];
+	}
 
 	return TRUE;
 }

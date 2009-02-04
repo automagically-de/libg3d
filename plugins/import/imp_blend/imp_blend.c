@@ -173,7 +173,7 @@ static gboolean blend_read_file(BlendGlobal *global)
 				len -= 4;
 				blend_ptr_insert(global->pointers, address,
 					BLEND_PTR_POINTER, GINT_TO_POINTER((guint32)pointerval));
-#if DEBUG > 0
+#if DEBUG > 2
 				g_debug("PTR: 0x%08x => 0x%08x", address, (guint32)pointerval);
 #endif
 			} else {

@@ -25,14 +25,17 @@
 
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/context.h>
 
 #include "imp_blend_def.h"
 #include "imp_blend_types.h"
 #include "imp_blend_sdna.h"
 #include "imp_blend_read.h"
 #include "imp_blend_chunks.h"
+#include "imp_blend_ptr.h"
 
 static gboolean blend_read_file(BlendGlobal *global);
+static gboolean blend_fixup_pointers(BlendGlobal *global);
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
@@ -72,9 +75,12 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	global->stream = stream;
 	global->model = model;
 	global->flags = flags;
+	global->pointers = blend_ptr_init();
 
 	blend_read_file(global);
+	blend_fixup_pointers(global);
 
+	blend_ptr_cleanup(global->pointers);
 	g_free(global);
 
 	return TRUE;
@@ -108,7 +114,7 @@ static inline const BlendChunkInfo *blend_get_chunk_info(guint32 code,
 
 static gboolean blend_read_file(BlendGlobal *global)
 {
-	guint32 code, len, old, sdnanr, nr;
+	guint32 code, len, address, sdnanr, nr;
 	BlendLocal *local;
 	const BlendChunkInfo *cinfo;
 	const BlendSdnaStruct *sstruct;
@@ -116,6 +122,8 @@ static gboolean blend_read_file(BlendGlobal *global)
 	G3DObject *object = NULL;
 	G3DObject *grpobject = NULL;
 	guint32 object_id = 0;
+	goffset pointerval;
+	gfloat prev_pcnt = 0.0, pcnt;
 
 	while(TRUE) {
 		code = blend_read_uint(global->stream, global->flags);
@@ -123,7 +131,7 @@ static gboolean blend_read_file(BlendGlobal *global)
 		if(code == MKID('E','N','D','B'))
 			return TRUE;
 
-		old = blend_read_uint(global->stream, global->flags);
+		address = blend_read_uint(global->stream, global->flags);
 		sdnanr = blend_read_uint(global->stream, global->flags);
 		nr = blend_read_uint(global->stream, global->flags);
 
@@ -142,7 +150,7 @@ static gboolean blend_read_file(BlendGlobal *global)
 			blend_from_id(code, 0), blend_from_id(code, 1),
 			blend_from_id(code, 2), blend_from_id(code, 3),
 			cinfo ? cinfo->description : "(unknown)",
-			len, old, sdnanr, nr);
+			len, address, sdnanr, nr);
 
 		if(len == 0)
 			return FALSE;
@@ -155,20 +163,34 @@ static gboolean blend_read_file(BlendGlobal *global)
 		local = g_new0(BlendLocal, 1);
 		local->ndata = nr;
 		local->data = g_new0(BlendSdnaData *, nr);
+		local->address = address;
 
 		if(global->sdna) {
-			for(i = 0; i < nr; i ++) {
-				sstruct = blend_sdna_get_struct_by_id(global->sdna, sdnanr);
-				if(sstruct) {
-#if DEBUG > BLEND_DEBUG_STRUCT
-					g_debug("|struct %s /* %d */",
-						sstruct->name, sstruct->size);
+			if(sdnanr == 0) {
+				/* just a pointer value */
+				/* FIXME: endianess/pointer size */
+				pointerval = g3d_stream_read_int32_le(global->stream);
+				len -= 4;
+				blend_ptr_insert(global->pointers, address,
+					BLEND_PTR_POINTER, GINT_TO_POINTER((guint32)pointerval));
+#if DEBUG > 0
+				g_debug("PTR: 0x%08x => 0x%08x", address, (guint32)pointerval);
 #endif
-					local->data[i] = blend_sdna_data_read(global->sdna,
-						sstruct, global, &len, 0);
+			} else {
+				for(i = 0; i < nr; i ++) {
+					sstruct =
+						blend_sdna_get_struct_by_id(global->sdna, sdnanr);
+					if(sstruct) {
+#if DEBUG > BLEND_DEBUG_STRUCT
+						g_debug("|struct %s /* %d */",
+							sstruct->name, sstruct->size);
+#endif
+						local->data[i] = blend_sdna_data_read(global->sdna,
+							sstruct, global, &len, 0);
+					}
 				}
-			}
-		}
+			} /* no pointer */
+		} /* sdna present */
 
 		local->object = object;
 		local->grpobject = grpobject;
@@ -191,8 +213,60 @@ static gboolean blend_read_file(BlendGlobal *global)
 
 		/* skip remaining data */
 		g3d_stream_skip(global->stream, len);
+
+		/* update interface */
+		pcnt = (gfloat)g3d_stream_tell(global->stream) /
+			(gfloat)g3d_stream_size(global->stream);
+		if((pcnt - prev_pcnt) > 0.002) {
+			prev_pcnt = pcnt;
+			g3d_context_update_progress_bar(global->context, pcnt, TRUE);
+		}
+		g3d_context_update_interface(global->context);
 	}
 
 	blend_sdna_cleanup(global->sdna);
+	return TRUE;
+}
+
+static gboolean blend_fixup_material_ptrs(BlendGlobal *global, GSList *olist)
+{
+	G3DObject *object;
+	G3DMaterial *material, *refmat;
+	GSList *item;
+	guint32 pval;
+	goffset pointer;
+
+	for(item = olist; item != NULL; item = item->next) {
+		object = item->data;
+		material = g_slist_nth_data(object->materials, 0);
+		if((material != NULL) && (strncmp(material->name, "PTR:", 4) == 0)) {
+			pval = strtoul(material->name + 4, NULL, 16);
+#if DEBUG > 4
+			g_debug("PTR: fixup %x", pval);
+#endif
+			if(pval != 0) {
+				pointer = GPOINTER_TO_INT(blend_ptr_get(global->pointers, pval,
+					BLEND_PTR_POINTER));
+				if(pointer != 0) {
+					refmat = blend_ptr_get(global->pointers, pointer,
+						BLEND_PTR_G3DMATERIAL);
+					if(refmat) {
+#if DEBUG > 4
+						g_debug("PTR: material: %s", material->name);
+#endif
+						g_free(material->name);
+						memcpy(material, refmat, sizeof(G3DMaterial));
+					}
+				}
+			}
+		}
+		blend_fixup_material_ptrs(global, object->objects);
+	}
+	return TRUE;
+}
+
+static gboolean blend_fixup_pointers(BlendGlobal *global)
+{
+	blend_fixup_material_ptrs(global, global->model->objects);
 	return TRUE;
 }

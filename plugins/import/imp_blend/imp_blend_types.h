@@ -85,6 +85,7 @@ typedef struct {
 	G3DStream *stream;
 	guint32 flags;
 	BlendSdna *sdna;
+	GHashTable *pointers;
 } BlendGlobal;
 
 typedef struct {
@@ -92,9 +93,23 @@ typedef struct {
 	guint32 len;
 	G3DObject *object;
 	G3DObject *grpobject;
+	guint32 address;
 	guint32 object_id;
 	guint32 ndata;
 	BlendSdnaData **data;
 } BlendLocal;
+
+typedef enum {
+	BLEND_PTR_OTHER,
+	BLEND_PTR_POINTER,
+	BLEND_PTR_G3DMATERIAL,
+	BLEND_PTR_G3DOBJECT
+} BlendPtrType;
+
+typedef struct {
+	BlendPtrType type;
+	goffset address;
+	gpointer value;
+} BlendPtr;
 
 #endif

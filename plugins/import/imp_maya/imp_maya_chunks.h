@@ -48,7 +48,7 @@ static G3DIffChunkInfo maya_chunks[] = {
 	{ "DELL", "delete list",                       1, NULL }, /* LIS4 */
 	{ "DISC", "unknown",                           0, NULL },
 	{ "DISL", "unknown",                           1, NULL }, /* LIS4 */
-	{ "DMSH", "mesh",                              1, maya_cb_DMSH },
+	{ "DMSH", "dimension shape",                   1, maya_cb_DMSH },
 	{ "DMTI", "material info",                     1, NULL }, /* FOR4 */
 	{ "DPLM", "layer manager",                     1, NULL }, /* FOR4 */
 	{ "DSPL", "layer ?",                           1, NULL }, /* FOR4 */

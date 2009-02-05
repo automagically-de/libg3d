@@ -293,7 +293,7 @@ gboolean maya_cb_DBLE(G3DIffGlobal *global, G3DIffLocal *local)
 	return TRUE;
 }
 
-/* mesh object */
+/* dimension shape object */
 gboolean maya_cb_DMSH(G3DIffGlobal *global, G3DIffLocal *local)
 {
 	MayaObject *obj;
@@ -305,7 +305,7 @@ gboolean maya_cb_DMSH(G3DIffGlobal *global, G3DIffLocal *local)
 		obj = (MayaObject *)local->object;
 
 		object = (G3DObject *)obj->user_data;
-		object->name = obj->name ? g_strdup(obj->name) : "(unnamed mesh)";
+		object->name = obj->name ? g_strdup(obj->name) : "(unnamed shape)";
 
 		if(obj->parent)
 		{
@@ -486,71 +486,114 @@ gboolean maya_cb_MESH(G3DIffGlobal *global, G3DIffLocal *local)
 	G3DObject *object;
 	G3DMaterial *material;
 	G3DFace *face;
-	gint32 x1, x2, x3, x4, i, j, i1, i2;
+	gint32 len, i, j;
+	guint32 x1, x2, x3, x4;
+	gchar *str;
+	guint32 *edges;
+#if DEBUG > 2
+	guint8 *data;
+#endif
 
-	x1 = g3d_stream_read_int16_be(global->stream);
-	x2 = g3d_stream_read_int16_be(global->stream);
-	x3 = g3d_stream_read_int16_be(global->stream);
-	x4 = g3d_stream_read_int16_be(global->stream);
-	local->nb -= 8;
+	str = g_new0(gchar, local->nb + 1);
+	local->nb -= g3d_stream_read_cstr(global->stream, str, local->nb);
+	x2 = g3d_stream_read_int8(global->stream);
+	x3 = g3d_stream_read_int8(global->stream);
+	x4 = g3d_stream_read_int8(global->stream);
+	local->nb -= 3;
 
 #if DEBUG > 0
-		g_debug("|%s[Maya][MESH] 0x%04x, %d %d %d",
-			debug_pad(local->level), x1, x2, x3, x4);
+		g_debug("|%s[Maya][MESH] %s: 0x%02x 0x%02x 0x%02x",
+			debug_pad(local->level), str, x2, x3, x4);
 #endif
 
 	object = (G3DObject *)((MayaObject *)local->object)->user_data;
 	material = (G3DMaterial *)g_slist_nth_data(object->materials, 0);
 
-	if(x1 == 0x6369)
-	{
-		object->vertex_count = x4 / 3;
+	if(1 || strcmp(str, "ci") == 0) {
+		len = g3d_stream_read_int16_be(global->stream);
+		local->nb -= 2;
+		object->vertex_count = len / 3;
 		object->vertex_data = g_new0(gfloat, object->vertex_count * 3);
+#if DEBUG > 0
+		g_debug("|%s[Maya][MESH] %d vertices",
+			debug_pad(local->level), len / 3);
+#endif
 
 		for(i = 0; i < object->vertex_count; i ++) {
 			for(j = 0; j < 3; j ++)
 				object->vertex_data[i * 3 + j] =
 					g3d_stream_read_float_be(global->stream);
 			local->nb -= 12;
+#if DEBUG > 2
+			g_debug("vertex: %f %f %f",
+				object->vertex_data[i * 3 + 0],
+				object->vertex_data[i * 3 + 1],
+				object->vertex_data[i * 3 + 2]);
+#endif
 		}
 
-		x3 = g3d_stream_read_int16_be(global->stream);
-		x4 = g3d_stream_read_int16_be(global->stream);
+		/* edges */
+		len = g3d_stream_read_int32_be(global->stream);
 		local->nb -= 4;
-		i1 = -1;
-		i2 = -1;
-		for(i = 0; i < x4 / 2; i ++)
-		{
-			if(i1 == -1)
-			{
-				i1 = g3d_stream_read_int32_be(global->stream) & 0xFFFFFF;
-				i2 = g3d_stream_read_int32_be(global->stream) & 0xFFFFFF;
-				local->nb -= 8;
+		edges = g_new0(guint32, len);
+#if DEBUG > 0
+		g_debug("|%s[Maya][MESH] %d edges",
+			debug_pad(local->level), len / 2);
+#endif
+		for(i = 0; i < len; i ++) {
+			edges[i] = g3d_stream_read_int32_be(global->stream) & 0x00FFFFFF;
+			local->nb -= 4;
+		}
+		/* faces */
+		len = g3d_stream_read_int32_be(global->stream);
+		local->nb -= 4;
+#if DEBUG > 0
+		g_debug("|%s[Maya][MESH] %d face edge indices",
+			debug_pad(local->level), len);
+#endif
+		for(i = 0; i < len / 4; i ++) {
+			face = g_new0(G3DFace, 1);
+			face->vertex_count = 4;
+			face->vertex_indices = g_new0(guint32, 4);
+			face->material = material;
+			object->faces = g_slist_prepend(object->faces, face);
+#if DEBUG > 0
+			g_debug("face %03i", i);
+#endif
+			for(j = 0; j < 4; j ++) {
+				x1 = g3d_stream_read_int32_be(global->stream);
+				local->nb -= 4;
+				face->vertex_indices[j] =
+					edges[(x1 & 0x00FFFFFF) * 2 + ((x1 & 0x80000000) ? 1 : 0)];
+#if DEBUG > 0
+				g_debug("  vertex: %03d (%03d - %03d, 0x%02x)",
+					face->vertex_indices[j],
+					edges[(x1 & 0x00FFFFFF) * 2 + 0],
+					edges[(x1 & 0x00FFFFFF) * 2 + 1],
+					(x1 & 0xFF000000) >> 24);
+#endif
 			}
-			else
-			{
-				face = g_new0(G3DFace, 1);
-				face->vertex_count = 4;
-				face->vertex_indices = g_new0(guint32, 4);
-				face->vertex_indices[0] = i1;
-				face->vertex_indices[1] = i2;
-				face->vertex_indices[2] =
-					g3d_stream_read_int32_be(global->stream) & 0xFFFFFF;
-				face->vertex_indices[3] =
-					g3d_stream_read_int32_be(global->stream) & 0xFFFFFF;
-				face->material = material;
-				local->nb -= 8;
-				i1 = face->vertex_indices[3];
-				i2 = face->vertex_indices[2];
-
-				object->faces = g_slist_append(object->faces, face);
-			}
+			if(face->vertex_indices[0] == face->vertex_indices[3])
+				face->vertex_count = 3;
+#if DEBUG > 2
+			g_debug("face: %3d %3d %3d %3d",
+				face->vertex_indices[0], face->vertex_indices[1],
+				face->vertex_indices[2], face->vertex_indices[3]);
+#endif
 		}
 
-		x3 = g3d_stream_read_int16_be(global->stream);
-		x4 = g3d_stream_read_int16_be(global->stream);
-		local->nb -= 4;
+		/* free edge data */
+		g_free(edges);
+
+#if DEBUG > 2
+		data = g_malloc(local->nb);
+		g3d_stream_read(global->stream, data, local->nb);
+		debug_hexdump(data, local->nb);
+		local->nb = 0;
+		g_free(data);
+#endif
 	}
+	g_free(str);
 	return TRUE;
 }
 
@@ -561,6 +604,10 @@ gboolean maya_cb_PCUB(G3DIffGlobal *global, G3DIffLocal *local)
 	G3DObject *object;
 	G3DMaterial *material;
 	gdouble w, h, d;
+
+#if 1
+	return TRUE;
+#endif
 
 	if(local->finalize)
 	{
@@ -600,6 +647,10 @@ gboolean maya_cb_PCYL(G3DIffGlobal *global, G3DIffLocal *local)
 	G3DMaterial *material;
 	gdouble h, r;
 	guint32 s;
+
+#if 1
+	return TRUE;
+#endif
 
 	if(local->finalize) {
 		obj = (MayaObject *)local->object;
@@ -687,8 +738,9 @@ gboolean maya_cb_XFRM(G3DIffGlobal *global, G3DIffLocal *local)
 		g3d_matrix_dump(tf->matrix);
 #endif
 
+#if 1
 		object->transformation = tf;
-
+#endif
 		maya_obj_add_to_tree(obj, global->model, object);
 		maya_obj_free(obj);
 	} else {

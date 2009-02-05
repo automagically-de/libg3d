@@ -248,6 +248,7 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 	guint32 chunk_id, chunk_len, chunk_mod, chunk_type;
 	gchar *tid;
 	gpointer level_object;
+	gfloat prev_pcnt = 0.0, pcnt;
 #ifndef G3D_DISABLE_DEPRECATED
 	long int fpos;
 #endif
@@ -409,9 +410,12 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 		}
 
 		if(global->stream) {
-			g3d_context_update_progress_bar(global->context,
-				(G3DFloat)g3d_stream_tell(global->stream) /
-				(G3DFloat)g3d_stream_size(global->stream), TRUE);
+			pcnt = (gfloat)g3d_stream_tell(global->stream) /
+				(gfloat)g3d_stream_size(global->stream);
+			if((pcnt - prev_pcnt) > 0.002) {
+				prev_pcnt = pcnt;
+				g3d_context_update_progress_bar(global->context, pcnt, TRUE);
+			}
 		}
 #ifndef G3D_DISABLE_DEPRECATED
 		else {
@@ -420,6 +424,7 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 				((G3DFloat)fpos / (G3DFloat)global->max_fpos), TRUE);
 		}
 #endif
+		g3d_context_update_interface(global->context);
 	} /* nb >= 8/6 */
 
 	if(local->nb > 0)

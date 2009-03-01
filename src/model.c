@@ -38,11 +38,11 @@ G3DModel *g3d_model_new(void)
 	return model;
 }
 
-static gdouble objects_max_radius(GSList *objects)
+static G3DFloat objects_max_radius(GSList *objects)
 {
 	G3DObject *object;
 	GSList *oitem;
-	gdouble radius, max_rad = 0.0;
+	G3DFloat radius, max_rad = 0.0;
 
 	oitem = objects;
 	while(oitem)
@@ -62,7 +62,7 @@ static gdouble objects_max_radius(GSList *objects)
 	return max_rad;
 }
 
-static void objects_post_load(GSList *objects, gdouble max_rad, guint32 flags)
+static void objects_post_load(GSList *objects, G3DFloat max_rad, guint32 flags)
 {
 	G3DObject *object;
 	GSList *oitem;
@@ -139,7 +139,7 @@ G3DModel *g3d_model_load_full(G3DContext *context, const gchar *filename,
 	guint32 flags)
 {
 	G3DModel *model;
-	gdouble max_rad;
+	G3DFloat max_rad;
 
 	model = g3d_model_new();
 
@@ -190,8 +190,8 @@ G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
 }
 
 static void objects_max_extension(GSList *objects,
-	gdouble *min_x, gdouble *min_y, gdouble *min_z,
-	gdouble *max_x,	gdouble *max_y, gdouble *max_z)
+	G3DFloat *min_x, G3DFloat *min_y, G3DFloat *min_z,
+	G3DFloat *max_x, G3DFloat *max_y, G3DFloat *max_z)
 {
 	GSList *oitem;
 	G3DObject *object;
@@ -226,7 +226,7 @@ static void objects_max_extension(GSList *objects,
 }
 
 static void objects_move(GSList *objects,
-	gdouble off_x, gdouble off_y, gdouble off_z)
+	G3DFloat off_x, G3DFloat off_y, G3DFloat off_z)
 {
 	GSList *oitem;
 	G3DObject *object;
@@ -251,9 +251,9 @@ static void objects_move(GSList *objects,
 
 gboolean g3d_model_center(G3DModel *model)
 {
-	gdouble min_x = 10.0e99, min_y = 10.0e99, min_z = 10.0e99;
-	gdouble max_x = -9.9e99, max_y = -9.9e99, max_z = -9.9e99;
-	gdouble off_x, off_y, off_z;
+	G3DFloat min_x = 10.0e99, min_y = 10.0e99, min_z = 10.0e99;
+	G3DFloat max_x = -9.9e99, max_y = -9.9e99, max_z = -9.9e99;
+	G3DFloat off_x, off_y, off_z;
 
 	/* determine maximum extension */
 	objects_max_extension(model->objects,

@@ -82,7 +82,7 @@ gint g3d_stream_skip(G3DStream *stream, goffset offset)
 				g_free(buffer);
 				return -1;
 			}
-			offset -= s;
+			todo -= s;
 		}
 		g_free(buffer);
 		return 0;

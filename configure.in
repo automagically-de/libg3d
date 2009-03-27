@@ -73,6 +73,10 @@ AC_DEFINE([HAVE_LIBGSF], 1, [have GSF library])
 fi
 AM_CONDITIONAL([HAVE_LIBGSF], test "x$have_libgsf" = "xtrue")
 
+# lua
+PKG_CHECK_MODULES(LUA, lua5.1, [have_lua=true], [have_lua=false])
+AM_CONDITIONAL([HAVE_LUA], test "x$have_lua" = "xtrue")
+
 # libmagic
 AC_ARG_ENABLE(libmagic,
 	[[  --disable-libmagic      disable file type detection using libmagic]],
@@ -196,6 +200,7 @@ AC_OUTPUT(
 	plugins/import/imp_kmz/Makefile
 	plugins/import/imp_ldraw/Makefile
 	plugins/import/imp_leocad/Makefile
+	plugins/import/imp_lua/Makefile
 	plugins/import/imp_lwo/Makefile
 	plugins/import/imp_max/Makefile
 	plugins/import/imp_maya/Makefile

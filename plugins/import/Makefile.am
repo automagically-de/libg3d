@@ -20,6 +20,7 @@ SUBDIRS = \
 	imp_kmz \
 	imp_ldraw \
 	imp_leocad \
+	imp_lua \
 	imp_lwo \
 	imp_max \
 	imp_maya \

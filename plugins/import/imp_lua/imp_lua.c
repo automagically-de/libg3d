@@ -20,6 +20,8 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <string.h>
+
 #include <g3d/types.h>
 #include <g3d/stream.h>
 
@@ -28,29 +30,33 @@
 
 #include "imp_lua_funcs.h"
 
+typedef struct {
+	gchar *buffer;
+	G3DStream *stream;
+} _G3DLuaReaderData;
+
+static const char *stream_reader(lua_State *ls, void *data, size_t *s);
+
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	lua_State *ls;
-	gchar buffer[2048], *line;
+	_G3DLuaReaderData *rdata;
+	gint r;
 
 	ls = lua_open();
 	luaopen_base(ls);
 	lua_funcs_register(ls);
-
-	while(TRUE) {
-		line = g3d_stream_read_line(stream, buffer, 2048);
-		if(line == NULL)
-			break;
-		if(0 != luaL_dostring(ls, line)) {
-			g_warning("imp_lua: %s:%d: error in %s",
-				stream->uri, g3d_stream_line(stream), line);
-			break;
-		}
-	}
+	rdata = g_new0(_G3DLuaReaderData, 1);
+	rdata->stream = stream;
+	r = lua_load(ls, stream_reader, rdata, stream->uri);
+	if(rdata->buffer)
+		g_free(rdata->buffer);
+	if(r == 0)
+		r = lua_pcall(ls, 0, LUA_MULTRET, 0);
 
 	lua_close(ls);
-	return TRUE;
+	return (r == 0) ? TRUE : FALSE;
 }
 
 gchar *plugin_description(void)
@@ -65,3 +71,24 @@ gchar **plugin_extensions(void)
 }
 
 /*****************************************************************************/
+
+static const char *stream_reader(lua_State *ls, void *data, size_t *s)
+{
+	_G3DLuaReaderData *rdata = data;
+
+	g_return_val_if_fail(rdata != NULL, NULL);
+
+	if(rdata->buffer)
+		g_free(rdata->buffer);
+
+	rdata->buffer = g_new0(gchar, 2048);
+	if(!g3d_stream_read_line(rdata->stream, rdata->buffer, 2048)) {
+		g_free(rdata->buffer);
+		rdata->buffer = NULL;
+		return NULL;
+	}
+
+	*s = strlen(rdata->buffer);
+	return rdata->buffer;
+}
+

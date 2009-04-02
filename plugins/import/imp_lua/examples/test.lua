@@ -1,4 +1,11 @@
 
+function dump_o(object, name)
+	g3d.debug("\\dumping object '" .. name .. "':")
+	for k, v in pairs(object) do
+		g3d.debug("\\ " .. type(v) .. " " .. k)
+	end
+end
+
 for i = 1, 3 do
 	g3d.debug('|Hello World ' .. i)
 end
@@ -6,16 +13,18 @@ end
 g3d.debug('bla blubb')
 
 o = g3d.Object()
-for k, v in pairs(o) do
-	g3d.debug("\\" .. type(v) .. " " .. k)
-end
 
 o:setName('bla bla')
+g3d.debug("|vertex count: " .. o:addVertex(0.1, 2, 4))
+g3d.debug("|vertex count: " .. o:addVertex(1, .2, 4))
 
-f = {}
-f.vertices = {{1, 2, 3}, {5, 6, 7}}
-f.vertices[3] = {7, 8 ,9}
+m = g3d.Material()
 
-for k, v in pairs(f.vertices) do
-	g3d.debug('|x='..v[1]..', y='..v[2]..', z='..v[3])
-end
+f = g3d.Face()
+f:setMaterial(m)
+
+dump_o(o, "G3DObject")
+dump_o(f, "G3DFace")
+dump_o(m, "G3DMaterial")
+dump_o(g3d.model, "g3d.model");
+

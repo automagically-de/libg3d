@@ -54,7 +54,15 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		g_free(rdata->buffer);
 	if(r == 0)
 		r = lua_pcall(ls, 0, LUA_MULTRET, 0);
+	if(r != 0) {
+		if(r == LUA_ERRRUN) {
+			if(lua_isstring(ls, -1)) {
+				g_warning("lua error: %s", lua_tostring(ls, -1));
+			}
+		}
+	}
 
+	g_debug("LUA: close");
 	lua_close(ls);
 	return (r == 0) ? TRUE : FALSE;
 }

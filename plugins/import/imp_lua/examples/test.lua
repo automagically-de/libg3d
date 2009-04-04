@@ -15,13 +15,25 @@ g3d.debug('bla blubb')
 o = g3d.Object()
 
 o:setName('bla bla')
-g3d.debug("|vertex count: " .. o:addVertex(0.1, 2, 4))
-g3d.debug("|vertex count: " .. o:addVertex(1, .2, 4))
+
+o:addVertex(-1, 1, 0)
+o:addVertex(1, 1, 0)
+o:addVertex(1, -1, 0)
+o:addVertex(-1, -1, 0)
 
 m = g3d.Material()
+m:setColor(0.2, 0.8, 0.9)
+m:setAlpha(0.7)
 
-f = g3d.Face()
+f = g3d.Face(0, 1, 2)
 f:setMaterial(m)
+o:addFace(f)
+
+f = g3d.Face(2, 3, 0)
+f:setMaterial(m)
+o:addFace(f)
+
+g3d.model:addObject(o)
 
 dump_o(o, "G3DObject")
 dump_o(f, "G3DFace")

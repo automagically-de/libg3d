@@ -4,7 +4,8 @@
 #include <glib.h>
 #include <lauxlib.h>
 
-gboolean lua_funcs_register(lua_State *ls);
+gboolean lua_funcs_register(lua_State *ls,
+	G3DContext *context, G3DModel *model);
 
 #endif /* _IMP_LUA_FUNCS_H */
 

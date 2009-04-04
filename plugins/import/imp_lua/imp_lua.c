@@ -47,6 +47,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	ls = lua_open();
 	luaopen_base(ls);
 	luaopen_math(ls);
+	luaopen_string(ls);
 	lua_funcs_register(ls, context, model);
 	rdata = g_new0(_G3DLuaReaderData, 1);
 	rdata->stream = stream;

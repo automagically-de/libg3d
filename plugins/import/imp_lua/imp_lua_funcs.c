@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include <g3d/types.h>
+#include <g3d/texture.h>
 
 #include <lauxlib.h>
 #include <lualib.h>
@@ -52,12 +53,49 @@ static gpointer get_lua_object(lua_State *ls, gint tid, const gchar *name,
 	return object;
 }
 
+static G3DContext *get_g3d_context(lua_State *ls)
+{
+	G3DContext *context;
+
+	lua_getglobal(ls, "g3d");
+	lua_getfield(ls, -1, "context");
+	lua_getfield(ls, -1, "__g3dcontext");
+	if(!lua_isuserdata(ls, -1)) {
+		lua_pop(ls, 3);
+		return 0;
+	}
+	context = lua_touserdata(ls, -1);
+	lua_pop(ls, 3);
+	return context;
+}
+
+static G3DModel *get_g3d_model(lua_State *ls)
+{
+	G3DModel *model;
+
+	lua_getglobal(ls, "g3d");
+	lua_getfield(ls, -1, "model");
+	lua_getfield(ls, -1, "__g3dmodel");
+	if(!lua_isuserdata(ls, -1)) {
+		lua_pop(ls, 3);
+		return 0;
+	}
+	model = lua_touserdata(ls, -1);
+	lua_pop(ls, 3);
+	return model;
+}
+
+/****************************************************************************/
+/* callback functions                                                       */
+
 static int _g3d_debug(lua_State *ls)
 {
 	check_lua_sig(ls, LUA_TSTRING, -1);
 	g_debug("%s", lua_tostring(ls, -1));
 	return 0;
 }
+
+/* G3DObject */
 
 static int _g3d_Object_setName(lua_State *ls)
 {
@@ -68,8 +106,6 @@ static int _g3d_Object_setName(lua_State *ls)
 	if(object->name)
 		g_free(object->name);
 	object->name = g_strdup(lua_tostring(ls, -1));
-
-	g_debug("Object:setName('%s')", object->name);
 	return 0;
 }
 
@@ -133,6 +169,8 @@ static int _g3d_Object(lua_State *ls)
 	return 1;
 }
 
+/* G3DFace */
+
 static int _g3d_Face_setMaterial(lua_State *ls)
 {
 	G3DFace *face;
@@ -143,6 +181,28 @@ static int _g3d_Face_setMaterial(lua_State *ls)
 	material = get_lua_object(ls, -1, "__g3dmaterial", FALSE);
 	face->material = material;
 
+	return 0;
+}
+
+static int _g3d_Face_addTexVertex(lua_State *ls)
+{
+	G3DFace *face;
+
+	check_lua_sig(ls, LUA_TNUMBER, LUA_TNUMBER, LUA_TTABLE, -1);
+
+	face = get_lua_object(ls, -3, "__g3dface", FALSE);
+
+	face->tex_vertex_data = g_realloc(face->tex_vertex_data,
+		sizeof(G3DVector) * 2 * (face->tex_vertex_count + 1));
+	face->tex_vertex_data[face->tex_vertex_count * 2 + 0] =
+		lua_tonumber(ls, -2);
+	face->tex_vertex_data[face->tex_vertex_count * 2 + 1] =
+		lua_tonumber(ls, -1);
+	if(face->material && face->material->tex_image) {
+		face->flags |= G3D_FLAG_FAC_TEXMAP;
+		face->tex_image = face->material->tex_image;
+	}
+	face->tex_vertex_count ++;
 	return 0;
 }
 
@@ -173,8 +233,13 @@ static int _g3d_Face(lua_State *ls)
 	lua_pushcfunction(ls, _g3d_Face_setMaterial);
 	lua_setfield(ls, -2, "setMaterial");
 
+	lua_pushcfunction(ls, _g3d_Face_addTexVertex);
+	lua_setfield(ls, -2, "addTexVertex");
+
 	return 1;
 }
+
+/* G3DMaterial */
 
 static int _g3d_Material_setColor(lua_State *ls)
 {
@@ -202,6 +267,21 @@ static int _g3d_Material_setAlpha(lua_State *ls)
 	return 0;
 }
 
+static int _g3d_Material_setTexture(lua_State *ls)
+{
+	G3DMaterial *material;
+	G3DImage *image;
+
+	check_lua_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+
+	material = get_lua_object(ls, -2, "__g3dmaterial", FALSE);
+	image = get_lua_object(ls, -1, "__g3dimage", FALSE);
+
+	material->tex_image = image;
+
+	return 0;
+}
+
 static int _g3d_Material(lua_State *ls)
 {
 	G3DMaterial *material;
@@ -221,6 +301,32 @@ static int _g3d_Material(lua_State *ls)
 	lua_pushcfunction(ls, _g3d_Material_setAlpha);
 	lua_setfield(ls, -2, "setAlpha");
 
+	lua_pushcfunction(ls, _g3d_Material_setTexture);
+	lua_setfield(ls, -2, "setTexture");
+
+	return 1;
+}
+
+/* G3DImage */
+
+static int _g3d_Image(lua_State *ls)
+{
+	G3DImage *image;
+
+	check_lua_sig(ls, LUA_TSTRING, -1);
+
+	image = g3d_texture_load_cached(
+		get_g3d_context(ls), get_g3d_model(ls), lua_tostring(ls, -1));	
+	if(image == NULL) {
+		lua_pushnil(ls);
+		return 1;
+	}
+
+	lua_newtable(ls);
+
+	lua_pushlightuserdata(ls, image);
+	lua_setfield(ls, -2, "__g3dimage");
+
 	return 1;
 }
 
@@ -239,6 +345,9 @@ static int _g3d_model_addObject(lua_State *ls)
 	return 0;
 }
 
+/*****************************************************************************/
+/* register functions                                                        */
+
 static void _g3d_model__register(lua_State *ls, G3DModel *model)
 {
 	lua_getglobal(ls, "g3d");
@@ -252,6 +361,22 @@ static void _g3d_model__register(lua_State *ls, G3DModel *model)
 	lua_setfield(ls, -2, "addObject");
 
 	lua_setfield(ls, -2, "model");
+
+	lua_pop(ls, 1);
+}
+
+static void _g3d_context__register(lua_State *ls, G3DContext *context)
+{
+	lua_getglobal(ls, "g3d");
+
+	lua_newtable(ls);
+
+	lua_pushlightuserdata(ls, context);
+	lua_setfield(ls, -2, "__g3dcontext");
+
+	lua_setfield(ls, -2, "context");
+
+	lua_pop(ls, 1);
 }
 
 static const luaL_Reg g3d_functions[] = {
@@ -259,6 +384,7 @@ static const luaL_Reg g3d_functions[] = {
 	{ "Material",    _g3d_Material },
 	{ "Face",        _g3d_Face },
 	{ "Object",      _g3d_Object },
+	{ "Image",       _g3d_Image },
 	{ NULL, NULL }
 };
 
@@ -267,6 +393,7 @@ gboolean lua_funcs_register(lua_State *ls,
 {
 	luaL_register(ls, "g3d", g3d_functions);
 	_g3d_model__register(ls, model);
+	_g3d_context__register(ls, context);
 
 	return TRUE;
 }

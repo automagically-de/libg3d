@@ -35,8 +35,15 @@ o:addFace(f)
 
 g3d.model:addObject(o)
 
+
+x = g3d.Matrix()
+x:translate(1, 0, 0)
+x:rotate(math.rad(90), 0, 1, 0)
+o:transform(x)
+
 dump_o(o, "G3DObject")
 dump_o(f, "G3DFace")
 dump_o(m, "G3DMaterial")
+dump_o(x, "G3DMatrix")
 dump_o(g3d.model, "g3d.model");
 

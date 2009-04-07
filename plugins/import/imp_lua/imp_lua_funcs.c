@@ -2,6 +2,8 @@
 
 #include <g3d/types.h>
 #include <g3d/texture.h>
+#include <g3d/matrix.h>
+#include <g3d/object.h>
 
 #include <lauxlib.h>
 #include <lualib.h>
@@ -146,6 +148,21 @@ static int _g3d_Object_addFace(lua_State *ls)
 	return g_slist_length(object->faces);
 }
 
+static int _g3d_Object_transform(lua_State *ls)
+{
+	G3DObject *object;
+	G3DMatrix *matrix;
+
+	check_lua_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+
+	object = get_lua_object(ls, -2, "__g3dobject", FALSE);
+	matrix = get_lua_object(ls, -1, "__g3dmatrix", FALSE);
+
+	g3d_object_transform(object, matrix);
+
+	return 0;
+}
+
 static int _g3d_Object(lua_State *ls)
 {
 	G3DObject *object;
@@ -165,6 +182,9 @@ static int _g3d_Object(lua_State *ls)
 
 	lua_pushcfunction(ls, _g3d_Object_addFace);
 	lua_setfield(ls, -2, "addFace");
+
+	lua_pushcfunction(ls, _g3d_Object_transform);
+	lua_setfield(ls, -2, "transform");
 
 	return 1;
 }
@@ -330,6 +350,98 @@ static int _g3d_Image(lua_State *ls)
 	return 1;
 }
 
+/* G3DMatrix */
+
+static int _g3d_Matrix_translate(lua_State *ls)
+{
+	G3DMatrix *matrix;
+
+	check_lua_sig(ls, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, LUA_TTABLE, -1);
+
+	matrix = get_lua_object(ls, -4, "__g3dmatrix", FALSE);
+	g3d_matrix_translate(
+		lua_tonumber(ls, -3),
+		lua_tonumber(ls, -2),
+		lua_tonumber(ls, -1),
+		matrix);
+	return 0;
+}
+
+static int _g3d_Matrix_scale(lua_State *ls)
+{
+	G3DMatrix *matrix;
+
+	check_lua_sig(ls, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, LUA_TTABLE, -1);
+
+	matrix = get_lua_object(ls, -4, "__g3dmatrix", FALSE);
+	g3d_matrix_scale(
+		lua_tonumber(ls, -3),
+		lua_tonumber(ls, -2),
+		lua_tonumber(ls, -1),
+		matrix);
+	return 0;
+}
+
+static int _g3d_Matrix_rotateXYZ(lua_State *ls)
+{
+	G3DMatrix *matrix;
+
+	check_lua_sig(ls, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, LUA_TTABLE, -1);
+
+	matrix = get_lua_object(ls, -4, "__g3dmatrix", FALSE);
+	g3d_matrix_rotate_xyz(
+		lua_tonumber(ls, -3),
+		lua_tonumber(ls, -2),
+		lua_tonumber(ls, -1),
+		matrix);
+	return 0;
+}
+
+static int _g3d_Matrix_rotate(lua_State *ls)
+{
+	G3DMatrix *matrix;
+
+	check_lua_sig(ls, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER,
+		LUA_TTABLE, -1);
+
+	matrix = get_lua_object(ls, -5, "__g3dmatrix", FALSE);
+	g3d_matrix_rotate(
+		lua_tonumber(ls, -4),
+		lua_tonumber(ls, -3),
+		lua_tonumber(ls, -2),
+		lua_tonumber(ls, -1),
+		matrix);
+	return 0;
+}
+
+static int _g3d_Matrix(lua_State *ls)
+{
+	G3DMatrix *matrix;
+
+	matrix = g3d_matrix_new();
+
+	lua_newtable(ls);
+
+	lua_pushlightuserdata(ls, matrix);
+	lua_setfield(ls, -2, "__g3dmatrix");
+
+	lua_pushcfunction(ls, _g3d_Matrix_translate);
+	lua_setfield(ls, -2, "translate");
+	
+	lua_pushcfunction(ls, _g3d_Matrix_scale);
+	lua_setfield(ls, -2, "scale");
+
+	lua_pushcfunction(ls, _g3d_Matrix_rotateXYZ);
+	lua_setfield(ls, -2, "rotateXYZ");
+
+	lua_pushcfunction(ls, _g3d_Matrix_rotate);
+	lua_setfield(ls, -2, "rotate");
+
+	return 1;
+}
+
+/* G3DModel */
+
 static int _g3d_model_addObject(lua_State *ls)
 {
 	G3DModel *model;
@@ -385,6 +497,7 @@ static const luaL_Reg g3d_functions[] = {
 	{ "Face",        _g3d_Face },
 	{ "Object",      _g3d_Object },
 	{ "Image",       _g3d_Image },
+	{ "Matrix",      _g3d_Matrix },
 	{ NULL, NULL }
 };
 

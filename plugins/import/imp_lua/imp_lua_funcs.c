@@ -59,15 +59,13 @@ static G3DContext *get_g3d_context(lua_State *ls)
 {
 	G3DContext *context;
 
-	lua_getglobal(ls, "g3d");
-	lua_getfield(ls, -1, "context");
-	lua_getfield(ls, -1, "__g3dcontext");
+	lua_getfield(ls, LUA_REGISTRYINDEX, "__g3dcontext");
 	if(!lua_isuserdata(ls, -1)) {
-		lua_pop(ls, 3);
+		lua_pop(ls, 1);
 		return 0;
 	}
 	context = lua_touserdata(ls, -1);
-	lua_pop(ls, 3);
+	lua_pop(ls, 1);
 	return context;
 }
 
@@ -75,15 +73,13 @@ static G3DModel *get_g3d_model(lua_State *ls)
 {
 	G3DModel *model;
 
-	lua_getglobal(ls, "g3d");
-	lua_getfield(ls, -1, "model");
-	lua_getfield(ls, -1, "__g3dmodel");
+	lua_getfield(ls, LUA_REGISTRYINDEX, "__g3dmodel");
 	if(!lua_isuserdata(ls, -1)) {
-		lua_pop(ls, 3);
+		lua_pop(ls, 1);
 		return 0;
 	}
 	model = lua_touserdata(ls, -1);
-	lua_pop(ls, 3);
+	lua_pop(ls, 1);
 	return model;
 }
 
@@ -447,9 +443,9 @@ static int _g3d_model_addObject(lua_State *ls)
 	G3DModel *model;
 	G3DObject *object;
 
-	check_lua_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+	check_lua_sig(ls, LUA_TTABLE, -1);
 
-	model = get_lua_object(ls, -2, "__g3dmodel", FALSE);
+	model = get_g3d_model(ls);
 	object = get_lua_object(ls, -1, "__g3dobject", FALSE);
 
 	model->objects = g_slist_append(model->objects, object);
@@ -462,12 +458,12 @@ static int _g3d_model_addObject(lua_State *ls)
 
 static void _g3d_model__register(lua_State *ls, G3DModel *model)
 {
+	lua_pushlightuserdata(ls, model);
+	lua_setfield(ls, LUA_REGISTRYINDEX, "__g3dmodel");
+
 	lua_getglobal(ls, "g3d");
 
 	lua_newtable(ls);
-
-	lua_pushlightuserdata(ls, model);
-	lua_setfield(ls, -2, "__g3dmodel");
 
 	lua_pushcfunction(ls, _g3d_model_addObject);
 	lua_setfield(ls, -2, "addObject");
@@ -479,12 +475,12 @@ static void _g3d_model__register(lua_State *ls, G3DModel *model)
 
 static void _g3d_context__register(lua_State *ls, G3DContext *context)
 {
+	lua_pushlightuserdata(ls, context);
+	lua_setfield(ls, LUA_REGISTRYINDEX, "__g3dcontext");
+
 	lua_getglobal(ls, "g3d");
 
 	lua_newtable(ls);
-
-	lua_pushlightuserdata(ls, context);
-	lua_setfield(ls, -2, "__g3dcontext");
 
 	lua_setfield(ls, -2, "context");
 

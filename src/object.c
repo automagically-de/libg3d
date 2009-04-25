@@ -31,6 +31,7 @@
 #include <g3d/texture.h>
 #include <g3d/object.h>
 #include <g3d/plugins.h>
+#include <g3d/stream.h>
 
 static gboolean model_remove_texture_cb(gpointer key, gpointer value,
 	gpointer user_data)
@@ -78,6 +79,9 @@ G3DObject *g3d_object_load_from_stream(G3DStream *stream, G3DContext *ctxt)
 
 	if(g3d_plugins_load_model_from_stream(ctxt, stream, model)) {
 		object = g3d_object_convert_from_model(model, NULL);
+		if(object->name == NULL) {
+			object->name = g_strdup(g3d_stream_get_uri(stream));
+		}
 		g3d_model_free(model);
 		return object;
 	}

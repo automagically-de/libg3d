@@ -25,10 +25,66 @@
 
 #include <g3d/types.h>
 #include <g3d/vector.h>
+#include <g3d/model.h>
 #include <g3d/matrix.h>
 #include <g3d/face.h>
 #include <g3d/texture.h>
 #include <g3d/object.h>
+#include <g3d/plugins.h>
+
+static gboolean model_remove_texture_cb(gpointer key, gpointer value,
+	gpointer user_data)
+{
+	GHashTable *texcache = user_data;
+
+	if(texcache != NULL) {
+		g_hash_table_insert(texcache, key, value);
+	} else {
+		g3d_texture_free((G3DImage *)value);
+		g_free(key);
+	}
+	return TRUE;
+}
+
+G3DObject *g3d_object_convert_from_model(G3DModel *model, GHashTable *texcache)
+{
+	G3DObject *object;
+
+	object = g_new0(G3DObject, 1);
+	object->name = model->filename;
+	model->filename = NULL;
+	model->plugin = NULL;
+
+	object->objects = model->objects;
+	model->objects = NULL;
+	object->materials = model->materials;
+	model->materials = NULL;
+
+	/* cached textures */
+	if(model->tex_images != NULL) {
+		g_hash_table_foreach_remove(model->tex_images, model_remove_texture_cb,
+			texcache);
+	}
+
+	return object;
+}
+
+G3DObject *g3d_object_load_from_stream(G3DStream *stream, G3DContext *ctxt)
+{
+	G3DModel *model;
+	G3DObject *object;
+
+	model = g3d_model_new();
+
+	if(g3d_plugins_load_model_from_stream(ctxt, stream, model)) {
+		object = g3d_object_convert_from_model(model, NULL);
+		g3d_model_free(model);
+		return object;
+	}
+
+	g3d_model_free(model);
+	return NULL;
+}
 
 void g3d_object_free(G3DObject *object)
 {

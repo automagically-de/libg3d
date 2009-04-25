@@ -38,6 +38,29 @@
 G_BEGIN_DECLS
 
 /**
+ * g3d_object_convert_from_model:
+ * @model: model to convert
+ * @texcache: texture cache, may be %NULL
+ *
+ * Convert a model to an object. This cleans the model.
+ *
+ * Returns: an object
+ */
+G3DObject *g3d_object_convert_from_model(G3DModel *model,
+	GHashTable *texcache);
+
+/**
+ * g3d_object_load_from_stream:
+ * @stream: model stream
+ * @ctxt: context
+ *
+ * Load a model from stram into an object.
+ *
+ * Returns: the object or NULL in case of an error
+ */
+G3DObject *g3d_object_load_from_stream(G3DStream *stream, G3DContext *ctxt);
+
+/**
  * g3d_object_free:
  * @object: the object to free
  *

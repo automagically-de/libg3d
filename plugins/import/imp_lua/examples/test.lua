@@ -46,7 +46,7 @@ o:transform(x)
 for x = 0, 2 do
 	for y = 0, 2 do
 		o = g3d.Object('gauss.lua')
-		o:setName("gauss @ "..x..", "..y)
+		-- o:setName("gauss @ "..x..", "..y)
 		g3d.model:addObject(o)
 		mtx = g3d.Matrix()
 		mtx:translate(x * 30, 0, y * 30)

@@ -34,6 +34,9 @@ for i = 0, 10 do
 			m:setColor(i / 10, j / 10, k / 10)
 
 			b1 = Box(m, 2, 2, 2)
+			b1:setName(string.format("%04d: %d, %d, %d",
+				i * 11 * 11 + j * 11 + k,
+				i, j, k))
 
 			matrix = g3d.Matrix()
 			matrix:rotateXYZ(math.rad(i * 9), math.rad(j * 9), math.rad(k * 9))

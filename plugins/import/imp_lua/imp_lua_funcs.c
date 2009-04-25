@@ -4,6 +4,7 @@
 #include <g3d/texture.h>
 #include <g3d/matrix.h>
 #include <g3d/object.h>
+#include <g3d/stream.h>
 
 #include <lauxlib.h>
 #include <lualib.h>
@@ -184,13 +185,44 @@ static int _g3d_Object_transform(lua_State *ls)
 	return 0;
 }
 
+static int _g3d_Object_addObject(lua_State *ls)
+{
+	G3DObject *parent, *object;
+
+	check_func_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+
+	parent = get_lua_object(ls, -2, "__g3dobject", FALSE);
+	object = get_lua_object(ls, -1, "__g3dobject", FALSE);
+
+	lua_gc_remove(get_g3d_luagc(ls), object);
+
+	parent->objects = g_slist_append(parent->objects, object);
+
+	return 0;
+}
+
 static int _g3d_Object(lua_State *ls)
 {
 	G3DObject *object;
+	G3DStream *stream;
 	
+	check_func_sig(ls, -1);
+
 	lua_newtable(ls);
 
-	object = g_new0(G3DObject, 1);
+	if((lua_gettop(ls) == 2) && lua_isstring(ls, 1)) {
+		stream = g3d_stream_open_file(lua_tostring(ls, 1), "rb");
+		if(stream) {
+			object = g3d_object_load_from_stream(stream, get_g3d_context(ls));
+			g3d_stream_close(stream);
+		} else {
+			lua_pushnil(ls);
+			return 1;
+		}
+	} else {
+		object = g_new0(G3DObject, 1);
+	}
+
 	lua_gc_add(get_g3d_luagc(ls), T_G3DOBJECT, object);
 
 	lua_pushlightuserdata(ls, object);
@@ -204,6 +236,9 @@ static int _g3d_Object(lua_State *ls)
 
 	lua_pushcfunction(ls, _g3d_Object_addFace);
 	lua_setfield(ls, -2, "addFace");
+
+	lua_pushcfunction(ls, _g3d_Object_addObject);
+	lua_setfield(ls, -2, "addObject");
 
 	lua_pushcfunction(ls, _g3d_Object_transform);
 	lua_setfield(ls, -2, "transform");
@@ -235,18 +270,20 @@ static int _g3d_Face_addTexVertex(lua_State *ls)
 
 	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, -1);
 
-	face = get_lua_object(ls, -3, "__g3dface", FALSE);
+	face = get_lua_object(ls, 1, "__g3dface", FALSE);
 
 	face->tex_vertex_data = g_realloc(face->tex_vertex_data,
 		sizeof(G3DVector) * 2 * (face->tex_vertex_count + 1));
+
 	face->tex_vertex_data[face->tex_vertex_count * 2 + 0] =
-		lua_tonumber(ls, -2);
+		lua_tonumber(ls, 2);
 	face->tex_vertex_data[face->tex_vertex_count * 2 + 1] =
-		lua_tonumber(ls, -1);
+		lua_tonumber(ls, 3);
 	if(face->material && face->material->tex_image) {
 		face->flags |= G3D_FLAG_FAC_TEXMAP;
 		face->tex_image = face->material->tex_image;
 	}
+
 	face->tex_vertex_count ++;
 	return 0;
 }
@@ -269,7 +306,8 @@ static int _g3d_Face(lua_State *ls)
 
 	face = g_new0(G3DFace, 1);
 	lua_gc_add(get_g3d_luagc(ls), T_G3DFACE, face);
-	for(i = -2; lua_isnumber(ls, i); i --) {
+
+	for(i = 1; (i < lua_gettop(ls)) && lua_isnumber(ls, i); i ++) {
 		_face_add_index(face, (guint32)lua_tonumber(ls, i));
 	}
 

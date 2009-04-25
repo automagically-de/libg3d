@@ -12,9 +12,12 @@ end
 
 g3d.debug('bla blubb')
 
-o = g3d.Object()
+c = g3d.Object()
+c:setName("Container object")
 
+o = g3d.Object()
 o:setName('bla bla')
+c:addObject(o)
 
 o:addVertex(-1, 1, 0)
 o:addVertex(1, 1, 0)
@@ -33,13 +36,23 @@ f = g3d.Face(2, 3, 0)
 f:setMaterial(m)
 o:addFace(f)
 
-g3d.model:addObject(o)
-
+g3d.model:addObject(c)
 
 x = g3d.Matrix()
 x:translate(1, 0, 0)
 x:rotate(math.rad(90), 0, 1, 0)
 o:transform(x)
+
+for x = 0, 2 do
+	for y = 0, 2 do
+		o = g3d.Object('gauss.lua')
+		o:setName("gauss @ "..x..", "..y)
+		g3d.model:addObject(o)
+		mtx = g3d.Matrix()
+		mtx:translate(x * 30, 0, y * 30)
+		o:transform(mtx)
+	end
+end
 
 dump_o(o, "G3DObject")
 dump_o(f, "G3DFace")

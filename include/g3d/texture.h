@@ -78,6 +78,18 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 	const gchar *filename);
 
 /**
+ * g3d_texture_cache_remove:
+ * @model: model with texture cache
+ * @image: image to remove from cache
+ *
+ * Removes an image from model's texture cache by name. It does not
+ * touch the image itself.
+ *
+ * Returns: TRUE if the image was successfully removed, FALSE else
+ */
+gboolean g3d_texture_cache_remove(G3DModel *model, G3DImage *image);
+
+/**
  * g3d_texture_free:
  * @texture: a texture image
  *

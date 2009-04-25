@@ -116,9 +116,13 @@ G3DImage *g3d_texture_load_from_stream(G3DContext *context, G3DModel *model,
 
 	if(g3d_plugins_load_image_from_stream(context, stream, image)) {
 		image->tex_id = g_str_hash(stream->uri);
-		if(model != NULL)
+		if(model != NULL) {
 			g_hash_table_insert(model->tex_images, g_strdup(stream->uri),
 				image);
+#if DEBUG > 0
+			g_debug("adding texture '%s' to cache", stream->uri);
+#endif
+		}
 		return image;
 	}
 	g_free(image);
@@ -165,6 +169,14 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 #endif
 
 	return image;
+}
+
+gboolean g3d_texture_cache_remove(G3DModel *model, G3DImage *image)
+{
+	g_return_val_if_fail(model->tex_images != NULL, FALSE);
+	g_return_val_if_fail(image->name != NULL, FALSE);
+
+	return g_hash_table_remove(model->tex_images, image->name);
 }
 
 void g3d_texture_free(G3DImage *texture)

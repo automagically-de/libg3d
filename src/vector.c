@@ -34,6 +34,11 @@ gboolean g3d_vector_normal(G3DVector ax, G3DVector ay, G3DVector az,
 	return TRUE;
 }
 
+G3DFloat g3d_vector_length(G3DVector *v)
+{
+	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+
 gboolean g3d_vector_unify(G3DVector *nx, G3DVector *ny, G3DVector *nz)
 {
 	G3DFloat r;
@@ -79,3 +84,13 @@ gboolean g3d_vector_transform(G3DVector *x, G3DVector *y, G3DVector *z,
 	return TRUE;
 }
 
+G3DFloat g3d_vector_dot(G3DVector *v1, G3DVector *v2)
+{
+	G3DFloat result = 0.0;
+	gint32 i;
+	
+	for(i = 0; i < 3; i ++)
+		result += v1[i] * v2[i];
+
+	return result;
+}

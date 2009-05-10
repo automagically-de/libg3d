@@ -449,7 +449,7 @@ G3DObject *g3d_primitive_sphere(G3DFloat radius, guint32 vseg, guint32 hseg,
 	for(sv = 1; sv < vseg; sv ++)
 	{
 		y = radius * cos(M_PI * sv / vseg);
-		u = radius * sin(M_PI * sv / vseg);
+		u = sin(M_PI * sv / vseg);
 		for(sh = 0; sh < hseg; sh ++)
 		{
 			x = radius * cos(M_PI * 2 * sh / hseg) * u;

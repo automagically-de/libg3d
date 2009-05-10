@@ -212,6 +212,7 @@ AC_OUTPUT(
 	plugins/import/imp_q3o/Makefile
 	plugins/import/imp_r4/Makefile
 	plugins/import/imp_rbh/Makefile
+	plugins/import/imp_ror/Makefile
 	plugins/import/imp_skp/Makefile
 	plugins/import/imp_stl/Makefile
 	plugins/import/imp_ta/Makefile

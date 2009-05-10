@@ -32,6 +32,7 @@ SUBDIRS = \
 	imp_q3o \
 	imp_r4 \
 	imp_rbh \
+	imp_ror \
 	imp_skp \
 	imp_stl \
 	imp_ta \

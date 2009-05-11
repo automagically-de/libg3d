@@ -46,6 +46,9 @@ typedef struct {
 
 	G3DMaterial *texmat;
 
+	G3DObject *o_joints;
+	G3DObject *o_beams;
+
 	G3DObject *submesh_object;
 	G3DFloat *submesh_texcoords;
 	guint32 submesh_ncoords;
@@ -61,6 +64,7 @@ typedef struct {
 
 gboolean ror_beams_cb(RorGlobalData *global);
 gboolean ror_cab_cb(RorGlobalData *global);
+gboolean ror_managedmaterials_cb(RorGlobalData *global);
 gboolean ror_nodes_cb(RorGlobalData *global);
 gboolean ror_submesh_start_cb(RorGlobalData *global);
 gboolean ror_texcoords_cb(RorGlobalData *global);
@@ -75,6 +79,7 @@ static const RorSectionMap ror_section_map[] = {
 	{ "engoption",  NULL,                 NULL },
 	{ "globals",    NULL,                 NULL },
 	{ "hydros",     NULL,                 NULL },
+	{ "managedmaterials", NULL,           ror_managedmaterials_cb },
 	{ "meshwheels", NULL,                 NULL },
 	{ "nodes",      NULL,                 ror_nodes_cb },
 	{ "rotators",   NULL,                 NULL },
@@ -107,6 +112,16 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	/* container object */
 	global->object = g_new0(G3DObject, 1);
 	model->objects = g_slist_append(model->objects, global->object);
+
+	global->o_beams = g_new0(G3DObject, 1);
+	global->o_beams->name = g_strdup("beams");
+	global->object->objects = g_slist_append(global->object->objects,
+		global->o_beams);
+
+	global->o_joints = g_new0(G3DObject, 1);
+	global->o_joints->name = g_strdup("joints");
+	global->object->objects = g_slist_append(global->object->objects,
+		global->o_joints);
 
 	/* material */
 	global->texmat = g3d_material_new();
@@ -217,7 +232,7 @@ gboolean ror_beams_cb(RorGlobalData *global)
 			g3d_matrix_translate(v1[0], v1[1], v1[2], matrix);
 			g3d_object_transform(beam, matrix);
 
-			global->object->objects = g_slist_append(global->object->objects,
+			global->o_beams->objects = g_slist_append(global->o_beams->objects,
 				beam);
 		} else {
 			g_warning("RoR: beam index out of bounds: %u, %u (%u)",
@@ -256,6 +271,26 @@ gboolean ror_cab_cb(RorGlobalData *global)
 	return TRUE;
 }
 
+gboolean ror_managedmaterials_cb(RorGlobalData *global)
+{
+	gchar *buf[3];
+	gint32 i;
+
+	for(i = 0; i < 3; i ++)
+		buf[i] = g_new0(gchar, ROR_LL);
+
+	if(sscanf(global->buffer, "%s %s %s", buf[0], buf[1], buf[2]) == 3) {
+		/* load base_texture */
+		global->texmat->tex_image = g3d_texture_load_cached(global->context,
+			global->model, buf[2]);
+	}
+
+	for(i = 0; i < 3; i ++)
+		g_free(buf[i]);
+
+	return TRUE;
+}
+
 gboolean ror_nodes_cb(RorGlobalData *global)
 {
 	guint32 idx;
@@ -289,7 +324,7 @@ gboolean ror_nodes_cb(RorGlobalData *global)
 		g3d_matrix_translate(x, y, z, matrix);
 		g3d_object_transform(joint, matrix);
 
-		global->object->objects = g_slist_append(global->object->objects,
+		global->o_joints->objects = g_slist_append(global->o_joints->objects,
 			joint);
 	} else {
 		g_warning("RoR: skipping line %s", global->buffer);

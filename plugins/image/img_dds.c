@@ -45,14 +45,17 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	}
 	image->name = g_strdup(stream->uri);
 
+	/* 0x0004 */
 	size = g3d_stream_read_int32_le(stream);
 	flags = g3d_stream_read_int32_le(stream);
 	image->height = g3d_stream_read_int32_le(stream);
+	/* 0x0010 */
 	image->width = g3d_stream_read_int32_le(stream);
 	g3d_stream_read_int32_le(stream); /* pitch or linesize */
 	depth = g3d_stream_read_int32_le(stream);
 	g3d_stream_read_int32_le(stream); /* num mipmaps */
 
+	/* 0x0020 */
 	g3d_stream_skip(stream, 44);
 
 	pfsize = g3d_stream_read_int32_le(stream);
@@ -86,6 +89,8 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 			break;
 		default:
 			g_warning("DDS: unsupported FOURCC: %s", sfourcc);
+			g_free(sfourcc);
+			return FALSE;
 	}
 
 	g_free(sfourcc);

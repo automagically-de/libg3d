@@ -64,6 +64,7 @@ typedef struct {
 
 gboolean ror_beams_cb(RorGlobalData *global);
 gboolean ror_cab_cb(RorGlobalData *global);
+gboolean ror_globals_cb(RorGlobalData *global);
 gboolean ror_managedmaterials_cb(RorGlobalData *global);
 gboolean ror_nodes_cb(RorGlobalData *global);
 gboolean ror_submesh_start_cb(RorGlobalData *global);
@@ -77,7 +78,7 @@ static const RorSectionMap ror_section_map[] = {
 	{ "commands",   NULL,                 NULL },
 	{ "engine",     NULL,                 NULL },
 	{ "engoption",  NULL,                 NULL },
-	{ "globals",    NULL,                 NULL },
+	{ "globals",    NULL,                 ror_globals_cb },
 	{ "hydros",     NULL,                 NULL },
 	{ "managedmaterials", NULL,           ror_managedmaterials_cb },
 	{ "meshwheels", NULL,                 NULL },
@@ -271,6 +272,23 @@ gboolean ror_cab_cb(RorGlobalData *global)
 	return TRUE;
 }
 
+gboolean ror_globals_cb(RorGlobalData *global)
+{
+	G3DFloat dm, cm;
+	gchar *matname;
+
+	matname = g_new0(gchar, ROR_LL);
+	if(sscanf(global->buffer, "%f, %f, %s", &dm, &cm, matname) == 3) {
+#if DEBUG > 0
+		g_debug("RoR: dry mass: %.2f, cargo mass: %.2f, material: %s", dm, cm,
+			matname);
+#endif
+	}
+	g_free(matname);
+
+	return TRUE;
+}
+
 gboolean ror_managedmaterials_cb(RorGlobalData *global)
 {
 	gchar *buf[3];
@@ -300,7 +318,7 @@ gboolean ror_nodes_cb(RorGlobalData *global)
 	G3DMatrix matrix[16];
 
 	if(sscanf(global->buffer, "%u, %f, %f, %f", &idx, &x, &y, &z) == 4) {
-#if DEBUG > 0
+#if DEBUG > 2
 		g_debug("|node %u: %f, %f, %f", idx, x, y, z);
 #endif
 		if(global->object->vertex_count < (idx + 1)) {

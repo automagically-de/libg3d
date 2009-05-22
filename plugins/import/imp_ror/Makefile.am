@@ -18,6 +18,7 @@ AM_LDFLAGS = \
 
 LIBTOOL += --quiet
 
-imp_ror_la_SOURCES = imp_ror.c
+imp_ror_la_SOURCES = imp_ror.c \
+	imp_ror_material.h imp_ror_material.c
 imp_ror_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@
 

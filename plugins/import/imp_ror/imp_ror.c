@@ -35,6 +35,8 @@
 #include <g3d/primitive.h>
 #include <g3d/texture.h>
 
+#include "imp_ror_material.h"
+
 #define ROR_LL 2048 /* line buffer */
 
 typedef struct {
@@ -45,6 +47,7 @@ typedef struct {
 	gchar *buffer;
 
 	G3DMaterial *texmat;
+	GHashTable *matfile;
 
 	G3DObject *o_joints;
 	G3DObject *o_beams;
@@ -58,7 +61,6 @@ typedef gboolean (* RorSectionCallback)(RorGlobalData *);
 
 typedef struct {
 	const gchar *section;
-	RorSectionCallback start_callback;
 	RorSectionCallback callback;
 } RorSectionMap;
 
@@ -67,27 +69,26 @@ gboolean ror_cab_cb(RorGlobalData *global);
 gboolean ror_globals_cb(RorGlobalData *global);
 gboolean ror_managedmaterials_cb(RorGlobalData *global);
 gboolean ror_nodes_cb(RorGlobalData *global);
-gboolean ror_submesh_start_cb(RorGlobalData *global);
 gboolean ror_texcoords_cb(RorGlobalData *global);
 
 static const RorSectionMap ror_section_map[] = {
-	{ "beams",      NULL,                 ror_beams_cb },
-	{ "brakes",     NULL,                 NULL },
-	{ "cab",        NULL,                 ror_cab_cb },
-	{ "cameras",    NULL,                 NULL },
-	{ "commands",   NULL,                 NULL },
-	{ "engine",     NULL,                 NULL },
-	{ "engoption",  NULL,                 NULL },
-	{ "globals",    NULL,                 ror_globals_cb },
-	{ "hydros",     NULL,                 NULL },
-	{ "managedmaterials", NULL,           ror_managedmaterials_cb },
-	{ "meshwheels", NULL,                 NULL },
-	{ "nodes",      NULL,                 ror_nodes_cb },
-	{ "rotators",   NULL,                 NULL },
-	{ "shocks",     NULL,                 NULL },
-	{ "submesh",    ror_submesh_start_cb, NULL },
-	{ "texcoords",  NULL,                 ror_texcoords_cb },
-	{ NULL, NULL, NULL }
+	{ "beams",                 ror_beams_cb },
+	{ "brakes",                NULL },
+	{ "cab",                   ror_cab_cb },
+	{ "cameras",               NULL },
+	{ "commands",              NULL },
+	{ "engine",                NULL },
+	{ "engoption",             NULL },
+	{ "globals",               ror_globals_cb },
+	{ "hydros",                NULL },
+	{ "managedmaterials",      ror_managedmaterials_cb },
+	{ "meshwheels",            NULL },
+	{ "nodes",                 ror_nodes_cb },
+	{ "rotators",              NULL },
+	{ "shocks",                NULL },
+	{ "submesh",               NULL },
+	{ "texcoords",             ror_texcoords_cb },
+	{ NULL, NULL }
 };
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
@@ -165,9 +166,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			g_debug("\\[%s] at line %d", buffer,
 				g3d_stream_line(stream));
 #endif
-			if(currentSection->start_callback)
-				currentSection->start_callback(global);
-				
+			
 		} else {
 			if(currentSection && currentSection->callback)
 				currentSection->callback(global);
@@ -175,6 +174,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	}
 
 	g_hash_table_destroy(sections);
+	if(global->matfile)
+		g_hash_table_destroy(global->matfile);
 	if(global->submesh_texcoords)
 		g_free(global->submesh_texcoords);
 	g_free(global);
@@ -275,7 +276,7 @@ gboolean ror_cab_cb(RorGlobalData *global)
 gboolean ror_globals_cb(RorGlobalData *global)
 {
 	G3DFloat dm, cm;
-	gchar *matname;
+	gchar *matname, *basename;
 
 	matname = g_new0(gchar, ROR_LL);
 	if(sscanf(global->buffer, "%f, %f, %s", &dm, &cm, matname) == 3) {
@@ -283,6 +284,17 @@ gboolean ror_globals_cb(RorGlobalData *global)
 		g_debug("RoR: dry mass: %.2f, cargo mass: %.2f, material: %s", dm, cm,
 			matname);
 #endif
+		strcat(matname, ".material");
+		basename = g_path_get_basename(matname);
+		global->matfile = ror_material_read(basename);
+		g_free(basename);
+
+		if(global->matfile) {
+			basename = g_hash_table_lookup(global->matfile, "texture");
+			if(basename != NULL)
+				global->texmat->tex_image = g3d_texture_load_cached(
+					global->context, global->model, basename);
+		}
 	}
 	g_free(matname);
 
@@ -347,17 +359,6 @@ gboolean ror_nodes_cb(RorGlobalData *global)
 	} else {
 		g_warning("RoR: skipping line %s", global->buffer);
 	}
-	return TRUE;
-}
-
-gboolean ror_submesh_start_cb(RorGlobalData *global)
-{
-	global->submesh_object = g_new0(G3DObject, 1);
-	global->model->objects = g_slist_append(global->model->objects,
-		global->submesh_object);
-	global->submesh_object->name = g_strdup_printf("submesh at line %d",
-		g3d_stream_line(global->stream));
-
 	return TRUE;
 }
 

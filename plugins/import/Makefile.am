@@ -26,6 +26,7 @@ SUBDIRS = \
 	imp_maya \
 	imp_md2 \
 	imp_md3 \
+	imp_mesh \
 	imp_nff \
 	imp_obj \
 	imp_osm \

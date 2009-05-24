@@ -28,6 +28,7 @@ AC_SUBST(LTVERSION)
 AC_CONFIG_HEADERS(include/g3d/config.h)
 
 AC_PROG_CC
+AC_PROG_CXX
 AM_PROG_LEX
 AC_HEADER_STDC
 
@@ -206,6 +207,7 @@ AC_OUTPUT(
 	plugins/import/imp_maya/Makefile
 	plugins/import/imp_md2/Makefile
 	plugins/import/imp_md3/Makefile
+	plugins/import/imp_mesh/Makefile
 	plugins/import/imp_nff/Makefile
 	plugins/import/imp_obj/Makefile
 	plugins/import/imp_osm/Makefile

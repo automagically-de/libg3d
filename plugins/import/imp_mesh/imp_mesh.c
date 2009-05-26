@@ -25,6 +25,8 @@
 #include <g3d/types.h>
 #include <g3d/stream.h>
 #include <g3d/debug.h>
+#include <g3d/face.h>
+#include <g3d/material.h>
 
 #include "imp_mesh.h"
 
@@ -50,6 +52,9 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	global->context = context;
 	global->stream = stream;
 	global->model = model;
+
+	global->defmat = g3d_material_new();
+	global->defmat->name = g_strdup("(default material)");
 
 	local = g_new0(MeshLocal, 1);
 	local->nb = g3d_stream_size(global->stream);
@@ -228,8 +233,50 @@ static gboolean mesh_read_0x5200(MeshGlobal *global, MeshLocal *local)
 /* GEOMETRY_VERTEX_BUFFER_DATA */
 static gboolean mesh_read_0x5210(MeshGlobal *global, MeshLocal *local)
 {
-	g3d_stream_skip(global->stream, local->nb);
-	local->nb = 0;
+	gint32 i, j;
+	guint32 n;
+	guint8 fperv = 8;
+
+	g_return_val_if_fail(local->object != NULL, TRUE);
+
+	n = local->nb / (4 * 8);
+	if(local->object->vertex_count < n) {
+		n = local->nb / (4 * 12);
+		fperv = 12;
+		if(local->object->vertex_count < n) {
+			g_warning("0x5210: n = %u, o = %p (%d)", n,
+				(gpointer)local->object,
+				local->object->vertex_count);
+			return TRUE;
+		}
+	}
+
+	for(i = 0; i < n; i ++) {
+		for(j = 0; j < 3; j ++) {
+			local->object->vertex_data[i * 3 + j] =
+				g3d_stream_read_float_le(global->stream);
+		}
+		for(j = 0; j < 3; j ++) {
+			/* shared? */
+			g3d_stream_read_float_le(global->stream);
+		}
+		for(j = 0; j < 2; j ++) {
+			/* tex vertex */
+			g3d_stream_read_float_le(global->stream);
+		}
+		if(fperv == 12) {
+			for(j = 0; j < 4; j ++) {
+				/* unknown */
+				g3d_stream_read_float_le(global->stream);
+			}
+		}
+		local->nb -= fperv * 4;
+	}
+
+	if(local->nb) {
+		g3d_stream_skip(global->stream, local->nb);
+		local->nb = 0;
+	}
 
 	return TRUE;
 }
@@ -279,10 +326,13 @@ static gboolean mesh_read_0xB000(MeshGlobal *global, MeshLocal *local)
 /* EDGE_LIST_LOD */
 static gboolean mesh_read_0xB100(MeshGlobal *global, MeshLocal *local)
 {
+	G3DFace *face;
 	guint16 index;
 	gboolean manual, closed;
 	guint32 ntris, nedgegrps;
 	gint32 i;
+
+	g_return_val_if_fail(local->object != NULL, TRUE);
 
 	index = g3d_stream_read_int16_le(global->stream);
 	manual = g3d_stream_read_int8(global->stream);
@@ -297,9 +347,13 @@ static gboolean mesh_read_0xB100(MeshGlobal *global, MeshLocal *local)
 		for(i = 0; i < ntris; i ++) {
 			g3d_stream_read_int32_le(global->stream); /* index set */
 			g3d_stream_read_int32_le(global->stream); /* vertex set */
-			g3d_stream_read_int32_le(global->stream); /* index[0] */
-			g3d_stream_read_int32_le(global->stream); /* index[1] */
-			g3d_stream_read_int32_le(global->stream); /* index[2] */
+
+			face = g3d_face_new_tri(global->defmat,
+				g3d_stream_read_int32_le(global->stream),
+				g3d_stream_read_int32_le(global->stream),
+				g3d_stream_read_int32_le(global->stream));
+			local->object->faces = g_slist_prepend(local->object->faces, face);
+
 			g3d_stream_read_int32_le(global->stream); /* shared[0] */
 			g3d_stream_read_int32_le(global->stream); /* shared[1] */
 			g3d_stream_read_int32_le(global->stream); /* shared[2] */

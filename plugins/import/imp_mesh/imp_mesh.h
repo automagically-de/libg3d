@@ -7,6 +7,7 @@ typedef struct {
 	G3DContext *context;
 	G3DStream *stream;
 	G3DModel *model;
+	G3DMaterial *defmat;
 	guint16 major;
 	guint16 minor;
 } MeshGlobal;

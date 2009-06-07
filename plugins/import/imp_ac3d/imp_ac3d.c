@@ -178,7 +178,7 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 	gfloat texscaleu = 1.0, texscalev = 1.0;
 	gfloat crease = 0.0;
 	guint32 len, facecnt = 0;
-	gchar *filename;
+	gchar *filename, *tmps;
 	gint32 kidsread, objectcount = 0;
 	gfloat pcnt, prev_pcnt = 0.0;
 
@@ -347,13 +347,23 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 									"AC3D: error reading vertex index (%s)",
 									buffer);
 							}
-							face->tex_vertex_data[i * 2 + 0] *=
-								(texrepu * texscaleu);
-							face->tex_vertex_data[i * 2 + 1] *=
-								(texrepv * texscalev);
 
-							face->tex_vertex_data[i * 2 + 0] += texoffu;
-							face->tex_vertex_data[i * 2 + 1] += texoffv;
+							if(face->tex_image) {
+								tmps = face->tex_image->name;
+								if(g_ascii_strcasecmp(
+									tmps + strlen(tmps) - 4, ".rgb")) {
+									face->tex_vertex_data[i * 2 + 1] =
+										1.0 - face->tex_vertex_data[i * 2 + 1];
+								}
+
+								face->tex_vertex_data[i * 2 + 0] *=
+									(texrepu * texscaleu);
+								face->tex_vertex_data[i * 2 + 1] *=
+									(texrepv * texscalev);
+
+								face->tex_vertex_data[i * 2 + 0] += texoffu;
+								face->tex_vertex_data[i * 2 + 1] += texoffv;
+							}
 						}
 
 						if(face->material && (face->vertex_count >= 3))
@@ -458,9 +468,18 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 				filename = ac3d_remove_quotes(namebuf);
 				object->tex_image = g3d_texture_load_cached(context, model,
 					filename);
+				if(!object->tex_image) {
+					tmps = g_strdup_printf("Textures%c%s",
+						G_DIR_SEPARATOR, filename);
+					object->tex_image = g3d_texture_load_cached(context, model,
+						tmps);
+					g_free(tmps);
+				}
 				if(object->tex_image)
 				{
-					g3d_texture_prepare(object->tex_image);
+					/*g3d_texture_prepare(object->tex_image);*/
+
+					object->tex_image->tex_env = G3D_TEXENV_MODULATE;
 
 					texscaleu = object->tex_image->tex_scale_u;
 					texscalev = object->tex_image->tex_scale_v;

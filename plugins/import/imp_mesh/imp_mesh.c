@@ -31,7 +31,8 @@
 #include "imp_mesh.h"
 
 static void mesh_debug_chunk(MeshGlobal *global, MeshLocal *local);
-static gchar *mesh_read_to_0a(MeshGlobal *global);
+static gchar *mesh_read_to_0a(MeshGlobal *global, gint32 *nbp);
+static gboolean mesh_read_container_1(MeshGlobal *global, MeshLocal *local);
 static gboolean mesh_read_container(MeshGlobal *global, MeshLocal *local);
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
@@ -60,7 +61,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	local->nb = g3d_stream_size(global->stream);
 	local->nb -= 2;
 
-	version = mesh_read_to_0a(global);
+	version = mesh_read_to_0a(global, &(local->nb));
 	if(!version || strncmp(version, "[MeshSerializer_v", 17)) {
 		if(version)
 			g_free(version);
@@ -71,7 +72,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	global->major = version[17] - '0';
 	global->minor = (version[19] - '0') * 10 + (version[20] - '0');
-	local->nb -= (strlen(version) + 1);
 	g_free(version);
 
 	g_debug("version: %d.%d", global->major, global->minor);
@@ -112,7 +112,7 @@ static void mesh_debug_chunk(MeshGlobal *global, MeshLocal *local)
 #endif
 }
 
-static gchar *mesh_read_to_0a(MeshGlobal *global)
+static gchar *mesh_read_to_0a(MeshGlobal *global, gint32 *nbp)
 {
 	gchar *buffer = g_new0(gchar, 1000), *rbuf;
 	gint32 i;
@@ -123,6 +123,7 @@ static gchar *mesh_read_to_0a(MeshGlobal *global)
 			buffer[i] = '\0';
 			rbuf = g_strdup(buffer);
 			g_free(buffer);
+			*nbp -= (i + 1);
 			return rbuf;
 		}
 	}
@@ -147,11 +148,10 @@ static gboolean mesh_read_0x3000(MeshGlobal *global, MeshLocal *local)
 static gboolean mesh_read_0x4000(MeshGlobal *global, MeshLocal *local)
 {
 	gchar *matname;
-	gboolean shared_verts, index_32bit;
+	gboolean retval, shared_verts, index_32bit;
 	gint32 i;
 
-	matname = mesh_read_to_0a(global);
-	local->nb -= (strlen(matname) + 1);
+	matname = mesh_read_to_0a(global, &(local->nb));
 #if DEBUG > 0
 	g_debug("|%smatname: %s", debug_pad(local->level + 1), matname);
 #endif
@@ -173,7 +173,14 @@ static gboolean mesh_read_0x4000(MeshGlobal *global, MeshLocal *local)
 		}
 	}
 
-	return mesh_read_container(global, local);
+	/* size of 0x4000 seems to be broken for some files */
+	retval = mesh_read_container_1(global, local);
+#if DEBUG > 0
+	if(local->nb > 0)
+		g_debug("0x4000: still %d bytes after container", local->nb);
+#endif
+	local->nb = 0;
+	return retval;
 }
 
 /* SUBMESH_OPERATION */
@@ -308,8 +315,8 @@ static gboolean mesh_read_0xA100(MeshGlobal *global, MeshLocal *local)
 	gchar *name;
 
 	index = g3d_stream_read_int16_le(global->stream);
-	name = mesh_read_to_0a(global);
-	local->nb -= (strlen(name) + 1 + 2);
+	local->nb -= 2;
+	name = mesh_read_to_0a(global, &(local->nb));
 #if DEBUG > 0
 	g_debug("|%s[%02d] %s", debug_pad(local->level + 1), index, name);
 #endif
@@ -393,98 +400,107 @@ static gboolean mesh_read_0xB110(MeshGlobal *global, MeshLocal *local)
 	return TRUE;
 }
 
-static gboolean mesh_read_container(MeshGlobal *global, MeshLocal *local)
+static gboolean mesh_read_container_1(MeshGlobal *global, MeshLocal *local)
 {
 	MeshLocal *sublocal;
 	gboolean retval = TRUE;
 
-	while(local->nb >= 6) {
-		sublocal = g_new0(MeshLocal, 1);
-		sublocal->level = local->level + 1;
-		sublocal->object = local->object;
-		sublocal->indices = local->indices;
-		sublocal->nindices = sublocal->nindices;
-		sublocal->chunkid = g3d_stream_read_int16_le(global->stream);
-		sublocal->nb = g3d_stream_read_int32_le(global->stream) - 6;
+	sublocal = g_new0(MeshLocal, 1);
+	sublocal->level = local->level + 1;
+	sublocal->object = local->object;
+	sublocal->indices = local->indices;
+	sublocal->nindices = sublocal->nindices;
+	sublocal->chunkid = g3d_stream_read_int16_le(global->stream);
+	sublocal->nb = g3d_stream_read_int32_le(global->stream) - 6;
 
-		if((sublocal->chunkid == 0) || (sublocal->nb < 0)) {
-			/* FIXME: still something wrong... */
-			local->nb = 0;
-			g_free(sublocal);
-			return TRUE;
-		}
-
-		local->nb -= 6;
-		local->nb -= sublocal->nb;
-
-		mesh_debug_chunk(global, sublocal);
-#if DEBUG > 2
-		g_debug("%s([%d]: %d bytes remaining)", debug_pad(local->level + 1),
-			local->level, local->nb);
-#endif
-
-		switch(sublocal->chunkid) {
-			case 0x3000: /* MESH */
-				retval = mesh_read_0x3000(global, sublocal);
-				break;
-			case 0x4000: /* SUBMESH */
-				retval = mesh_read_0x4000(global, sublocal);
-				break;
-			case 0x4010: /* SUBMESH_OPERATION */
-				retval = mesh_read_0x4010(global, sublocal);
-				break;
-			case 0x5000: /* GEOMETRY */
-				retval = mesh_read_0x5000(global, sublocal);
-				break;
-			case 0x5100: /* GEOMETRY_VERTEX_DECLARATION */
-				retval = mesh_read_0x5100(global, sublocal);
-				break;
-			case 0x5110: /* GEOMETRY_VERTEX_ELEMENT */
-				retval = mesh_read_0x5110(global, sublocal);
-				break;
-			case 0x5200: /* GEOMETRY_VERTEX_BUFFER */
-				retval = mesh_read_0x5200(global, sublocal);
-				break;
-			case 0x5210: /* GEOMETRY_VERTEX_BUFFER_DATA */
-				retval = mesh_read_0x5210(global, sublocal);
-				break;
-			case 0x9000: /* MESH_BOUNDS */
-				retval = mesh_read_0x9000(global, sublocal);
-				break;
-			case 0xA000: /* SUBMESH_NAME_TABLE */
-				retval = mesh_read_0xA000(global, sublocal);
-				break;
-			case 0xA100: /* SUBMESH_NAME_TABLE_ELEMENT */
-				retval = mesh_read_0xA100(global, sublocal);
-				break;
-			case 0xB000: /* EDGE_LISTS */
-				retval = mesh_read_0xB000(global, sublocal);
-				break;
-			case 0xB100: /* EDGE_LIST_LOD */
-				retval = mesh_read_0xB100(global, sublocal);
-				break;
-			case 0xB110: /* EDGE_GROUP */
-				retval = mesh_read_0xB110(global, sublocal);
-				break;
-				
-			default:
+	if((sublocal->chunkid == 0) || (sublocal->nb < 0)) {
+		/* FIXME: still something wrong... */
 #if DEBUG > 0
-				g_debug("skipping 0x%04x chunk", sublocal->chunkid);
+		g_debug("breaking here...");
 #endif
-		}
-		if(sublocal->nb > 0) {
-#if DEBUG > 0
-				g_debug("skipping %d bytes (%d)", sublocal->nb, local->level);
-#endif
-			g3d_stream_skip(global->stream, sublocal->nb);
-		}
-
-		if(sublocal->indices && !local->indices)
-			g_free(sublocal->indices);
+		local->nb = 0;
 		g_free(sublocal);
+		return TRUE;
+	}
 
-		if(retval == FALSE)
+	local->nb -= 6;
+	local->nb -= sublocal->nb;
+
+	mesh_debug_chunk(global, sublocal);
+#if DEBUG > 2
+	g_debug("%s([%d]: %d bytes remaining)", debug_pad(local->level + 1),
+		local->level, local->nb);
+#endif
+
+	switch(sublocal->chunkid) {
+		case 0x3000: /* MESH */
+			retval = mesh_read_0x3000(global, sublocal);
+			break;
+		case 0x4000: /* SUBMESH */
+			retval = mesh_read_0x4000(global, sublocal);
+			break;
+		case 0x4010: /* SUBMESH_OPERATION */
+			retval = mesh_read_0x4010(global, sublocal);
+			break;
+		case 0x5000: /* GEOMETRY */
+			retval = mesh_read_0x5000(global, sublocal);
+			break;
+		case 0x5100: /* GEOMETRY_VERTEX_DECLARATION */
+			retval = mesh_read_0x5100(global, sublocal);
+			break;
+		case 0x5110: /* GEOMETRY_VERTEX_ELEMENT */
+			retval = mesh_read_0x5110(global, sublocal);
+			break;
+		case 0x5200: /* GEOMETRY_VERTEX_BUFFER */
+			retval = mesh_read_0x5200(global, sublocal);
+			break;
+		case 0x5210: /* GEOMETRY_VERTEX_BUFFER_DATA */
+			retval = mesh_read_0x5210(global, sublocal);
+			break;
+		case 0x9000: /* MESH_BOUNDS */
+			retval = mesh_read_0x9000(global, sublocal);
+			break;
+		case 0xA000: /* SUBMESH_NAME_TABLE */
+			retval = mesh_read_0xA000(global, sublocal);
+			break;
+		case 0xA100: /* SUBMESH_NAME_TABLE_ELEMENT */
+			retval = mesh_read_0xA100(global, sublocal);
+			break;
+		case 0xB000: /* EDGE_LISTS */
+			retval = mesh_read_0xB000(global, sublocal);
+			break;
+		case 0xB100: /* EDGE_LIST_LOD */
+			retval = mesh_read_0xB100(global, sublocal);
+			break;
+		case 0xB110: /* EDGE_GROUP */
+			retval = mesh_read_0xB110(global, sublocal);
+			break;
+			
+		default:
+#if DEBUG > 0
+			g_debug("skipping 0x%04x chunk", sublocal->chunkid);
+#endif
+	}
+	if(sublocal->nb > 0) {
+#if DEBUG > 0
+			g_debug("skipping %d bytes (%d)", sublocal->nb, local->level);
+#endif
+		g3d_stream_skip(global->stream, sublocal->nb);
+	}
+
+	if(sublocal->indices && !local->indices)
+		g_free(sublocal->indices);
+	g_free(sublocal);
+
+	return retval;
+}
+
+static gboolean mesh_read_container(MeshGlobal *global, MeshLocal *local)
+{
+	while(local->nb >= 6) {
+		if(!mesh_read_container_1(global, local))
 			return FALSE;
 	}
 	return TRUE;
 }
+

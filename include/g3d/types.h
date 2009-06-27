@@ -432,6 +432,14 @@ typedef struct {
 /* declared in stream.h */
 typedef struct _G3DStream G3DStream;
 
+/*****************************************************************************
+ * G3DStreamScanner
+ *****************************************************************************/
+
+/* declared in stream-scanner.h */
+typedef struct _G3DStreamScanner G3DStreamScanner;
+typedef gboolean (* G3DStreamScannerHandler)(GScanner *, gpointer);
+
 G_END_DECLS
 
 #endif /* __G3D_TYPES_H__ */

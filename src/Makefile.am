@@ -9,6 +9,7 @@ libg3d_la_SOURCES = \
 	material.c \
 	texture.c \
 	stream.c stream_read.c stream_file.c stream_buffer.c \
+	stream-scanner.c \
 	read.c \
 	iff.c \
 	primitive.c \

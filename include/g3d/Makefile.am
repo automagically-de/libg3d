@@ -12,6 +12,7 @@ g3dinclude_HEADERS = \
 	material.h \
 	texture.h \
 	stream.h \
+	stream-scanner.h \
 	read.h \
 	iff.h \
 	primitive.h \

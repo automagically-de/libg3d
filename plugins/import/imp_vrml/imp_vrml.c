@@ -30,6 +30,8 @@
 #include <g3d/stream.h>
 #include <g3d/material.h>
 
+#include "imp_vrml.h"
+#include "imp_vrml_scanner_v1.h"
 #include "imp_vrml_v1.h"
 
 #define VRML_FT_VRML      0x01
@@ -70,6 +72,17 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	if((filetype == VRML_FT_INVENTOR) || (ver_maj == 1)) {
 		/* Inventor / VRML 1.x */
 		/* read complete file to buffer */
+
+		VrmlGlobal *global = g_new0(VrmlGlobal, 1);
+		global->stream = stream;
+		global->context = context;
+		global->model = model;
+
+		vrml_v1_scan(global);
+
+		return FALSE;
+
+#if 0
 		buflen = g3d_stream_size(stream) + 1;
 		buffer = g_new0(gchar, buflen);
 		bufp = buffer;
@@ -93,6 +106,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		}
 		vrml_v1_yylex_destroy(scanner);
 		g_free(buffer);
+#endif
 	} else if(ver_maj == 2) {
 		g_warning("VRML 2 is not yet supported");
 		return FALSE;

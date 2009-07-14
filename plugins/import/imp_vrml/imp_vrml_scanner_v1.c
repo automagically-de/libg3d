@@ -19,6 +19,7 @@ typedef struct {
 	VrmlScope scope;
 	VrmlScope toscope;
 	guint32 n_values;
+	guint32 flags;
 } VrmlSymbol;
 
 static VrmlSymbol vrml_symbols[] = {
@@ -65,7 +66,7 @@ static VrmlSymbol vrml_symbols[] = {
 	{ "matrix",           VRML_V1_SCOPE_DEFAULT, VRML_V1_SCOPE_VALUE,   16 },
 	{ "normalIndex",      VRML_V1_SCOPE_DEFAULT, VRML_V1_SCOPE_VALUE,   1 },
 	{ "on",               VRML_V1_SCOPE_DEFAULT, VRML_V1_SCOPE_VALUE,   1 },
-	{ "point",            VRML_V1_SCOPE_DEFAULT, VRML_V1_SCOPE_VALUE,   3 },
+	{ "point",            VRML_V1_SCOPE_DEFAULT, VRML_V1_SCOPE_VALUE,   3, 1 },
 	{ "radius",           VRML_V1_SCOPE_DEFAULT, VRML_V1_SCOPE_VALUE,   1 },
 	{ "rotation",         VRML_V1_SCOPE_DEFAULT, VRML_V1_SCOPE_VALUE,   4 },
 	{ "scaleFactor",      VRML_V1_SCOPE_DEFAULT, VRML_V1_SCOPE_VALUE,   2 },
@@ -118,11 +119,46 @@ static void vcnt_dec(VrmlGlobal *global, GScanner *gscanner)
 	}
 }
 
+static void set_num(VrmlProperty *property, GTokenType tt,
+	gint32 i_list, gint32 i_val, gint32 vi, G3DFloat vf)
+{
+	g_return_if_fail(property != NULL);
+	g_return_if_fail(i_list >= 0);
+
+	property->n_items = i_list + 1;
+	if((i_list + i_val) == 0) {
+		property->type = tt;
+	}
+
+	g_return_if_fail(tt == property->type);
+
+	switch(tt) {
+		case G_TOKEN_INT:
+#if DEBUG > 1
+			g_debug("realloc %d * %d * INT", property->n_items,
+				property->n_per_value);
+#endif
+			property->u.ip = g_realloc(property->u.ip,
+				property->n_items * property->n_per_value * sizeof(gint32));
+			property->u.ip[i_list * property->n_per_value + i_val] = vi;
+			break;
+		case G_TOKEN_FLOAT:
+			property->u.fp = g_realloc(property->u.fp,
+				property->n_items * property->n_per_value * sizeof(G3DFloat));
+			property->u.fp[i_list * property->n_per_value + i_val] = vf;
+			break;
+		default:
+			break;
+	}
+}
+
 static gboolean vrml_v1_handler(GScanner *gscanner, gpointer user_data)
 {
 	GTokenType tt;
-	VrmlSymbol *symbol;
+	VrmlSymbol *symbol = NULL;
 	VrmlGlobal *global = user_data;
+	VrmlNode *node = NULL;
+	VrmlProperty *property;
 
 	while(!g_scanner_eof(gscanner)) {
 		tt = g_scanner_get_next_token(gscanner);
@@ -134,6 +170,7 @@ static gboolean vrml_v1_handler(GScanner *gscanner, gpointer user_data)
 		switch(tt) {
 			case G_TOKEN_SYMBOL:
 				symbol = gscanner->value.v_symbol;
+				global->property = NULL;
 				global->scope = symbol->toscope;
 				global->value_counter = symbol->n_values;
 				global->value_reload = global->value_counter;
@@ -151,6 +188,16 @@ static gboolean vrml_v1_handler(GScanner *gscanner, gpointer user_data)
 						symbol->name, global->value_counter);
 #endif
 					global->current_option = symbol->name;
+					global->i_list = 0;
+					global->i_val = 0;
+					if(node) {
+						property = g_new0(VrmlProperty, 1);
+						property->n_per_value = symbol->n_values;
+						g_hash_table_insert(node->properties,
+							(gchar *)symbol->name, property);
+						global->property = property;
+					}
+					gscanner->config->int_2_float = (symbol->flags & 1);
 				}
 				if(global->defname) {
 					g_free(global->defname);
@@ -180,14 +227,18 @@ static gboolean vrml_v1_handler(GScanner *gscanner, gpointer user_data)
 				}
 				vcnt_dec(global, gscanner);
 				break;
-			case G_TOKEN_STRING:
-				g_debug("string: %s", gscanner->value.v_string);
-				vcnt_dec(global, gscanner);
-				break;
 			case G_TOKEN_LEFT_CURLY:
 				global->level ++;
+				node = g_new0(VrmlNode, 1);
+				node->name = symbol->name;
+				node->properties = g_hash_table_new(g_str_hash, g_str_equal);
+				g_queue_push_head(global->stack, node);
 				break;
 			case G_TOKEN_RIGHT_CURLY:
+				node = g_queue_pop_head(global->stack);
+				if(node) {
+					g_hash_table_destroy(node->properties);
+				}
 				global->level --;
 				break;
 			case G_TOKEN_LEFT_BRACE:
@@ -215,19 +266,44 @@ static gboolean vrml_v1_handler(GScanner *gscanner, gpointer user_data)
 							global->value_reload);
 					}
 					global->value_counter = global->value_reload;
+					global->i_list ++;
+					global->i_val = 0;
 				}
 				break;
 			case '-':
-			case G_TOKEN_EQUAL_SIGN:
+				global->negate_next = TRUE;
 				break;
-			case G_TOKEN_INT:
-			case G_TOKEN_FLOAT:
-			case G_TOKEN_HEX:
+
+			case G_TOKEN_STRING:
+				g_debug("string: %s", gscanner->value.v_string);
 				vcnt_dec(global, gscanner);
+				global->i_val ++;
+				break;
+
+			case G_TOKEN_INT:
+				property = global->property;
+				set_num(property, G_TOKEN_INT, global->i_list, global->i_val,
+					gscanner->value.v_int *
+					(global->negate_next ? -1 : 1),
+					0.0);
+				global->negate_next = FALSE;
+				vcnt_dec(global, gscanner);
+				global->i_val ++;
+				break;
+
+			case G_TOKEN_FLOAT:
+				property = global->property;
+				set_num(property, G_TOKEN_FLOAT, global->i_list, global->i_val,
+					0.0,
+					gscanner->value.v_float *
+					(global->negate_next ? -1.0 : 1.0));
+				global->negate_next = FALSE;
+				vcnt_dec(global, gscanner);
+				global->i_val ++;
 				break;
 
 			case G_TOKEN_EOF:
-#if DEBUG > 0
+#if DEBUG > 1
 				g_debug("EOF");
 #endif
 				return TRUE;

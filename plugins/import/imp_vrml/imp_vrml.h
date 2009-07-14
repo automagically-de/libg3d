@@ -14,9 +14,33 @@ typedef struct {
 	guint32 value_counter;
 	guint32 value_reload;
 	gboolean in_list;
+	gboolean negate_next;
 	guint32 list_item_count;
 	const gchar *current_group;
 	const gchar *current_option;
+
+	gpointer property;
+
+	gint32 i_list;
+	gint32 i_val;
+
+	GQueue *stack;
 } VrmlGlobal;
+
+typedef struct {
+	GTokenType type;
+	guint32 n_items;
+	guint32 n_per_value;
+	union {
+		gchar *s;
+		G3DFloat *fp;
+		gint32 *ip;
+	} u;
+} VrmlProperty;
+
+typedef struct {
+	const gchar *name;
+	GHashTable *properties;
+} VrmlNode;
 
 #endif /* _IMP_VRML_H */

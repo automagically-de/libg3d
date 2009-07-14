@@ -77,10 +77,14 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		global->stream = stream;
 		global->context = context;
 		global->model = model;
+		global->stack = g_queue_new();
 
 		vrml_v1_scan(global);
 
-		return FALSE;
+		g_queue_free(global->stack);
+		g_free(global);
+
+		return TRUE;
 
 #if 0
 		buflen = g3d_stream_size(stream) + 1;

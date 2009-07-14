@@ -32,7 +32,6 @@
 
 #include "imp_vrml.h"
 #include "imp_vrml_scanner_v1.h"
-#include "imp_vrml_v1.h"
 
 #define VRML_FT_VRML      0x01
 #define VRML_FT_INVENTOR  0x02
@@ -42,11 +41,8 @@
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	yyscan_t scanner;
-	YY_BUFFER_STATE bufstate;
-	G3DMaterial *material;
-	gchar line[MAX_LINE_SIZE + 1], *buffer, *bufp;
-	guint32 ver_maj, ver_min, filetype, buflen;
+	gchar line[MAX_LINE_SIZE + 1];
+	guint32 ver_maj, ver_min, filetype;
 
 	memset(line, 0, MAX_LINE_SIZE);
 	g3d_stream_read_line(stream, line, MAX_LINE_SIZE);
@@ -85,32 +81,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		g_free(global);
 
 		return TRUE;
-
-#if 0
-		buflen = g3d_stream_size(stream) + 1;
-		buffer = g_new0(gchar, buflen);
-		bufp = buffer;
-		memset(buffer, 0, buflen);
-		memset(line, 0, MAX_LINE_SIZE);
-		while(!g3d_stream_eof(stream) &&
-			g3d_stream_read_line(stream, line, MAX_LINE_SIZE)) {
-			memcpy(bufp, line, strlen(line));
-			bufp += strlen(line);
-		}
-		material = g3d_material_new();
-		material->name = g_strdup("fallback material");
-		model->materials = g_slist_append(model->materials, material);
-
-		vrml_v1_yylex_init(&scanner);
-		vrml_v1_yyset_extra(model, scanner);
-		bufstate = vrml_v1_yy_scan_string(buffer, scanner);
-		if(bufstate) {
-			vrml_v1_yylex(scanner);
-			vrml_v1_yy_delete_buffer(bufstate, scanner);
-		}
-		vrml_v1_yylex_destroy(scanner);
-		g_free(buffer);
-#endif
 	} else if(ver_maj == 2) {
 		g_warning("VRML 2 is not yet supported");
 		return FALSE;
@@ -132,6 +102,3 @@ gchar **plugin_extensions(void)
 	return g_strsplit("vrml:iv", ":", 0);
 }
 
-/* FIXME */
-extern int yywrap(yyscan_t yyscanner);
-int vrml_v1_yywrap(yyscan_t yyscanner) { return yywrap(yyscanner); }

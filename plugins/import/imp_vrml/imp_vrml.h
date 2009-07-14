@@ -25,6 +25,8 @@ typedef struct {
 	gint32 i_val;
 
 	GQueue *stack;
+
+	guint32 line_offset;
 } VrmlGlobal;
 
 typedef struct {
@@ -40,7 +42,17 @@ typedef struct {
 
 typedef struct {
 	const gchar *name;
+	gchar *defname;
+	gpointer symbol;
 	GHashTable *properties;
+	G3DObject *object;
 } VrmlNode;
+
+typedef enum {
+	VRML_STEP_OPEN,
+	VRML_STEP_CLOSE
+} VrmlStep;
+
+typedef gboolean (* VrmlCallback)(VrmlGlobal *, VrmlNode *, VrmlStep);
 
 #endif /* _IMP_VRML_H */

@@ -40,7 +40,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 {
 	G3DIffGlobal *global;
 	G3DIffLocal *local;
-	guint32 id, len;
+	guint32 id;
+	gsize len;
 	G3DMatrix rmatrix[16];
 
 	if(!g3d_iff_check(stream, &id, &len) ||

@@ -45,6 +45,7 @@ gboolean g3d_iff_check(G3DStream *stream, guint32 *id, gsize *len)
 	form_bytes = g3d_stream_read_int32_be(stream);
 	*id = g3d_stream_read_int32_be(stream);
 	*len = form_bytes - 4;
+
 	return TRUE;
 }
 
@@ -187,7 +188,8 @@ gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
 	G3DIffChunkInfo *chunks, guint32 flags)
 {
 	gpointer object = NULL;
-	guint32 chunk_id, chunk_len;
+	guint32 chunk_id;
+	gsize chunk_len;
 	G3DIffLocal *sublocal;
 	G3DIffChunkInfo *info;
 
@@ -245,7 +247,8 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 {
 	G3DIffLocal *sublocal;
 	G3DIffChunkInfo *info;
-	guint32 chunk_id, chunk_len, chunk_mod, chunk_type;
+	guint32 chunk_id, chunk_mod, chunk_type;
+	gsize chunk_len;
 	gchar *tid;
 	gpointer level_object;
 	gfloat prev_pcnt = 0.0, pcnt;
@@ -381,7 +384,7 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 		} else {
 			tid = g3d_iff_id_to_text(chunk_id);
 			g_warning("[IFF] unknown chunk type \"%s\" (%d) @ 0x%08x",
-				tid, chunk_len, (guint32)g3d_iff_pos(global) - 8);
+				tid, (gint32)chunk_len, (guint32)g3d_iff_pos(global) - 8);
 			g_free(tid);
 			if(global->stream)
 				g3d_stream_skip(global->stream, chunk_len);

@@ -69,8 +69,9 @@
 0             string       \000GLB                 glb
 
 # VRML
-0             string/b     #VRML\ V1.0\ ascii      vrml
-0             string/b     #VRML\ V2.0\ utf8       vrml2
+0			  string       #VRML					vrml
+# 0             string/b     #VRML\ V1.0\ ascii      vrml
+# 0             string/b     #VRML\ V2.0\ utf8       vrml2
 
 # XML
 0             string          \<?xml\ version="

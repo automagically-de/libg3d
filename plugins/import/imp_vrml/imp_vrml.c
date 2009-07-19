@@ -31,7 +31,7 @@
 #include <g3d/material.h>
 
 #include "imp_vrml.h"
-#include "imp_vrml_scanner_v1.h"
+#include "imp_vrml_v1_scanner.h"
 
 #define VRML_FT_VRML      0x01
 #define VRML_FT_INVENTOR  0x02

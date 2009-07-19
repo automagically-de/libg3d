@@ -1,5 +1,5 @@
-#ifndef _IMP_VRML_SCANNER_V1_H
-#define _IMP_VRML_SCANNER_V1_H
+#ifndef _IMP_VRML_V1_SCANNER_H
+#define _IMP_VRML_V1_SCANNER_H
 
 #include "imp_vrml.h"
 

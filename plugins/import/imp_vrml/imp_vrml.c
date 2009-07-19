@@ -32,6 +32,7 @@
 
 #include "imp_vrml.h"
 #include "imp_vrml_v1_scanner.h"
+#include "imp_vrml_v2_scanner.h"
 
 #define VRML_FT_VRML      0x01
 #define VRML_FT_INVENTOR  0x02
@@ -82,6 +83,17 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 		return TRUE;
 	} else if(ver_maj == 2) {
+		VrmlGlobal *global = g_new0(VrmlGlobal, 1);
+		global->stream = stream;
+		global->context = context;
+		global->model = model;
+		global->stack = g_queue_new();
+
+		vrml_v2_scan(global);
+
+		g_queue_free(global->stack);
+		g_free(global);
+
 		g_warning("VRML 2 is not yet supported");
 		return FALSE;
 	} else {

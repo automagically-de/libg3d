@@ -5,5 +5,5 @@
 
 gboolean vrml_v1_scan(VrmlGlobal *global);
 
-#endif /* _IMP_VRML_SCANNER_V1_H */
+#endif /* _IMP_VRML_V1_SCANNER_H */
 

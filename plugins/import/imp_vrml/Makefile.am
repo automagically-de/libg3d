@@ -21,7 +21,10 @@ imp_vrml_la_SOURCES = \
 	\
 	imp_vrml_v1_chunks.h imp_vrml_v1_types.h \
 	imp_vrml_v1_callbacks.c imp_vrml_v1_callbacks.h \
-	imp_vrml_v1_scanner.c imp_vrml_v1_scanner.h
+	imp_vrml_v1_scanner.c imp_vrml_v1_scanner.h \
+	\
+	imp_vrml_v2_chunks.h imp_vrml_v2_types.h \
+	imp_vrml_v2_scanner.c imp_vrml_v2_scanner.h
 
 imp_vrml_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@
 

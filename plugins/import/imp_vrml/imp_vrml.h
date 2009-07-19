@@ -8,8 +8,11 @@ typedef struct {
 	G3DModel *model;
 	G3DStream *stream;
 
+	guint32 line_offset;
 	guint32 scope;
 	gint32 level;
+
+	/* v1 */
 	gchar *defname;
 	guint32 value_counter;
 	guint32 value_reload;
@@ -25,8 +28,10 @@ typedef struct {
 	gint32 i_val;
 
 	GQueue *stack;
+	/* V2 */
+	gpointer opaque;
 
-	guint32 line_offset;
+	/* common */
 } VrmlGlobal;
 
 typedef struct {

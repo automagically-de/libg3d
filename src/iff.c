@@ -190,18 +190,24 @@ gpointer g3d_iff_handle_chunk(G3DIffGlobal *global, G3DIffLocal *plocal,
 	gpointer object = NULL;
 	guint32 chunk_id;
 	gsize chunk_len;
+#ifndef G3D_DISABLE_DEPRECATED
+	guint32 chunk_len_depr;
+#endif
 	G3DIffLocal *sublocal;
 	G3DIffChunkInfo *info;
 
 	/* read info for one chunk */
 	if(global->stream)
 		g3d_iff_read_chunk(global->stream, &chunk_id, &chunk_len, 0);
-	else
+	else {
 #ifndef G3D_DISABLE_DEPRECATED
-		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, 0);
+		g_warning("using deprecated g3d_iff_readchunk()");
+		g3d_iff_readchunk(global->f, &chunk_id, &chunk_len_depr, 0);
+		chunk_len = chunk_len_depr;
 #else
 		return NULL;
 #endif
+	}
 
 	plocal->nb -= 8;
 
@@ -254,6 +260,7 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 	gfloat prev_pcnt = 0.0, pcnt;
 #ifndef G3D_DISABLE_DEPRECATED
 	long int fpos;
+	guint32 chunk_len_depr;
 #endif
 
 	level_object = NULL;
@@ -268,12 +275,14 @@ gboolean g3d_iff_read_ctnr(G3DIffGlobal *global, G3DIffLocal *local,
 
 		if(global->stream)
 			g3d_iff_read_chunk(global->stream, &chunk_id, &chunk_len, flags);
-		else
+		else {
 #ifndef G3D_DISABLE_DEPRECATED
-			g3d_iff_readchunk(global->f, &chunk_id, &chunk_len, flags);
+			g3d_iff_readchunk(global->f, &chunk_id, &chunk_len_depr, flags);
+			chunk_len = chunk_len_depr;
 #else
 			return FALSE;
 #endif
+		}
 		local->nb -= ((flags & G3D_IFF_LEN16) ? 6 : 8);
 
 		chunk_mod = flags & 0x0F;

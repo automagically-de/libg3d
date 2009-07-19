@@ -55,7 +55,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 {
 	LwoObject *obj;
 	G3DMaterial *material;
-	guint32 id, len;
+	guint32 id = 0xDEADBEEF;
+	gsize len;
 	G3DIffGlobal *global;
 	G3DIffLocal *local;
 

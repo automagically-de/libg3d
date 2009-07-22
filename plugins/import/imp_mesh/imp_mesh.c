@@ -480,6 +480,7 @@ static gboolean mesh_read_container_1(MeshGlobal *global, MeshLocal *local)
 #if DEBUG > 0
 			g_debug("skipping 0x%04x chunk", sublocal->chunkid);
 #endif
+			break;
 	}
 	if(sublocal->nb > 0) {
 #if DEBUG > 0

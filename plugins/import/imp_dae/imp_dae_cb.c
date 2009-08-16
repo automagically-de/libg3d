@@ -385,6 +385,135 @@ gboolean dae_cb_phong(DaeGlobalData *global, DaeLocalData *local)
 	return TRUE;
 }
 
+gboolean dae_cb_polygons(DaeGlobalData *global, DaeLocalData *local)
+{
+	G3DObject *object = local->user_data;
+	G3DFace *face;
+	G3DMaterial *material;
+	xmlNodePtr pnode;
+	gchar *scnt, *smat, *nextp = NULL;
+	guint32 count, normal_count, tex_count, flags = 0;
+	gfloat *normal_data = NULL, *tex_data = NULL;
+	gint i, j = 0, tmp;
+	GSList *inputs, *item;
+	DaeInput *input;
+	gboolean pfinished = TRUE;
+
+	g_return_val_if_fail(object != NULL, FALSE);
+
+	scnt = dae_xml_get_attr(local->node, "count");
+	g_return_val_if_fail(scnt != NULL, FALSE);
+	count = atoi(scnt);
+	g_return_val_if_fail(count != 0, FALSE);
+	g_free(scnt);
+
+	/* material */
+	material = g_slist_nth_data(object->materials, 0);
+	smat = dae_xml_get_attr(local->node, "material");
+	if(smat != NULL) {
+		material = dae_get_material_by_name(global, smat, local->level);
+		g_free(smat);
+	}
+
+	/* get all inputs */
+	inputs = dae_get_inputs(local->node);
+	for(item = inputs; item != NULL; item = item->next) {
+		input = (DaeInput *)item->data;
+		if(input->semantic == SEM_NORMAL)
+			if(dae_load_source(global->lib, input->source,
+				&normal_data, &normal_count)) {
+				flags |= G3D_FLAG_FAC_NORMALS;
+			}
+		if(input->semantic == SEM_TEXCOORD)
+			if(dae_load_source(global->lib, input->source,
+				&tex_data, &tex_count) && (material->tex_image != NULL)) {
+				flags |= G3D_FLAG_FAC_TEXMAP;
+			}
+	}
+
+	pnode = NULL;
+	for(i = 0; i < count; i ++) {
+		face = g_new0(G3DFace, 1);
+		face->material = material;
+		face->flags = flags;
+
+		pnode = dae_xml_next_child_by_tagname(local->node, &pnode, "p");
+		nextp = NULL;
+
+		if(!pnode) {
+			g_warning("DAE: could not find <p> node #%d in <polygons>",
+				i);
+			break;
+		}
+
+		pfinished = FALSE;
+		while(!pfinished) {
+			for(item = inputs; item != NULL; item = item->next) {
+				input = (DaeInput *)item->data;
+				if(!dae_xml_next_int(pnode, &nextp, &tmp)) {
+					pfinished = TRUE;
+					break;
+				}
+				switch(input->semantic) {
+					case SEM_VERTEX:
+						face->vertex_indices = g_realloc(
+							face->vertex_indices,
+							(face->vertex_count + 1) * sizeof(guint32));
+						face->vertex_count ++;
+						j = face->vertex_count - 1;
+#if DEBUG > 2
+						g_debug("DAE: polygons [%d:%d]: %d", i, j, tmp);
+#endif
+						face->vertex_indices[j] = tmp;
+						if(face->vertex_indices[j] >= object->vertex_count) {
+							g_warning("polygons: [%s] face[%d] (%d) >= %d",
+								object->name, j, face->vertex_indices[j],
+								object->vertex_count);
+							face->vertex_indices[j] = 0;
+						}
+						break;
+					case SEM_NORMAL:
+						if(flags & G3D_FLAG_FAC_NORMALS) {
+							face->normals = g_realloc(face->normals,
+								face->vertex_count * 3 * sizeof(G3DVector));
+							face->normals[j * 3 + 0] =
+								normal_data[tmp * 3 + 0];
+							face->normals[j * 3 + 1] =
+								normal_data[tmp * 3 + 1];
+							face->normals[j * 3 + 2] =
+								normal_data[tmp * 3 + 2];
+						}
+						break;
+					case SEM_TEXCOORD:
+						if(flags & G3D_FLAG_FAC_TEXMAP) {
+							face->tex_vertex_data = g_realloc(
+								face->tex_vertex_data,
+								face->vertex_count * 2 * sizeof(G3DVector));
+							face->tex_vertex_count = face->vertex_count;
+							face->tex_vertex_data[j * 2 + 0] =
+								tex_data[tmp * 2 + 0];
+							face->tex_vertex_data[j * 2 + 1] = 1.0 -
+								tex_data[tmp * 2 + 1];
+						}
+						break;
+					case SEM_UNKNOWN:
+						break;
+				}
+			} /* inputs */
+		}
+
+		object->faces = g_slist_append(object->faces, face);
+	}
+
+	if(tex_data)
+		g_free(tex_data);
+	if(normal_data)
+		g_free(normal_data);
+	dae_inputs_free(inputs);
+
+	return TRUE;
+}
+
 gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local)
 {
 	G3DObject *object = local->user_data;

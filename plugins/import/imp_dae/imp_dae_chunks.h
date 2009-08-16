@@ -48,6 +48,7 @@ static DaeChunkDesc dae_chunks_material[] = {
 
 static DaeChunkDesc dae_chunks_mesh[] = {
 	{ "lines",            NULL },
+	{ "polygons",         dae_cb_polygons },
 	{ "polylist",         dae_cb_polylist },
 	{ "source",           dae_cb_source },
 	{ "triangles",        dae_cb_triangles },

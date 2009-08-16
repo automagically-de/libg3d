@@ -201,7 +201,9 @@ gboolean dae_xml_next_int(xmlNodePtr node, gchar **nextp, gint *i)
 
 	*i = strtol(s, &err, 0);
 	if(s == err) {
+#if DEBUG > 4
 		g_debug("DAE: imp_xml_next_int: error at '%.*s...'", 5, s);
+#endif
 		return FALSE;
 	}
 

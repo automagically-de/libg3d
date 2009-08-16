@@ -59,6 +59,7 @@ gboolean dae_cb_mesh(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_newparam(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_node(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_phong(DaeGlobalData *global, DaeLocalData *local);
+gboolean dae_cb_polygons(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_polylist(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_profile_COMMON(DaeGlobalData *global, DaeLocalData *local);
 gboolean dae_cb_rotate(DaeGlobalData *global, DaeLocalData *local);

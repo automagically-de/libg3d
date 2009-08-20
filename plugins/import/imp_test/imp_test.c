@@ -24,12 +24,15 @@
 #include <g3d/context.h>
 #include <g3d/material.h>
 #include <g3d/matrix.h>
+#include <g3d/vector.h>
 #include <g3d/primitive.h>
 #include <g3d/object.h>
 #include <g3d/texture.h>
 
 static gboolean test_primitive_transfrom(G3DModel *model);
 static gboolean test_texture_uv(G3DContext *context, G3DModel *model);
+static gboolean test_spherical(G3DContext *context, G3DModel *model);
+static gboolean test_lines(G3DModel *model);
 
 /*****************************************************************************/
 /* plugin interface                                                          */
@@ -39,7 +42,7 @@ static gboolean test_texture_uv(G3DContext *context, G3DModel *model);
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	guint32 test = 1;
+	guint32 test = 3;
 
 	switch(test) {
 		case 0:
@@ -47,6 +50,12 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			break;
 		case 1:
 			return test_texture_uv(context, model);
+			break;
+		case 2:
+			return test_spherical(context, model);
+			break;
+		case 3:
+			return test_lines(model);
 			break;
 		default:
 			break;
@@ -158,6 +167,89 @@ static gboolean test_texture_uv(G3DContext *context, G3DModel *model)
 
 	model->objects = g_slist_append(model->objects, box);
 	model->materials = g_slist_append(model->materials, material);
+
+	return TRUE;
+}
+
+struct TestCoordinates {
+	const gchar *name;
+	G3DFloat lon;
+	G3DFloat lat;
+};
+
+static struct TestCoordinates test_coords[] = {
+	{ "BRB",      52.408520348638,    12.562290942609 },
+	{ "BRB2",     52.405444098406,    12.571256872475 },
+	{ "0",        0.0,                0.0 },
+	{ NULL }
+};
+
+static gboolean test_spherical(G3DContext *context, G3DModel *model)
+{
+	G3DObject *world, *point;
+	G3DMaterial *mat;
+	G3DMatrix matrix[16];
+	G3DVector x, y, z;
+	gint32 i;
+
+#define SPHERE_RADIUS 10000.0
+
+	mat = g3d_material_new();
+	mat->name = g_strdup("world material");
+	mat->r = 0.3;
+	mat->g = 1.0;
+	mat->b = 0.6;
+
+	world = g3d_primitive_sphere(SPHERE_RADIUS, 18, 36, mat);
+	model->objects = g_slist_append(model->objects, world);
+
+	mat = g3d_material_new();
+	mat->name = g_strdup("marker");
+	mat->r = 1.0;
+	mat->g = 0.2;
+	mat->b = 0.2;
+
+	for(i = 0; test_coords[i].name != NULL; i ++) {
+		point = g3d_primitive_sphere(SPHERE_RADIUS / 100.0, 8, 8, mat);
+		g3d_vector_from_spherical(
+			test_coords[i].lon,
+			test_coords[i].lat,
+			SPHERE_RADIUS,
+			&x, &y, &z);
+		g3d_matrix_identity(matrix);
+		g3d_matrix_translate(x, - y, z, matrix);
+		g3d_object_transform(point, matrix);
+		model->objects = g_slist_append(model->objects, point);
+	}
+
+	return TRUE;
+}
+
+static gboolean test_lines(G3DModel *model)
+{
+	G3DObject *object;
+	G3DFace *face;
+	G3DMaterial *material;
+
+	object = g_new0(G3DObject, 1);
+	object->name = g_strdup("lines");
+	model->objects = g_slist_append(model->objects, object);
+
+	object->vertex_count = 2;
+	object->vertex_data = g3d_vector_new(3, 2);
+	object->vertex_data[1 * 3 + 0] = 1.0;
+
+	material = g3d_material_new();
+	material->name = g_strdup("default material");
+	object->materials = g_slist_append(object->materials, material);
+
+	face = g_new0(G3DFace, 1);
+	face->material = material;
+	face->vertex_count = 2;
+	face->vertex_indices = g_new0(guint32, 2);
+	face->vertex_indices[1] = 1;
+
+	object->faces = g_slist_append(object->faces, face);
 
 	return TRUE;
 }

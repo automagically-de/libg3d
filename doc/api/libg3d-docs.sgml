@@ -5,7 +5,7 @@
   <bookinfo>
     <title>libg3d Reference Manual</title>
     <releaseinfo>
-      for libg3d 0.0.7
+      for libg3d 0.1.0
       The latest version of this documentation can be found on-line at
       <ulink role="online-location" url="http://automagically.de/libg3d/index.html">http://automagically.de/libg3d/</ulink>.
     </releaseinfo>
@@ -25,6 +25,7 @@
 	<title>Plugin interface</title>
     <xi:include href="xml/plugins.xml"/>
     <xi:include href="xml/stream.xml"/>
+    <xi:include href="xml/stream-scanner.xml"/>
    	<xi:include href="xml/iff.xml"/>
     <xi:include href="xml/read.xml"/>
    	<xi:include href="xml/primitive.xml"/>

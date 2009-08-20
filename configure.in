@@ -4,9 +4,9 @@ AC_CONFIG_AUX_DIR(config)
 
 # versioning stuff
 m4_define([g3d_major_version], [0])
-m4_define([g3d_minor_version], [0])
-m4_define([g3d_micro_version], [8])
-m4_define([g3d_interface_age], [8])
+m4_define([g3d_minor_version], [1])
+m4_define([g3d_micro_version], [0])
+m4_define([g3d_interface_age], [0])
 m4_define([g3d_version],
 	[g3d_major_version.g3d_minor_version.g3d_micro_version])
 m4_define([g3d_binary_age],
@@ -211,6 +211,7 @@ AC_OUTPUT(
 	plugins/import/imp_nff/Makefile
 	plugins/import/imp_obj/Makefile
 	plugins/import/imp_osm/Makefile
+	plugins/import/imp_pmd/Makefile
 	plugins/import/imp_q3o/Makefile
 	plugins/import/imp_r4/Makefile
 	plugins/import/imp_rbh/Makefile

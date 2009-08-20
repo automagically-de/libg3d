@@ -113,6 +113,22 @@ gboolean g3d_vector_transform(G3DFloat *x, G3DFloat *y, G3DFloat *z,
 	G3DMatrix *matrix);
 
 /**
+ * g3d_vector_from_spherical:
+ * @lat: latitude
+ * @lon: longitude
+ * @r: radius of sphere
+ * @v1: x component of result vector
+ * @v2: y component of result vector
+ * @v3: z component of result vector
+ *
+ * Calculate carthesian coordinates from spherical coordinates.
+ *
+ * Returns: TRUE on success, FALSE else.
+ */
+gboolean g3d_vector_from_spherical(G3DFloat lat, G3DFloat lon, G3DFloat r,
+	G3DVector *v1, G3DVector *v2, G3DVector *v3);
+
+/**
  * g3d_vector_length:
  * @v: vector
  *

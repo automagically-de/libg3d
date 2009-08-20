@@ -84,6 +84,20 @@ gboolean g3d_vector_transform(G3DVector *x, G3DVector *y, G3DVector *z,
 	return TRUE;
 }
 
+gboolean g3d_vector_from_spherical(G3DFloat lat, G3DFloat lon, G3DFloat r,
+	G3DVector *v1, G3DVector *v2, G3DVector *v3)
+{
+	G3DDouble rlat, rlon;
+
+	rlon = (lon - 90) * G_PI / 180.0;
+	rlat = lat * G_PI / 180.0;
+	*v1 = r * cos(rlat) * sin(rlon);
+	*v2 = r * sin(rlat) * sin(rlon);
+	*v3 = r * cos(rlon);
+
+	return TRUE;
+}
+
 G3DFloat g3d_vector_dot(G3DVector *v1, G3DVector *v2)
 {
 	G3DFloat result = 0.0;
@@ -94,3 +108,4 @@ G3DFloat g3d_vector_dot(G3DVector *v1, G3DVector *v2)
 
 	return result;
 }
+

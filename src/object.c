@@ -41,6 +41,9 @@ static gboolean model_remove_texture_cb(gpointer key, gpointer value,
 	if(texcache != NULL) {
 		g_hash_table_insert(texcache, key, value);
 	} else {
+#if DEBUG > 0
+		g_print("freeing texture...\n");
+#endif
 		g3d_texture_free((G3DImage *)value);
 		g_free(key);
 	}
@@ -60,6 +63,8 @@ G3DObject *g3d_object_convert_from_model(G3DModel *model, GHashTable *texcache)
 	model->objects = NULL;
 	object->materials = model->materials;
 	model->materials = NULL;
+	object->metadata = model->metadata;
+	model->metadata = NULL;
 
 	/* cached textures */
 	if(model->tex_images != NULL) {
@@ -70,7 +75,8 @@ G3DObject *g3d_object_convert_from_model(G3DModel *model, GHashTable *texcache)
 	return object;
 }
 
-G3DObject *g3d_object_load_from_stream(G3DStream *stream, G3DContext *ctxt)
+G3DObject *g3d_object_load_from_stream(G3DStream *stream, G3DContext *ctxt,
+	GHashTable *texcache)
 {
 	G3DModel *model;
 	G3DObject *object;
@@ -78,7 +84,7 @@ G3DObject *g3d_object_load_from_stream(G3DStream *stream, G3DContext *ctxt)
 	model = g3d_model_new();
 
 	if(g3d_plugins_load_model_from_stream(ctxt, stream, model)) {
-		object = g3d_object_convert_from_model(model, NULL);
+		object = g3d_object_convert_from_model(model, texcache);
 		if(object->name == NULL) {
 			object->name = g_strdup(g3d_stream_get_uri(stream));
 		}
@@ -123,10 +129,12 @@ void g3d_object_free(G3DObject *object)
 	/* vertices */
 	if(object->vertex_data != NULL) g_free(object->vertex_data);
 	if(object->tex_vertex_data != NULL) g_free(object->tex_vertex_data);
+#if 0
 	if(object->_normals != NULL) g_free(object->_normals);
 	if(object->_indices != NULL) g_free(object->_indices);
 	if(object->_materials != NULL) g_free(object->_materials);
 	if(object->_flags != NULL) g_free(object->_flags);
+#endif
 
 	g_free(object);
 }
@@ -341,6 +349,7 @@ gboolean g3d_object_smooth(G3DObject *object)
 	return FALSE;
 }
 
+#if 0
 gboolean g3d_object_optimize(G3DObject *object)
 {
 	G3DFace *face;
@@ -448,4 +457,5 @@ gboolean g3d_object_optimize(G3DObject *object)
 
 	return TRUE;
 }
+#endif
 

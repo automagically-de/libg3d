@@ -53,12 +53,14 @@ G3DObject *g3d_object_convert_from_model(G3DModel *model,
  * g3d_object_load_from_stream:
  * @stream: model stream
  * @ctxt: context
+ * @texcache: texture cache
  *
- * Load a model from stram into an object.
+ * Load a model from stream into an object.
  *
  * Returns: the object or NULL in case of an error
  */
-G3DObject *g3d_object_load_from_stream(G3DStream *stream, G3DContext *ctxt);
+G3DObject *g3d_object_load_from_stream(G3DStream *stream, G3DContext *ctxt,
+	GHashTable *texcache);
 
 /**
  * g3d_object_free:
@@ -122,6 +124,7 @@ gboolean g3d_object_transform_normals(G3DObject *object, G3DMatrix *matrix);
  */
 G3DObject *g3d_object_duplicate(G3DObject *object);
 
+#if 0
 /**
  * g3d_object_optimize:
  * @object: the object to optimize
@@ -132,6 +135,7 @@ G3DObject *g3d_object_duplicate(G3DObject *object);
  * Returns: TRUE on success, FALSE else
  */
 gboolean g3d_object_optimize(G3DObject *object);
+#endif
 
 /**
  * g3d_object_smooth:

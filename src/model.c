@@ -67,20 +67,13 @@ static void objects_post_load(GSList *objects, G3DFloat max_rad, guint32 flags)
 	G3DObject *object;
 	GSList *oitem;
 
-	oitem = objects;
-	while(oitem)
-	{
+	for(oitem = objects; oitem != NULL; oitem = oitem->next) {
 		object = (G3DObject *)oitem->data;
 
 		if(flags & G3D_MODEL_SCALE)
 			g3d_object_scale(object, (10.0 / max_rad));
 
-		if(flags & G3D_MODEL_OPTIMIZE)
-			g3d_object_optimize(object);
-
 		objects_post_load(object->objects, max_rad, flags);
-
-		oitem = oitem->next;
 	}
 }
 
@@ -105,13 +98,14 @@ static gboolean objects_check(GSList *objects)
 				return FALSE;
 			}
 
+#if 0
 			if(face->vertex_count < 3) {
 				g_warning("g3d_object_check: face->num_vertices < 3 (%d)"
 					" (o: %d, %s; f: %d)", face->vertex_count,
 					no, object->name ? object->name : "(unnamed)", nf);
 				return FALSE;
 			}
-
+#endif
 			for(i = 0; i < face->vertex_count; i ++)
 				if(face->vertex_indices[i] >= object->vertex_count) {
 					g_warning("g3d_object_check: "
@@ -186,7 +180,7 @@ G3DModel *g3d_model_load_full(G3DContext *context, const gchar *filename,
 G3DModel *g3d_model_load(G3DContext *context, const gchar *filename)
 {
 	return g3d_model_load_full(context, filename,
-		G3D_MODEL_SCALE | G3D_MODEL_CENTER | G3D_MODEL_OPTIMIZE);
+		G3D_MODEL_SCALE | G3D_MODEL_CENTER);
 }
 
 static void objects_max_extension(GSList *objects,
@@ -306,6 +300,7 @@ void g3d_model_clear(G3DModel *model)
 {
 	GSList *list, *next;
 	G3DMaterial *mat;
+	G3DMetaDataItem *mditem;
 
 	/* lights */
 	/* TODO */
@@ -325,6 +320,17 @@ void g3d_model_clear(G3DModel *model)
 		list = next;
 	}
 	model->materials = NULL;
+
+	/* metadata */
+	for(list = model->metadata; list != NULL;) {
+		mditem = list->data;
+		g_free(mditem->name);
+		g_free(mditem->value);
+		g_free(mditem);
+		next = list->next;
+		g_slist_free_1(list);
+		list = next;
+	}
 
 	if(model->tex_images)
 	{

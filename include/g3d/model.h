@@ -57,6 +57,8 @@ G3DModel *g3d_model_new(void);
  * The model should be centered around the (0,0,0).
  */
 #define G3D_MODEL_CENTER          (1 << 1)
+
+#if 0
 /**
  * G3D_MODEL_OPTIMIZE:
  *
@@ -64,6 +66,8 @@ G3DModel *g3d_model_new(void);
  * arrays (deprecated).
  */
 #define G3D_MODEL_OPTIMIZE        (1 << 2)
+#endif
+
 /**
  * G3D_MODEL_NOCHECK:
  *

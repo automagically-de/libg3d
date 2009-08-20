@@ -266,6 +266,21 @@ typedef struct {
 	guint32 flags;
 } G3DTransformation;
 
+/*****************************************************************************
+ * G3DMetaData
+ *****************************************************************************/
+
+typedef enum {
+	G3D_MDT_OTHER,
+	G3D_MDT_DC_AUTHOR,
+	G3D_MDT_DC_DESCRIPTION
+} G3DMetaDataTypeHint;
+
+typedef struct {
+	gchar *name;
+	G3DMetaDataTypeHint typehint;
+	gchar *value;
+} G3DMetaDataItem;
 
 /*****************************************************************************
  * G3DObject
@@ -274,9 +289,10 @@ typedef struct {
 /**
  * G3DObject:
  * @name: name of object
- * @materials: list of materials
- * @faces: list of faces
- * @objects: list of sub-objects
+ * @materials: list of materials (#G3DMaterial)
+ * @faces: list of faces (#G3DFace)
+ * @objects: list of sub-objects (#G3DObject)
+ * @metadata: list of metadata items (#G3DMetaDataItem)
  * @transformation: optional transformation
  * @hide: flag to disable object rendering
  * @vertex_count: number of vertices
@@ -290,6 +306,7 @@ typedef struct {
 	GSList *materials;
 	GSList *faces;
 	GSList *objects;
+	GSList *metadata;
 
 	/* transformation, may be NULL */
 	G3DTransformation *transformation;
@@ -307,16 +324,8 @@ typedef struct {
 	G3DVector *tex_vertex_data;
 	G3DImage *tex_image;
 
-	/*< private >*/
-	/* some fields to speed up rendering, should not be used by plugins */
-	/* FIXME: remove from API (replace with user_data pointer?) */
-	G3DVector *_normals;
-	G3DMaterial **_materials;
-	guint32  _num_faces;
-	guint32 *_indices;
-	guint32 *_flags;
-	guint32 *_tex_images;
-	G3DVector *_tex_coords;
+	/* user data */
+	gpointer user_data;
 } G3DObject;
 
 /*****************************************************************************
@@ -406,6 +415,7 @@ typedef struct _G3DPlugin G3DPlugin;
  * @filename: file name or URI of loaded model, may be set by application
  * @materials: list of materials (#G3DMaterial)
  * @objects: list of objects (#G3DObject)
+ * @metadata: list of metadata (#G3DMetaDataItem)
  *
  * A 3D model.
  */
@@ -417,6 +427,8 @@ typedef struct {
 	/*< public >*/
 	GSList *materials;
 	GSList *objects;
+
+	GSList *metadata;
 
 	/*< private >*/
 	GHashTable *tex_images;
@@ -437,8 +449,23 @@ typedef struct _G3DStream G3DStream;
  *****************************************************************************/
 
 /* declared in stream-scanner.h */
+/**
+ * G3DStreamScanner:
+ *
+ * A GScanner wrapper for G3DStream.
+ */
 typedef struct _G3DStreamScanner G3DStreamScanner;
-typedef gboolean (* G3DStreamScannerHandler)(GScanner *, gpointer);
+/**
+ * G3DStreamScannerHandler:
+ * @scanner: a stream scanner
+ * @user_data: custom user data
+ *
+ * Should do all the parsing work
+ *
+ * Returns: TRUE on success, FALSE in case of an error.
+ */
+typedef gboolean (* G3DStreamScannerHandler)(GScanner *scanner,
+	gpointer user_data);
 
 G_END_DECLS
 

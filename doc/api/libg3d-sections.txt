@@ -54,9 +54,10 @@ g3d_object_scale
 g3d_object_transform
 g3d_object_transform_normals
 g3d_object_duplicate
-g3d_object_optimize
 g3d_object_smooth
 g3d_object_merge
+g3d_object_convert_from_model
+g3d_object_load_from_stream
 </SECTION>
 
 <SECTION>
@@ -163,6 +164,17 @@ G3DStreamTellFunc
 </SECTION>
 
 <SECTION>
+<FILE>stream-scanner</FILE>
+G3DStreamScanner
+G3DStreamScannerHandler
+g3d_stream_scanner_new
+g3d_stream_scanner_free
+g3d_stream_scanner_get_gscanner
+g3d_stream_scanner_set_handler
+g3d_stream_scanner_run
+</SECTION>
+
+<SECTION>
 <FILE>iff</FILE>
 G3D_IFF_PAD1
 G3D_IFF_PAD2
@@ -242,6 +254,8 @@ g3d_vector_free
 g3d_vector_normal
 g3d_vector_unify
 g3d_vector_transform
+g3d_vector_dot
+g3d_vector_length
 </SECTION>
 
 <SECTION>

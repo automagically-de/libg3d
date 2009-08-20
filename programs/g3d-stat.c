@@ -308,6 +308,8 @@ static gboolean file_stat(Config *config, const char *filename,
 	gboolean detailed, FileStats *stats, gchar **plugin_used)
 {
 	G3DModel *model;
+	G3DMetaDataItem *mditem;
+	GSList *litem;
 
 	model = g3d_model_load(config->context, filename);
 	if(model == NULL) {
@@ -317,6 +319,14 @@ static gboolean file_stat(Config *config, const char *filename,
 	objects_stat(model->objects, detailed, stats, 0);
 	if(plugin_used && model->plugin)
 		*plugin_used = g_strdup(model->plugin->name);
+
+	if(detailed) {
+		printf("metadata:\n");
+		for(litem = model->metadata; litem != NULL; litem = litem->next) {
+			mditem = litem->data;
+			printf("  %-30s: %-40s\n", mditem->name, mditem->value);
+		}
+	}
 
 	g3d_model_free(model);
 

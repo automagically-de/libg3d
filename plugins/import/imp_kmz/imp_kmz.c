@@ -34,7 +34,8 @@
 #include <g3d/stream.h>
 #include <g3d/plugins.h>
 
-static gchar * kmz_find_model(xmlDocPtr xmldoc);
+static gchar *kmz_find_model(xmlDocPtr xmldoc);
+static void kmz_add_metadata(xmlDocPtr xmldoc, G3DModel *model);
 
 static int kml_stream_read_cb(gpointer ctx, gchar *buffer, gint len)
 {
@@ -87,6 +88,11 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 					from_zip ? stream->uri : "",
 					from_zip ? "'" : "");
 			}
+		}
+
+		if(retval) {
+			/* model successfully loaded, try to add metadata */
+			kmz_add_metadata(xmldoc, model);
 		}
 
 		xmlFreeDoc(xmldoc);
@@ -163,5 +169,42 @@ static gchar * kmz_find_model(xmlDocPtr xmldoc)
 	if(hrefnode)
 		return (gchar *)hrefnode->children->content;
 	return NULL;
+}
+
+struct _KmzMetadataMap {
+	const gchar *xmlpath;
+	G3DMetaDataTypeHint typehint;
+	const gchar *name;
+};
+
+static struct _KmzMetadataMap kmz_metadata_map[] = {
+	{ "Folder/name",               G3D_MDT_OTHER,           "name" },
+	{ "Folder/Placemark/description",  G3D_MDT_DC_DESCRIPTION, "description" },
+	{ "Folder/Placemark/Model/Location/altitude", G3D_MDT_OTHER, "altitude" },
+	{ "Folder/Placemark/Model/Location/latitude", G3D_MDT_OTHER, "latitude" },
+	{ "Folder/Placemark/Model/Location/longitude",G3D_MDT_OTHER, "longitude" },
+	{ NULL }
+};
+
+static void kmz_add_metadata(xmlDocPtr xmldoc, G3DModel *model)
+{
+	xmlNodePtr rootnode, node;
+	G3DMetaDataItem *mditem;
+	gint32 i;
+
+	rootnode = xmlDocGetRootElement(xmldoc);
+	if(rootnode == NULL)
+		return;
+
+	for(i = 0; kmz_metadata_map[i].xmlpath != NULL; i ++) {
+		node = kmz_find_node(rootnode, kmz_metadata_map[i].xmlpath);
+		if(node) {
+			mditem = g_new0(G3DMetaDataItem, 1);
+			mditem->name = g_strdup(kmz_metadata_map[i].name);
+			mditem->typehint = kmz_metadata_map[i].typehint;
+			mditem->value = g_strdup((gchar *)node->children->content);
+			model->metadata = g_slist_append(model->metadata, mditem);
+		}
+	}
 }
 

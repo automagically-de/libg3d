@@ -120,6 +120,10 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	}
 
 	/* clean up */
+	if(object->transformation) {
+		g_free(object->transformation);
+		object->transformation = NULL;
+	}
 	if(object->vertex_data) {
 		/* reference points not needed anymore */
 		g_free(object->vertex_data);
@@ -203,9 +207,14 @@ static void osm_add_node(G3DObject *object, OSMNodeTransList *translist,
 	xmlNodePtr node)
 {
 	gdouble lat, lon;
+	gint32 i;
+	G3DVector x, y, z;
+	G3DVector u[3] = { 0.0 }, r[3] = { 0.0 }, n[3] = { 0.0, 0.1, 0.0 };
 
 	lat = strtod((char *)xmlGetProp(node, (xmlChar *)"lat"), NULL);
 	lon = strtod((char *)xmlGetProp(node, (xmlChar *)"lon"), NULL);
+
+	g3d_vector_from_spherical(lat, lon, 6378000.0, &x, &y, &z);
 
 	translist->length ++;
 	translist->ids = g_realloc(translist->ids,
@@ -213,14 +222,46 @@ static void osm_add_node(G3DObject *object, OSMNodeTransList *translist,
 	translist->ids[translist->length - 1] = strtoul(
 		(char *)xmlGetProp(node, (xmlChar *)"id"), NULL, 10);
 
+	if(object->vertex_count == 0) {
+		u[0] = x;
+		u[1] = y;
+		u[2] = z;
+		g3d_vector_unify(u, u + 1, u + 2);
+		for(i = 0; i < 3; i ++) {
+			r[i] = n[i] - u[i];
+		}
+		g3d_vector_unify(r, r + 1, r + 2);
+#if DEBUG > 3
+		g_debug("{%.2f, %.2f, %.2f} => {0.0, 1.0, 0.0}: {%.2f, %.2f, %.2f}",
+			u[0], u[1], u[2], r[0], r[1], r[2]);
+#endif
+
+		object->transformation = g_new0(G3DTransformation, 1);
+
+		g3d_matrix_identity(object->transformation->matrix);
+		g3d_matrix_rotate_xyz(r[0], r[1], r[2],
+			object->transformation->matrix);
+	}
+
+	g3d_vector_transform(&x, &y, &z, object->transformation->matrix);
+
 	object->vertex_count ++;
 	object->vertex_data = g_realloc(object->vertex_data,
 		object->vertex_count * sizeof(gdouble) * 3);
+
+	/* rotate to { 0, 1, 0 } */
+
+	object->vertex_data[(object->vertex_count - 1) * 3 + 0] = x;
+	object->vertex_data[(object->vertex_count - 1) * 3 + 1] = y;
+	object->vertex_data[(object->vertex_count - 1) * 3 + 2] = z;
+
+#if 0
 	object->vertex_data[(object->vertex_count - 1) * 3 + 0] =
 		(lat * G_PI / 180) * cos(lon * G_PI / 180) * 180 / G_PI;
 	object->vertex_data[(object->vertex_count - 1) * 3 + 1] = 0.0;
 	object->vertex_data[(object->vertex_count - 1) * 3 + 2] =
 		(lat * G_PI / 180) * sin(lon * G_PI / 180) * 180 / G_PI;
+#endif
 }
 
 static void osm_add_street(G3DObject *object, OSMNodeTransList *translist,
@@ -264,7 +305,7 @@ static void osm_add_street(G3DObject *object, OSMNodeTransList *translist,
 		vdata[i * 2 + 0] = object->vertex_data[n * 3 + 0];
 		vdata[i * 2 + 1] = object->vertex_data[n * 3 + 2];
 	}
-	ostreet = g3d_primitive_box_strip_2d(refcount, vdata, 0.00003, 0.0003,
+	ostreet = g3d_primitive_box_strip_2d(refcount, vdata, 0.4, 10.0,
 		material);
 	g_free(vdata);
 

@@ -11,7 +11,7 @@
 
 #include "imp_lua_gc.h"
 
-static void check_func_sig(lua_State *ls, ...)
+static void check_func_sig(const gchar *name, lua_State *ls, ...)
 {
 	va_list va;
 	gchar *err;
@@ -28,7 +28,9 @@ static void check_func_sig(lua_State *ls, ...)
 			va_end(va);
 		}
 		if((idx >= n) || (lua_type(ls, idx + 1) != type)) {
-			err = g_strdup_printf("parameter %d: wrong type (%s, expected %s)",
+			err = g_strdup_printf(
+				"%s: parameter %d: wrong type (%s, expected %s)",
+				name,
 				idx + 1,
 				lua_typename(ls, lua_type(ls, idx + 1)),
 				lua_typename(ls, type));
@@ -112,7 +114,7 @@ static G3DLuaGC *get_g3d_luagc(lua_State *ls)
 
 static int _g3d_debug(lua_State *ls)
 {
-	check_func_sig(ls, LUA_TSTRING, -1);
+	check_func_sig("g3d.debug()", ls, LUA_TSTRING, -1);
 	g_debug("%s", lua_tostring(ls, -1));
 	return 0;
 }
@@ -123,7 +125,7 @@ static int _g3d_Object_setName(lua_State *ls)
 {
 	G3DObject *object;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TSTRING, -1);
+	check_func_sig("g3d.Object:setName()", ls, LUA_TTABLE, LUA_TSTRING, -1);
 	object = get_lua_object(ls, -2, "__g3dobject", FALSE);
 	if(object->name)
 		g_free(object->name);
@@ -137,7 +139,8 @@ static int _g3d_Object_addVertex(lua_State *ls)
 	gint i;
 	G3DVector f;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
+	check_func_sig("g3d.Object:addVertex()",
+		ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
 	object = get_lua_object(ls, -4, "__g3dobject", FALSE);
 
 	object->vertex_data = g_realloc(object->vertex_data,
@@ -158,7 +161,7 @@ static int _g3d_Object_addFace(lua_State *ls)
 	G3DObject *object;
 	G3DFace *face;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+	check_func_sig("g3d.Object:addFace()", ls, LUA_TTABLE, LUA_TTABLE, -1);
 
 	object = get_lua_object(ls, -2, "__g3dobject", FALSE);
 	face = get_lua_object(ls, -1, "__g3dface", FALSE);
@@ -175,7 +178,7 @@ static int _g3d_Object_transform(lua_State *ls)
 	G3DObject *object;
 	G3DMatrix *matrix;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+	check_func_sig("g3d.Object:transform()", ls, LUA_TTABLE, LUA_TTABLE, -1);
 
 	object = get_lua_object(ls, -2, "__g3dobject", FALSE);
 	matrix = get_lua_object(ls, -1, "__g3dmatrix", FALSE);
@@ -185,11 +188,33 @@ static int _g3d_Object_transform(lua_State *ls)
 	return 0;
 }
 
+static int _g3d_Object_getMetadata(lua_State *ls)
+{
+	G3DObject *object;
+	G3DMetaDataItem *mditem;
+	GSList *item;
+
+	check_func_sig("g3d.Object:getMetadata()", ls, LUA_TTABLE, -1);
+
+	object = get_lua_object(ls, -1, "__g3dobject", FALSE);
+
+	lua_newtable(ls);
+
+	for(item = object->metadata; item != NULL; item = item->next) {
+		mditem = item->data;
+		g_debug("adding %s = %s", mditem->name, mditem->value);
+		lua_pushstring(ls, mditem->value);
+		lua_setfield(ls, -2, mditem->name);
+	}
+
+	return 1;
+}
+
 static int _g3d_Object_addObject(lua_State *ls)
 {
 	G3DObject *parent, *object;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+	check_func_sig("g3d.Object:addObject()", ls, LUA_TTABLE, LUA_TTABLE, -1);
 
 	parent = get_lua_object(ls, -2, "__g3dobject", FALSE);
 	object = get_lua_object(ls, -1, "__g3dobject", FALSE);
@@ -203,17 +228,24 @@ static int _g3d_Object_addObject(lua_State *ls)
 
 static int _g3d_Object(lua_State *ls)
 {
+	G3DModel *model;
 	G3DObject *object;
 	G3DStream *stream;
 	
-	check_func_sig(ls, -1);
+	check_func_sig("g3d.Object()", ls, -1);
+
+	model = get_g3d_model(ls);
+	if(model->tex_images == NULL) {
+		model->tex_images = g_hash_table_new(g_str_hash, g_str_equal);
+	}
 
 	lua_newtable(ls);
 
 	if((lua_gettop(ls) == 2) && lua_isstring(ls, 1)) {
 		stream = g3d_stream_open_file(lua_tostring(ls, 1), "rb");
 		if(stream) {
-			object = g3d_object_load_from_stream(stream, get_g3d_context(ls));
+			object = g3d_object_load_from_stream(stream, get_g3d_context(ls),
+				model->tex_images);
 			g3d_stream_close(stream);
 		} else {
 			lua_pushnil(ls);
@@ -243,6 +275,9 @@ static int _g3d_Object(lua_State *ls)
 	lua_pushcfunction(ls, _g3d_Object_transform);
 	lua_setfield(ls, -2, "transform");
 
+	lua_pushcfunction(ls,_g3d_Object_getMetadata);
+	lua_setfield(ls, -2, "getMetadata");
+
 	return 1;
 }
 
@@ -253,7 +288,7 @@ static int _g3d_Face_setMaterial(lua_State *ls)
 	G3DFace *face;
 	G3DMaterial *material;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+	check_func_sig("g3d.Face:setMaterial()", ls, LUA_TTABLE, LUA_TTABLE, -1);
 	face = get_lua_object(ls, -2, "__g3dface", FALSE);
 	material = get_lua_object(ls, -1, "__g3dmaterial", FALSE);
 
@@ -268,7 +303,8 @@ static int _g3d_Face_addTexVertex(lua_State *ls)
 {
 	G3DFace *face;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, -1);
+	check_func_sig("g3d.Face:addTexVertex()",
+		ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, -1);
 
 	face = get_lua_object(ls, 1, "__g3dface", FALSE);
 
@@ -329,7 +365,8 @@ static int _g3d_Material_setColor(lua_State *ls)
 {
 	G3DMaterial *material;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
+	check_func_sig("g3d.Material:setColor()",
+		ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
 
 	material = get_lua_object(ls, -4, "__g3dmaterial", FALSE);
 	material->r = lua_tonumber(ls, -3);
@@ -343,7 +380,7 @@ static int _g3d_Material_setAlpha(lua_State *ls)
 {
 	G3DMaterial *material;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, -1);
+	check_func_sig("g3d.Material:setAlpha()", ls, LUA_TTABLE, LUA_TNUMBER, -1);
 
 	material = get_lua_object(ls, -2, "__g3dmaterial", FALSE);
 	material->a = lua_tonumber(ls, -1);
@@ -356,7 +393,8 @@ static int _g3d_Material_setTexture(lua_State *ls)
 	G3DMaterial *material;
 	G3DImage *image;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TTABLE, -1);
+	check_func_sig("g3d.Material:setTexture()",
+		ls, LUA_TTABLE, LUA_TTABLE, -1);
 
 	material = get_lua_object(ls, -2, "__g3dmaterial", FALSE);
 	image = get_lua_object(ls, -1, "__g3dimage", FALSE);
@@ -400,7 +438,7 @@ static int _g3d_Image(lua_State *ls)
 {
 	G3DImage *image;
 
-	check_func_sig(ls, LUA_TSTRING, -1);
+	check_func_sig("g3d.Image()", ls, LUA_TSTRING, -1);
 
 	image = g3d_texture_load_cached(
 		get_g3d_context(ls), get_g3d_model(ls), lua_tostring(ls, -1));	
@@ -425,7 +463,8 @@ static int _g3d_Matrix_translate(lua_State *ls)
 {
 	G3DMatrix *matrix;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
+	check_func_sig("g3d.Matrix:translate()",
+		ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
 
 	matrix = get_lua_object(ls, -4, "__g3dmatrix", FALSE);
 	g3d_matrix_translate(
@@ -440,7 +479,8 @@ static int _g3d_Matrix_scale(lua_State *ls)
 {
 	G3DMatrix *matrix;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
+	check_func_sig("g3d.Matrix:scale()",
+		ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
 
 	matrix = get_lua_object(ls, -4, "__g3dmatrix", FALSE);
 	g3d_matrix_scale(
@@ -455,7 +495,8 @@ static int _g3d_Matrix_rotateXYZ(lua_State *ls)
 {
 	G3DMatrix *matrix;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
+	check_func_sig("g3d.Matrix:rotateXYZ()",
+		ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
 
 	matrix = get_lua_object(ls, -4, "__g3dmatrix", FALSE);
 	g3d_matrix_rotate_xyz(
@@ -470,7 +511,8 @@ static int _g3d_Matrix_rotate(lua_State *ls)
 {
 	G3DMatrix *matrix;
 
-	check_func_sig(ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER,
+	check_func_sig("g3d.Matrix:rotate()",
+		ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER,
 		LUA_TNUMBER, -1);
 
 	matrix = get_lua_object(ls, -5, "__g3dmatrix", FALSE);
@@ -517,7 +559,7 @@ static int _g3d_model_addObject(lua_State *ls)
 	G3DModel *model;
 	G3DObject *object;
 
-	check_func_sig(ls, LUA_TTABLE, -1);
+	check_func_sig("g3d.model:addObject()", ls, LUA_TTABLE, -1);
 
 	model = get_g3d_model(ls);
 	object = get_lua_object(ls, -1, "__g3dobject", FALSE);

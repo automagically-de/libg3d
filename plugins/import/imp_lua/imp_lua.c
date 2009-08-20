@@ -69,6 +69,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	g_debug("LUA: close");
 	lua_close(ls);
+
 	return (r == 0) ? TRUE : FALSE;
 }
 

@@ -61,6 +61,7 @@ static DaeChunkDesc dae_chunks_node[] = {
 	{ "controller",       NULL },
 	{ "geometry",         dae_cb_geometry },
 	{ "light",            NULL },
+	{ "lookat",           NULL },
 	{ "matrix",           dae_cb_matrix },
 	{ "node",             dae_cb_node },
 	{ "scale",            dae_cb_scale },

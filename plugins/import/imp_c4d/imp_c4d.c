@@ -102,6 +102,7 @@ static gboolean c4d_handle_opcode(guint8 opcode, G3DStream *stream,
 	gfloat f1, f2, f3;
 	gchar *str;
 	gint32 i;
+	gsize nb;
 
 	switch(opcode) {
 		case 0x01: /* 64 bit something */
@@ -227,20 +228,20 @@ static gboolean c4d_handle_opcode(guint8 opcode, G3DStream *stream,
 		case 0x84: /* typed content */
 			x1 = g3d_stream_read_int32_be(stream);
 			*n_bytes += 4;
-			x2 = 0;
+			nb = 0;
 #if DEBUG > C4D_DEBUG_OPCODE
 			g_debug("\\%s84: 0x%08x", debug_pad(*level), x1);
 #endif
 			*level += 1;
-			while(x2 < x1) {
+			while(nb < x1) {
 				u1 = g3d_stream_read_int8(stream);
-				x2 ++;
-				if(!c4d_handle_opcode(u1, stream, model, &x2, level))
+				nb ++;
+				if(!c4d_handle_opcode(u1, stream, model, &nb, level))
 					return FALSE;
 				x3 = g3d_stream_read_int32_be(stream);
-				x2 += 4;
+				nb += 4;
 				u1 = g3d_stream_read_int8(stream);
-				x2 += 1;
+				nb += 1;
 			}
 			*level -= 1;
 			*n_bytes += x1;

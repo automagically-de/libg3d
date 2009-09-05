@@ -3,6 +3,7 @@
 #include <g3d/types.h>
 #include <g3d/texture.h>
 #include <g3d/matrix.h>
+#include <g3d/vector.h>
 #include <g3d/object.h>
 #include <g3d/stream.h>
 
@@ -43,6 +44,21 @@ static void check_func_sig(const gchar *name, lua_State *ls, ...)
 		type = va_arg(va, gint);
 	}
 	va_end(va);
+}
+
+static lua_Number get_lua_number(lua_State *ls, gint tid, const gchar *name)
+{
+	lua_Number num;
+
+	lua_pushstring(ls, name);
+	lua_gettable(ls, tid - 1);
+	if(!lua_isnumber(ls, -1)) {
+		lua_pop(ls, 1);
+		return 0.0;
+	}
+	num = lua_tonumber(ls, -1);
+	lua_pop(ls, 1);
+	return num;
 }
 
 static gpointer get_lua_object(lua_State *ls, gint tid, const gchar *name,
@@ -119,7 +135,7 @@ static int _g3d_debug(lua_State *ls)
 	return 0;
 }
 
-/* G3DObject */
+/* g3d.Object */
 
 static int _g3d_Object_setName(lua_State *ls)
 {
@@ -281,7 +297,7 @@ static int _g3d_Object(lua_State *ls)
 	return 1;
 }
 
-/* G3DFace */
+/* g3d.Face */
 
 static int _g3d_Face_setMaterial(lua_State *ls)
 {
@@ -359,7 +375,7 @@ static int _g3d_Face(lua_State *ls)
 	return 1;
 }
 
-/* G3DMaterial */
+/* g3d.Material */
 
 static int _g3d_Material_setColor(lua_State *ls)
 {
@@ -432,7 +448,7 @@ static int _g3d_Material(lua_State *ls)
 	return 1;
 }
 
-/* G3DImage */
+/* g3d.Image */
 
 static int _g3d_Image(lua_State *ls)
 {
@@ -457,7 +473,7 @@ static int _g3d_Image(lua_State *ls)
 	return 1;
 }
 
-/* G3DMatrix */
+/* g3d.Matrix */
 
 static int _g3d_Matrix_translate(lua_State *ls)
 {
@@ -552,7 +568,111 @@ static int _g3d_Matrix(lua_State *ls)
 	return 1;
 }
 
-/* G3DModel */
+/* g3d.Vector */
+
+static int _g3d_Vector_transform(lua_State *ls)
+{
+	G3DVector v[3];
+	G3DMatrix *matrix;
+
+	check_func_sig("g3d.Vector:transform()", ls, LUA_TTABLE, LUA_TTABLE, -1);
+
+	v[0] = get_lua_number(ls, -2, "x");
+	v[1] = get_lua_number(ls, -2, "y");
+	v[2] = get_lua_number(ls, -2, "z");
+
+	matrix = get_lua_object(ls, -1, "__g3dmatrix", FALSE);
+
+	g3d_vector_transform(v, v + 1, v + 2, matrix);
+
+	lua_pushnumber(ls, v[0]);
+	lua_setfield(ls, -3, "x");
+
+	lua_pushnumber(ls, v[1]);
+	lua_setfield(ls, -3, "y");
+
+	lua_pushnumber(ls, v[2]);
+	lua_setfield(ls, -3, "z");
+
+	return 0;
+}
+
+static int _g3d_Vector_unify(lua_State *ls)
+{
+	G3DVector v[3];
+
+	check_func_sig("g3d.Vector:fromSpherical()", ls,
+		LUA_TTABLE, -1);
+
+	v[0] = get_lua_number(ls, -1, "x");
+	v[1] = get_lua_number(ls, -1, "y");
+	v[2] = get_lua_number(ls, -1, "z");
+
+	g3d_vector_unify(v, v + 1, v + 2);
+
+	lua_pushnumber(ls, v[0]);
+	lua_setfield(ls, -2, "x");
+
+	lua_pushnumber(ls, v[1]);
+	lua_setfield(ls, -2, "y");
+
+	lua_pushnumber(ls, v[2]);
+	lua_setfield(ls, -2, "z");
+
+	return 0;
+}
+
+static int _g3d_Vector_fromSpherical(lua_State *ls)
+{
+	G3DVector v[3];
+
+	check_func_sig("g3d.Vector:fromSpherical()", ls,
+		LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
+
+	g3d_vector_from_spherical(
+		lua_tonumber(ls, -3),
+		lua_tonumber(ls, -2),
+		lua_tonumber(ls, -1),
+		v, v + 1, v + 2);
+
+	lua_pushnumber(ls, v[0]);
+	lua_setfield(ls, -5, "x");
+
+	lua_pushnumber(ls, v[1]);
+	lua_setfield(ls, -5, "y");
+
+	lua_pushnumber(ls, v[2]);
+	lua_setfield(ls, -5, "z");
+
+	return 0;
+}
+
+static int _g3d_Vector(lua_State *ls)
+{
+	lua_newtable(ls);
+
+	lua_pushnumber(ls, 0.0);
+	lua_setfield(ls, -2, "x");
+
+	lua_pushnumber(ls, 0.0);
+	lua_setfield(ls, -2, "y");
+	
+	lua_pushnumber(ls, 0.0);
+	lua_setfield(ls, -2, "z");
+
+	lua_pushcfunction(ls, _g3d_Vector_fromSpherical);
+	lua_setfield(ls, -2, "fromSpherical");
+
+	lua_pushcfunction(ls, _g3d_Vector_unify);
+	lua_setfield(ls, -2, "unify");
+
+	lua_pushcfunction(ls, _g3d_Vector_transform);
+	lua_setfield(ls, -2, "transform");
+
+	return 1;
+}
+
+/* g3d.model */
 
 static int _g3d_model_addObject(lua_State *ls)
 {
@@ -621,6 +741,7 @@ static const luaL_Reg g3d_functions[] = {
 	{ "Object",      _g3d_Object },
 	{ "Image",       _g3d_Image },
 	{ "Matrix",      _g3d_Matrix },
+	{ "Vector",      _g3d_Vector },
 	{ NULL, NULL }
 };
 

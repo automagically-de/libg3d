@@ -61,8 +61,9 @@ static X3dmfToc *x3dmf_read_toc(G3DStream *stream, X3dmfToc *prev_toc,
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	guint32 id, len, flags, tocloc, pos;
+	guint32 id, flags, tocloc, pos;
 	guint16 ver_min, ver_maj;
+	gsize len;
 	gchar txthead[10];
 	X3dmfToc *toc = NULL;
 
@@ -402,7 +403,8 @@ static gboolean x3dmf_read_rfrn(G3DStream *stream, G3DModel *model,
 	X3dmfToc *toc, G3DContext *context)
 {
 	G3DObject *object;
-	guint32 id, len, i, refid, savedoffset;
+	guint32 id, i, refid, savedoffset;
+	gsize len;
 	X3dmfTocEntry *tocentry = NULL;
 
 	refid = g3d_stream_read_int32_be(stream);
@@ -448,7 +450,8 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 {
 	G3DMaterial *material = NULL;
 	X3dmfChunkDesc *chunkdesc;
-	guint32 len, id, chk, i;
+	guint32 id, chk, i;
+	gsize len;
 	gfloat matrix[16];
 
 	g3d_matrix_identity(matrix);
@@ -466,7 +469,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 		chunkdesc = x3dmf_get_chunk_info(id);
 
 #if DEBUG > 0
-		g_debug("\\%s[%c%c%c%c]: %s (%d bytes)", debug_pad(level),
+		g_debug("\\%s[%c%c%c%c]: %s (%ld bytes)", debug_pad(level),
 			X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 			X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
 			chunkdesc ? chunkdesc->description : "unknown chunk",
@@ -478,9 +481,9 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 			case G3D_IFF_MKID('c', 'n', 't', 'r'):
 				/* container */
 #if DEBUG > 0
-				g_debug("|%snew container @ 0x%x (%d bytes)",
-					debug_pad(level - 1),
-					(guint32)g3d_stream_tell(stream) - 8, len);
+				g_debug("|%snew container @ 0x%08lx (%ld bytes)",
+					debug_pad(level + 1),
+					g3d_stream_tell(stream) - 8, len);
 #endif
 				x3dmf_read_container(stream, len, model, object, level + 1,
 					toc, context);
@@ -542,7 +545,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				chk = x3dmf_read_mesh(stream, object, context);
 				g3d_object_transform(object, matrix);
 				if(chk != len) {
-					g_warning("3DMF: mesh: wrong length (%u != %u)\n",
+					g_warning("3DMF: mesh: wrong length (%u != %ld)\n",
 						chk, len);
 					return FALSE;
 				}
@@ -587,7 +590,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				g3d_object_transform(object, matrix);
 				if(chk != len) {
 #if DEBUG > 0
-					g_debug("3DMF: tmsh: offset %d bytes", len - chk);
+					g_debug("3DMF: tmsh: offset %ld bytes", len - chk);
 #endif
 					g3d_stream_skip(stream, len - chk);
 				}
@@ -622,7 +625,7 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 #if DEBUG > 0
 				g_warning("3DMF: Container: unknown chunk '%c%c%c%c'/"
 					"0x%02X%02X%02X%02X @ 0x%08x "
-					"(%d bytes)",
+					"(%ld bytes)",
 					X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 					X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
 					X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),

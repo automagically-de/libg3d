@@ -208,13 +208,13 @@ static void osm_add_node(G3DObject *object, OSMNodeTransList *translist,
 {
 	gdouble lat, lon;
 	gint32 i;
-	G3DVector x, y, z;
+	G3DVector v[3];
 	G3DVector u[3] = { 0.0 }, r[3] = { 0.0 }, n[3] = { 0.0, 0.1, 0.0 };
 
 	lat = strtod((char *)xmlGetProp(node, (xmlChar *)"lat"), NULL);
 	lon = strtod((char *)xmlGetProp(node, (xmlChar *)"lon"), NULL);
 
-	g3d_vector_from_spherical(lat, lon, 6378000.0, &x, &y, &z);
+	g3d_vector_from_spherical(lat, lon, 6378000.0, v);
 
 	translist->length ++;
 	translist->ids = g_realloc(translist->ids,
@@ -223,14 +223,12 @@ static void osm_add_node(G3DObject *object, OSMNodeTransList *translist,
 		(char *)xmlGetProp(node, (xmlChar *)"id"), NULL, 10);
 
 	if(object->vertex_count == 0) {
-		u[0] = x;
-		u[1] = y;
-		u[2] = z;
+		g3d_vector_copy(u, v);
 		g3d_vector_unify(u, u + 1, u + 2);
 		for(i = 0; i < 3; i ++) {
 			r[i] = n[i] - u[i];
 		}
-		g3d_vector_unify(r, r + 1, r + 2);
+		g3d_vector_unitize(r);
 #if DEBUG > 3
 		g_debug("{%.2f, %.2f, %.2f} => {0.0, 1.0, 0.0}: {%.2f, %.2f, %.2f}",
 			u[0], u[1], u[2], r[0], r[1], r[2]);
@@ -243,7 +241,7 @@ static void osm_add_node(G3DObject *object, OSMNodeTransList *translist,
 			object->transformation->matrix);
 	}
 
-	g3d_vector_transform(&x, &y, &z, object->transformation->matrix);
+	g3d_vector_transform(v, v + 1, v + 2, object->transformation->matrix);
 
 	object->vertex_count ++;
 	object->vertex_data = g_realloc(object->vertex_data,
@@ -251,9 +249,8 @@ static void osm_add_node(G3DObject *object, OSMNodeTransList *translist,
 
 	/* rotate to { 0, 1, 0 } */
 
-	object->vertex_data[(object->vertex_count - 1) * 3 + 0] = x;
-	object->vertex_data[(object->vertex_count - 1) * 3 + 1] = y;
-	object->vertex_data[(object->vertex_count - 1) * 3 + 2] = z;
+	for(i = 0; i < 3; i ++)
+		object->vertex_data[(object->vertex_count - 1) * 3 + i] = v[i];
 
 #if 0
 	object->vertex_data[(object->vertex_count - 1) * 3 + 0] =

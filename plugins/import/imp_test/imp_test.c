@@ -189,7 +189,7 @@ static gboolean test_spherical(G3DContext *context, G3DModel *model)
 	G3DObject *world, *point;
 	G3DMaterial *mat;
 	G3DMatrix matrix[16];
-	G3DVector x, y, z;
+	G3DVector v[3];
 	gint32 i;
 
 #define SPHERE_RADIUS 10000.0
@@ -215,9 +215,9 @@ static gboolean test_spherical(G3DContext *context, G3DModel *model)
 			test_coords[i].lon,
 			test_coords[i].lat,
 			SPHERE_RADIUS,
-			&x, &y, &z);
+			v);
 		g3d_matrix_identity(matrix);
-		g3d_matrix_translate(x, - y, z, matrix);
+		g3d_matrix_translate(v[0], - v[1], v[2], matrix);
 		g3d_object_transform(point, matrix);
 		model->objects = g_slist_append(model->objects, point);
 	}

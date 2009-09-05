@@ -633,7 +633,7 @@ static int _g3d_Vector_fromSpherical(lua_State *ls)
 		lua_tonumber(ls, -3),
 		lua_tonumber(ls, -2),
 		lua_tonumber(ls, -1),
-		v, v + 1, v + 2);
+		v);
 
 	lua_pushnumber(ls, v[0]);
 	lua_setfield(ls, -5, "x");

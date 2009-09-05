@@ -113,7 +113,7 @@ gboolean md3_load_skin(G3DContext *context, G3DModel *model,
 
 	basename = g_path_get_basename(filename);
 	skinname = g_strdup_printf("%.*s_default.skin",
-		strlen(basename) - 4, basename);
+		(int)(strlen(basename) - 4), basename);
 
 	g_debug("MD3: trying to open skin file %s", skinname);
 

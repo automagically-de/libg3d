@@ -143,7 +143,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			/* replace extension */
 			for(i = 0; textureExtensions[i] != NULL; i ++) {
 				g_snprintf(skinname, sizeof(skinname), "%.*s%s",
-					strlen(skinnames[j]) - 4, skinnames[j],
+					(int)(strlen(skinnames[j]) - 4), skinnames[j],
 					textureExtensions[i]);
 				if(g_file_test(skinname, G_FILE_TEST_EXISTS))
 					image = g3d_texture_load_cached(context, model, skinname);

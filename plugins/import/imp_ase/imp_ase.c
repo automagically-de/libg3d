@@ -75,7 +75,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 				g_debug("ASE: material file: %s", tmp);
 #endif
 				/* TODO: parse .fx file */
-				s = g_strdup_printf("%.*s.jpg", strlen(tmp) - 3, tmp);
+				s = g_strdup_printf("%.*s.jpg", (int)(strlen(tmp) - 3), tmp);
 				material->tex_image =
 					g3d_texture_load_cached(context, model, s);
 				if(material->tex_image)

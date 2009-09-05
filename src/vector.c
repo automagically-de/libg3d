@@ -23,6 +23,22 @@
 #include <math.h>
 #include <g3d/types.h>
 
+void g3d_vector_copy(G3DVector *vdst, G3DVector *vsrc)
+{
+	gint32 i;
+	for(i = 0; i < 3; i ++) {
+		vdst[i] = vsrc[i];
+	}
+}
+
+void g3d_vector_cross(G3DVector *a, G3DVector *b, G3DVector *r)
+{
+	r[0] = a[1] * b[2] - a[2] * b[1];
+	r[1] = a[2] * b[0] - a[0] * b[2];
+	r[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+/* deprecated: use g3d_vector_cross */
 gboolean g3d_vector_normal(G3DVector ax, G3DVector ay, G3DVector az,
 	G3DVector bx, G3DVector by, G3DVector bz,
 	G3DVector *nx, G3DVector *ny, G3DVector *nz)
@@ -39,6 +55,7 @@ G3DFloat g3d_vector_length(G3DVector *v)
 	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }
 
+/* deprecated: use g3d_vector_unitize() */
 gboolean g3d_vector_unify(G3DVector *nx, G3DVector *ny, G3DVector *nz)
 {
 	G3DFloat r;
@@ -53,6 +70,20 @@ gboolean g3d_vector_unify(G3DVector *nx, G3DVector *ny, G3DVector *nz)
 	}
 
 	return TRUE;
+}
+
+void g3d_vector_unitize(G3DVector *v)
+{
+	G3DFloat r;
+
+	r = g3d_vector_length(v);
+	if(r == 0.0F) {
+		v[0] = v[1] = v[2] = 0.0F;
+	} else {
+		v[0] /= r;
+		v[1] /= r;
+		v[2] /= r;
+	}
 }
 
 gboolean g3d_vector_transform(G3DVector *x, G3DVector *y, G3DVector *z,
@@ -85,15 +116,15 @@ gboolean g3d_vector_transform(G3DVector *x, G3DVector *y, G3DVector *z,
 }
 
 gboolean g3d_vector_from_spherical(G3DFloat lat, G3DFloat lon, G3DFloat r,
-	G3DVector *v1, G3DVector *v2, G3DVector *v3)
+	G3DVector *rv)
 {
 	G3DDouble rlat, rlon;
 
-	rlon = (lon - 90) * G_PI / 180.0;
-	rlat = lat * G_PI / 180.0;
-	*v1 = r * cos(rlat) * sin(rlon);
-	*v2 = r * sin(rlat) * sin(rlon);
-	*v3 = r * cos(rlon);
+	rlon = lon * G_PI / 180.0;
+	rlat = (90 - lat) * G_PI / 180.0;
+	rv[0] = r * cos(rlon) * sin(rlat);
+	rv[1] = r * sin(rlon) * sin(rlat);
+	rv[2] = r * cos(rlat);
 
 	return TRUE;
 }
@@ -107,5 +138,18 @@ G3DFloat g3d_vector_dot(G3DVector *v1, G3DVector *v2)
 		result += v1[i] * v2[i];
 
 	return result;
+}
+
+G3DFloat g3d_vector_angle(G3DVector *v1, G3DVector *v2)
+{
+	G3DVector uv1[3], uv2[3];
+
+	g3d_vector_copy(uv1, v1);
+	g3d_vector_copy(uv2, v2);
+
+	g3d_vector_unitize(uv1);
+	g3d_vector_unitize(uv2);
+
+	return acos(g3d_vector_dot(v1, v2));
 }
 

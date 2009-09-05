@@ -67,6 +67,25 @@ _G3D_STATIC_INLINE void g3d_vector_free(G3DVector *vector) {
 }
 
 /**
+ * g3d_vector_copy:
+ * @vdst: destination vector
+ * @vsrc: source vector
+ *
+ * Copy the vector values from source to destination.
+ */
+void g3d_vector_copy(G3DVector *vdst, G3DVector *vsrc);
+
+/**
+ * g3d_vector_cross:
+ * @a: first vector
+ * @b: second vector
+ * @r: result vector
+ *
+ * Calculate the cross product (the normal vector) of two vectors
+ */
+void g3d_vector_cross(G3DVector *a, G3DVector *b, G3DVector *r);
+
+/**
  * g3d_vector_normal:
  * @ax: x component first vector
  * @ay: y component first vector
@@ -85,6 +104,14 @@ _G3D_STATIC_INLINE void g3d_vector_free(G3DVector *vector) {
 gboolean g3d_vector_normal(G3DFloat ax, G3DFloat ay, G3DFloat az,
 	G3DFloat bx, G3DFloat by, G3DFloat bz,
 	G3DFloat *nx, G3DFloat *ny, G3DFloat *nz);
+
+/**
+ * g3d_vector_unitize:
+ * @v: the vector
+ *
+ * Calculate the unit vector of v.
+ */
+void g3d_vector_unitize(G3DVector *v);
 
 /**
  * g3d_vector_unify:
@@ -117,16 +144,14 @@ gboolean g3d_vector_transform(G3DFloat *x, G3DFloat *y, G3DFloat *z,
  * @lat: latitude
  * @lon: longitude
  * @r: radius of sphere
- * @v1: x component of result vector
- * @v2: y component of result vector
- * @v3: z component of result vector
+ * @rv: result vector
  *
  * Calculate carthesian coordinates from spherical coordinates.
  *
  * Returns: TRUE on success, FALSE else.
  */
 gboolean g3d_vector_from_spherical(G3DFloat lat, G3DFloat lon, G3DFloat r,
-	G3DVector *v1, G3DVector *v2, G3DVector *v3);
+	G3DVector *rv);
 
 /**
  * g3d_vector_length:

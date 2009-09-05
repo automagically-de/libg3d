@@ -402,7 +402,7 @@ static void blend_sdna_dump_spdata_cb(gpointer key, gpointer value,
 	BlendSdnaPropData *spdata = value;
 	guint32 *levelp = user_data;
 
-#define DUMP_FORMAT "|%s %-10s %-10s [%03d]"
+#define DUMP_FORMAT "|%s %-10s %-10s [%03ld]"
 #define DUMP_ARGS debug_pad(*levelp), \
 	spdata->sprop->tname, spdata->name, spdata->sprop->nitems
 
@@ -454,7 +454,7 @@ gboolean blend_sdna_dump_struct(BlendSdna *sdna, guint32 sdnanr)
 	if(!sstruct)
 		return FALSE;
 	sstruct = g_slist_nth_data(sdna->structs, sdnanr);
-	g_debug("| struct %s { /* %d */", sstruct->name, sstruct->size);
+	g_debug("| struct %s { /* %ld */", sstruct->name, sstruct->size);
 	for(pitem = sstruct->properties; pitem != NULL; pitem = pitem->next) {
 		sprop = pitem->data;
 		g_debug("| \t%-16s %-24s;", sprop->tname, sprop->name);

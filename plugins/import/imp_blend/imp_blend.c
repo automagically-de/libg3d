@@ -114,7 +114,8 @@ static inline const BlendChunkInfo *blend_get_chunk_info(guint32 code,
 
 static gboolean blend_read_file(BlendGlobal *global)
 {
-	guint32 code, len, address, sdnanr, nr;
+	guint32 code, address, sdnanr, nr;
+	gsize len;
 	BlendLocal *local;
 	const BlendChunkInfo *cinfo;
 	const BlendSdnaStruct *sstruct;
@@ -146,7 +147,7 @@ static gboolean blend_read_file(BlendGlobal *global)
 				blend_from_id(code, 0), blend_from_id(code, 1),
 				blend_from_id(code, 2), blend_from_id(code, 3));
 
-		g_debug("\\%c%c%c%c: %-20s - %8d bytes (0x%08x, %d, %d)",
+		g_debug("\\%c%c%c%c: %-20s - %8ld bytes (0x%08x, %d, %d)",
 			blend_from_id(code, 0), blend_from_id(code, 1),
 			blend_from_id(code, 2), blend_from_id(code, 3),
 			cinfo ? cinfo->description : "(unknown)",

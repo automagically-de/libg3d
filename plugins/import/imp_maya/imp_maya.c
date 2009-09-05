@@ -35,7 +35,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 {
 	G3DIffGlobal *global;
 	G3DIffLocal *local;
-	guint32 id, len;
+	guint32 id;
+	gsize len;
 
 	if(!g3d_iff_check(stream, &id, &len) ||
 		(id != G3D_IFF_MKID('M','a','y','a'))) {

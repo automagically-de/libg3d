@@ -693,7 +693,7 @@ gboolean maya_cb_STR_(G3DIffGlobal *global, G3DIffLocal *local)
 	local->nb -= g3d_stream_read_cstr(global->stream, buffer, local->nb);
 
 #if DEBUG > 0
-	g_debug("|%s[Maya][STR ] %s = '%.*s' (%d characters)",
+	g_debug("|%s[Maya][STR ] %s = '%.*s' (%ld characters)",
 		debug_pad(local->level), var, 40, buffer, strlen(buffer));
 #endif
 

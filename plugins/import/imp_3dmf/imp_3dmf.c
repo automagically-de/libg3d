@@ -469,7 +469,8 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 		chunkdesc = x3dmf_get_chunk_info(id);
 
 #if DEBUG > 0
-		g_debug("\\%s[%c%c%c%c]: %s (%ld bytes)", debug_pad(level),
+		g_debug("\\%s[%c%c%c%c]: %s (%" G_GSIZE_FORMAT " bytes)",
+			debug_pad(level),
 			X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 			X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
 			chunkdesc ? chunkdesc->description : "unknown chunk",
@@ -481,9 +482,12 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 			case G3D_IFF_MKID('c', 'n', 't', 'r'):
 				/* container */
 #if DEBUG > 0
-				g_debug("|%snew container @ 0x%08lx (%ld bytes)",
+				g_debug("|%snew container @ 0x%08x%08x "
+					"(%" G_GSIZE_FORMAT " bytes)",
 					debug_pad(level + 1),
-					g3d_stream_tell(stream) - 8, len);
+					(guint32)((g3d_stream_tell(stream) - 8) >> 32),
+					(guint32)((g3d_stream_tell(stream) - 8) & (guint32)-1),
+					len);
 #endif
 				x3dmf_read_container(stream, len, model, object, level + 1,
 					toc, context);
@@ -545,7 +549,8 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				chk = x3dmf_read_mesh(stream, object, context);
 				g3d_object_transform(object, matrix);
 				if(chk != len) {
-					g_warning("3DMF: mesh: wrong length (%u != %ld)\n",
+					g_warning("3DMF: mesh: wrong length (%u != %"
+						G_GSIZE_FORMAT ")\n",
 						chk, len);
 					return FALSE;
 				}
@@ -590,7 +595,8 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				g3d_object_transform(object, matrix);
 				if(chk != len) {
 #if DEBUG > 0
-					g_debug("3DMF: tmsh: offset %ld bytes", len - chk);
+					g_debug("3DMF: tmsh: offset %" G_GSIZE_FORMAT " bytes",
+						len - chk);
 #endif
 					g3d_stream_skip(stream, len - chk);
 				}
@@ -624,13 +630,15 @@ static gboolean x3dmf_read_container(G3DStream *stream, guint32 length,
 				} else {
 #if DEBUG > 0
 				g_warning("3DMF: Container: unknown chunk '%c%c%c%c'/"
-					"0x%02X%02X%02X%02X @ 0x%08x "
-					"(%ld bytes)",
+					"0x%02X%02X%02X%02X @ 0x%08x%08x "
+					"(%" G_GSIZE_FORMAT " bytes)",
 					X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 					X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
 					X3DMF_CHUNK_CHAR(id, 24), X3DMF_CHUNK_CHAR(id, 16),
 					X3DMF_CHUNK_CHAR(id, 8), X3DMF_CHUNK_CHAR(id, 0),
-					(guint32)g3d_stream_tell(stream) - 8, len);
+					(guint32)((g3d_stream_tell(stream) - 8) >> 32),
+					(guint32)((g3d_stream_tell(stream) - 8) & (guint32)-1),
+					len);
 #endif
 					g3d_stream_skip(stream, len);
 				}

@@ -86,7 +86,8 @@ static gsize zlib_refill_buffer(G3DStreamZlib *sz)
 		}
 		sz->bufavail += (G3D_Z_CHUNK_SIZE - sz->zstream->avail_out);
 #if DEBUG > 0
-		g_debug("ZLIB: %ld bytes in output buffer", sz->bufavail);
+		g_debug("ZLIB: %" G_GSIZE_FORMAT " bytes in output buffer",
+			sz->bufavail);
 #endif
 	} while(sz->zstream->avail_out == 0);
 
@@ -179,8 +180,10 @@ G3DStream *g3d_stream_zlib_inflate_stream(G3DStream *stream, gsize cmp_size)
 	sz->inbuf = g_new0(guint8, G3D_Z_CHUNK_SIZE);
 
 	flags |= (1 << G3D_STREAM_READABLE);
-	sz->uri = g_strdup_printf("%s:gzipped@0x%08lx", stream->uri,
-		g3d_stream_tell(stream));
+	sz->uri = g_strdup_printf("%s:gzipped@0x%08x%08x",
+		stream->uri,
+		(guint32)(g3d_stream_tell(stream) >> 32),
+		(guint32)(g3d_stream_tell(stream) & (guint32)-1));
 
 	return g3d_stream_new_custom(flags, sz->uri,
 		g3d_stream_zlib_read, NULL /* readline */,

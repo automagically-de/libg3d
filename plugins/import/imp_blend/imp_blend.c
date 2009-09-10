@@ -147,7 +147,8 @@ static gboolean blend_read_file(BlendGlobal *global)
 				blend_from_id(code, 0), blend_from_id(code, 1),
 				blend_from_id(code, 2), blend_from_id(code, 3));
 
-		g_debug("\\%c%c%c%c: %-20s - %8ld bytes (0x%08x, %d, %d)",
+		g_debug("\\%c%c%c%c: %-20s - %" G_GSIZE_FORMAT
+			" bytes (0x%08x, %d, %d)",
 			blend_from_id(code, 0), blend_from_id(code, 1),
 			blend_from_id(code, 2), blend_from_id(code, 3),
 			cinfo ? cinfo->description : "(unknown)",

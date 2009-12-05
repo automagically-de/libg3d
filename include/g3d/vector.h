@@ -174,6 +174,8 @@ G3DFloat g3d_vector_length(G3DVector *v);
  */
 G3DFloat g3d_vector_dot(G3DVector *v1, G3DVector *v2);
 
+G3DFloat g3d_vector_angle(G3DVector *v1, G3DVector *v2);
+
 G_END_DECLS
 
 #endif /* __G3D_VECTOR_H__ */

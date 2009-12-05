@@ -150,6 +150,6 @@ G3DFloat g3d_vector_angle(G3DVector *v1, G3DVector *v2)
 	g3d_vector_unitize(uv1);
 	g3d_vector_unitize(uv2);
 
-	return acos(g3d_vector_dot(v1, v2));
+	return acos(g3d_vector_dot(uv1, uv2));
 }
 

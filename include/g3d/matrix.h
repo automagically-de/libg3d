@@ -161,6 +161,20 @@ gboolean g3d_matrix_transpose(G3DMatrix *matrix);
 G3DFloat g3d_matrix_determinant(G3DMatrix *matrix);
 
 /**
+ * g3d_matrix_shadow:
+ * @l: light position
+ * @p: point on ground plane
+ * @n: normal of ground plane
+ * @rm: resulting matrix
+ * 
+ * Fills @rm with a flat projection matrix to be used as shadow.
+ *
+ * Returns: TRUE
+ */
+gboolean g3d_matrix_shadow(G3DVector *l, G3DVector *p, G3DVector *n,
+	G3DMatrix *rm);
+
+/**
  * g3d_matrix_dump:
  * @matrix: the matrix
  *

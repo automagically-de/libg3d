@@ -236,6 +236,37 @@ G3DFloat g3d_matrix_determinant(G3DMatrix *matrix)
 		d1 * det3x3(a2, a3, a4, b2, b3, b4, c2, c3, c4);
 }
 
+gboolean g3d_matrix_shadow(G3DVector *l, G3DVector *p, G3DVector *n,
+	G3DMatrix *rm)
+{
+	G3DDouble c, d;
+
+	d = n[0] * l[0] + n[1] * l[1] + n[2] * l[2];
+	c = p[0] * n[0] + p[1] * n[1] + p[2] * n[2] - d;
+
+	rm[0 * 4 + 0] = l[0] * n[0] + c;
+	rm[1 * 4 + 0] = l[0] * n[1];
+	rm[2 * 4 + 0] = l[0] * n[2];
+	rm[3 * 4 + 0] = - l[0] * c - l[0] * d;
+
+	rm[0 * 4 + 1] = l[1] * n[0];
+	rm[1 * 4 + 1] = l[1] * n[1] + c;
+	rm[2 * 4 + 1] = l[1] * n[2];
+	rm[3 * 4 + 1] = - l[1] * c - l[1] * d;
+
+	rm[0 * 4 + 2] = l[2] * n[0];
+	rm[1 * 4 + 2] = l[2] * n[1];
+	rm[2 * 4 + 2] = l[2] * n[2] + c;
+	rm[3 * 4 + 2] = - l[2] * c - l[2] * d;
+
+	rm[0 * 4 + 3] = n[0];
+	rm[1 * 4 + 3] = n[1];
+	rm[2 * 4 + 3] = n[2];
+	rm[3 * 4 + 3] = -d;
+
+	return TRUE;
+}
+
 gboolean g3d_matrix_dump(G3DMatrix *matrix)
 {
 #if DEBUG > 0

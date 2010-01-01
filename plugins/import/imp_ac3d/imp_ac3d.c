@@ -191,6 +191,7 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 	memcpy(transform, parent_transform, sizeof(struct ac3d_transform));
 
 	object = g_new0(G3DObject, 1);
+	object->name = g_strdup("unnamed object");
 	objectcount ++;
 	*(objectlist) = g_slist_append(*(objectlist), object);
 
@@ -220,8 +221,7 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 			}
 
 #if DEBUG > 0
-			g_debug("AC3D: \"%s\": %d sub-objects read",
-				object->name ? object->name : "unnamed",
+			g_debug("AC3D: \"%s\": %d sub-objects read", object->name,
 				objectcount - 1);
 #endif
 
@@ -242,6 +242,7 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 			}
 			else
 			{
+				g_free(object->name);
 				object->name = g_strdup(namebuf);
 			}
 		}

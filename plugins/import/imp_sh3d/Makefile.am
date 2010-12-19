@@ -18,5 +18,6 @@ AM_LDFLAGS = \
 
 LIBTOOL += --quiet
 
-imp_sh3d_la_SOURCES = imp_sh3d.c
+imp_sh3d_la_SOURCES = imp_sh3d.c \
+	javaser.h javaser.c
 imp_sh3d_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

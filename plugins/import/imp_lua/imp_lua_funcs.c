@@ -12,6 +12,20 @@
 
 #include "imp_lua_gc.h"
 
+static void raise_lua_error(lua_State *ls, const gchar *format, ...)
+{
+	gchar *err;
+	va_list va;
+
+	va_start(va, format);
+	err = g_strdup_vprintf(format, va);
+	va_end(va);
+
+	lua_pushstring(ls, err);
+	g_free(err);
+	lua_error(ls);
+}
+
 static void check_func_sig(const gchar *name, lua_State *ls, ...)
 {
 	va_list va;
@@ -29,16 +43,13 @@ static void check_func_sig(const gchar *name, lua_State *ls, ...)
 			va_end(va);
 		}
 		if((idx >= n) || (lua_type(ls, idx + 1) != type)) {
-			err = g_strdup_printf(
+			va_end(va);
+			raise_lua_error(ls,
 				"%s: parameter %d: wrong type (%s, expected %s)",
 				name,
 				idx + 1,
 				lua_typename(ls, lua_type(ls, idx + 1)),
 				lua_typename(ls, type));
-			lua_pushstring(ls, err);
-			g_free(err);
-			va_end(va);
-			lua_error(ls);
 		}
 		idx ++;
 		type = va_arg(va, gint);
@@ -177,6 +188,10 @@ static int _g3d_Object_addFace(lua_State *ls)
 	G3DObject *object;
 	G3DFace *face;
 
+#if DEBUG > 2
+	g_debug("g3d.Object:addFace()");
+#endif
+
 	check_func_sig("g3d.Object:addFace()", ls, LUA_TTABLE, LUA_TTABLE, -1);
 
 	object = get_lua_object(ls, -2, "__g3dobject", FALSE);
@@ -229,6 +244,10 @@ static int _g3d_Object_getMetadata(lua_State *ls)
 static int _g3d_Object_addObject(lua_State *ls)
 {
 	G3DObject *parent, *object;
+
+#if DEBUG > 1
+	g_debug("g3d.Object:addObject()");
+#endif
 
 	check_func_sig("g3d.Object:addObject()", ls, LUA_TTABLE, LUA_TTABLE, -1);
 
@@ -322,21 +341,55 @@ static int _g3d_Face_addTexVertex(lua_State *ls)
 	check_func_sig("g3d.Face:addTexVertex()",
 		ls, LUA_TTABLE, LUA_TNUMBER, LUA_TNUMBER, -1);
 
-	face = get_lua_object(ls, 1, "__g3dface", FALSE);
+#if DEBUG > 2
+	g_debug("g3d.Face:addTexVertex(%f, %f)",
+		lua_tonumber(ls, -2), lua_tonumber(ls, -1));
+#endif
+
+	face = get_lua_object(ls, -3, "__g3dface", FALSE);
 
 	face->tex_vertex_data = g_realloc(face->tex_vertex_data,
 		sizeof(G3DVector) * 2 * (face->tex_vertex_count + 1));
 
 	face->tex_vertex_data[face->tex_vertex_count * 2 + 0] =
-		lua_tonumber(ls, 2);
+		lua_tonumber(ls, -2);
 	face->tex_vertex_data[face->tex_vertex_count * 2 + 1] =
-		lua_tonumber(ls, 3);
+		lua_tonumber(ls, -1);
 	if(face->material && face->material->tex_image) {
 		face->flags |= G3D_FLAG_FAC_TEXMAP;
 		face->tex_image = face->material->tex_image;
 	}
 
 	face->tex_vertex_count ++;
+	return 0;
+}
+
+static int _g3d_Face_setNormal(lua_State *ls)
+{
+	G3DFace *face;
+	guint32 n;
+
+	check_func_sig("g3d.Face:addNormal()",
+		ls, LUA_TTABLE,
+		LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, LUA_TNUMBER, -1);
+
+	face = get_lua_object(ls, -5, "__g3dface", FALSE);
+
+	n = lua_tonumber(ls, -4);
+	if(n >= face->vertex_count) {
+		raise_lua_error(ls, "normal index too large (%u >= %u)",
+			n, face->vertex_count);
+	}
+
+	if(!face->normals) {
+		face->normals = g3d_vector_new(3, face->vertex_count);
+		face->flags |= G3D_FLAG_FAC_NORMALS;
+	}
+
+	face->normals[0] = lua_tonumber(ls, -3);
+	face->normals[1] = lua_tonumber(ls, -2);
+	face->normals[2] = lua_tonumber(ls, -1);
+
 	return 0;
 }
 
@@ -371,6 +424,9 @@ static int _g3d_Face(lua_State *ls)
 
 	lua_pushcfunction(ls, _g3d_Face_addTexVertex);
 	lua_setfield(ls, -2, "addTexVertex");
+
+	lua_pushcfunction(ls, _g3d_Face_setNormal);
+	lua_setfield(ls, -2, "setNormal");
 
 	return 1;
 }

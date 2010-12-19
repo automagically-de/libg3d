@@ -41,6 +41,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
 	lua_State *ls;
+	lua_Debug ldebug;
 	_G3DLuaReaderData *rdata;
 	gint r;
 
@@ -60,7 +61,11 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	if(r != 0) {
 		if(r == LUA_ERRRUN) {
 			if(lua_isstring(ls, -1)) {
-				g_warning("lua error: %s", lua_tostring(ls, -1));
+				lua_getinfo(ls, "nSl", &ldebug);
+				g_warning("lua error: %s (%s:%d what=%s, name=%s)",
+					lua_tostring(ls, -1),
+					ldebug.source, ldebug.currentline,
+					ldebug.what, ldebug.name);
 			}
 		}
 	}

@@ -51,6 +51,9 @@
 # MD3
 0             string       IDP3                    md3
 
+# PMD
+0             string       PSMD                    pmd
+
 # Neutral File Format (FIXME: text based without a real magic...)
 
 # OpenFlight

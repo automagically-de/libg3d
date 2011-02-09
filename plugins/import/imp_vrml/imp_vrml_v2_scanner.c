@@ -37,6 +37,8 @@ static gboolean vrml_v2_handler(GScanner *gscanner, gpointer user_data)
 #if DEBUG > 0
 				g_debug("\\%s[%s]", debug_pad(global->level), symbol->name);
 #endif
+				global->scope = symbol->scope;
+				g_scanner_set_scope(gscanner, symbol->scope);
 				break;
 
 			case G_TOKEN_IDENTIFIER:

@@ -25,6 +25,7 @@
 #include <g3d/types.h>
 #include <g3d/context.h>
 #include <g3d/model.h>
+#include <g3d/image.h>
 #include <g3d/object.h>
 #include <g3d/material.h>
 #include <g3d/plugins.h>
@@ -268,11 +269,7 @@ static gboolean remove_teximg(gpointer key, gpointer value, gpointer data)
 	G3DImage *image;
 
 	image = (G3DImage *)value;
-	if(image->name)
-		g_free(image->name);
-	if(image->pixeldata)
-		g_free(image->pixeldata);
-	g_free(image);
+	g3d_image_free(image);
 
 	g_free(key);
 

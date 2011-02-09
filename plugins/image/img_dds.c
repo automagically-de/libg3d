@@ -25,6 +25,7 @@
 
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/image.h>
 #include <g3d/iff.h>
 
 static gboolean decode_dxt1(G3DImage *image, G3DStream *stream);
@@ -32,7 +33,7 @@ static gboolean decode_dxt1(G3DImage *image, G3DStream *stream);
 gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	G3DImage *image, gpointer user_data)
 {
-	guint32 magic, size, flags, depth;
+	guint32 magic, size, flags, width, height, depth;
 	guint32 pfsize, pfflags, pffourcc, pfbpp;
 	guint32 pfrmask, pfgmask, pfbmask, pfamask;
 	guint32 caps1, caps2;
@@ -43,14 +44,14 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		g_warning("%s is not a DDS file", stream->uri);
 		return FALSE;
 	}
-	image->name = g_strdup(stream->uri);
+	g3d_image_set_name(image, stream->uri);
 
 	/* 0x0004 */
 	size = g3d_stream_read_int32_le(stream);
 	flags = g3d_stream_read_int32_le(stream);
-	image->height = g3d_stream_read_int32_le(stream);
+	height = g3d_stream_read_int32_le(stream);
 	/* 0x0010 */
-	image->width = g3d_stream_read_int32_le(stream);
+	width = g3d_stream_read_int32_le(stream);
 	g3d_stream_read_int32_le(stream); /* pitch or linesize */
 	depth = g3d_stream_read_int32_le(stream);
 	g3d_stream_read_int32_le(stream); /* num mipmaps */
@@ -75,13 +76,13 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	g3d_stream_skip(stream, 12);
 
 #if DEBUG > 0
-	g_debug("DDS: %ux%u %s 0x%08x", image->width, image->height,
+	g_debug("DDS: %ux%u %s 0x%08x", width, height,
 		sfourcc, pfflags);
 	g_debug("DDS: masks: 0x%04x, 0x%04x, 0x%04x, 0x%04x",
 		pfrmask, pfgmask, pfbmask, pfamask);
 #endif
 
-	image->pixeldata = g_new0(guint8, image->width * image->height * 4);
+	g3d_image_set_size(image, width, height);
 
 	switch(pffourcc) {
 		case G3D_IFF_MKID('D','X','T','1'):
@@ -121,12 +122,17 @@ static void decode_rgb565(guint16 c, gfloat *r, gfloat *g, gfloat *b)
 static gboolean decode_dxt1(G3DImage *image, G3DStream *stream)
 {
 	gint32 x, y, i, j;
-	guint32 index;
+	guint32 index, width, height;
 	gfloat r, g, b, r1, r2, g1, g2, b1, b2;
 	guint8 line, v2;
+	guint8 *pixeldata;
 
-	for(y = 0; y < image->height; y += 4) {
-		for(x = 0; x < image->width; x += 4) {
+	width = g3d_image_get_width(image);
+	height = g3d_image_get_height(image);
+	pixeldata = g3d_image_get_pixels(image);
+
+	for(y = 0; y < height; y += 4) {
+		for(x = 0; x < width; x += 4) {
 			decode_rgb565(g3d_stream_read_int16_le(stream), &r1, &g1, &b1);
 			decode_rgb565(g3d_stream_read_int16_le(stream), &r2, &g2, &b2);
 			for(j = 0; j < 4; j ++) {
@@ -137,12 +143,11 @@ static gboolean decode_dxt1(G3DImage *image, G3DStream *stream)
 					r = r1 + ((r2 - r1) / 3.0) * v2;
 					g = g1 + ((g2 - g1) / 3.0) * v2;
 					b = b1 + ((b2 - b1) / 3.0) * v2;
-					index = ((image->height - 4) - y + j) *
-						image->width + x + i;
-					image->pixeldata[index * 4 + 0] = r * 255.0;
-					image->pixeldata[index * 4 + 1] = g * 255.0;
-					image->pixeldata[index * 4 + 2] = b * 255.0;
-					image->pixeldata[index * 4 + 3] = 0xFF;
+					index = ((height - 4) - y + j) * width + x + i;
+					pixeldata[index * 4 + 0] = r * 255.0;
+					pixeldata[index * 4 + 1] = g * 255.0;
+					pixeldata[index * 4 + 2] = b * 255.0;
+					pixeldata[index * 4 + 3] = 0xFF;
 				}
 			}
 		}

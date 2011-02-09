@@ -26,6 +26,7 @@
 
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/image.h>
 
 #define SGI_STORAGE_VERBATIM  0
 #define SGI_STORAGE_RLE       1
@@ -33,10 +34,11 @@
 gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	G3DImage *image, gpointer user_data)
 {
-	guint32 cmap, planes, x, y, p;
+	guint32 cmap, planes, x, y, p, width, height;
 	guint16 dims;
 	guint8 storage, bpc;
-	gchar name[80];
+	guint8 *pixeldata;
+	gchar *name;
 
 	if(g3d_stream_read_int16_be(stream) != 474) {
 		g_warning("file '%s' is not a SGI RGB file", stream->uri);
@@ -52,49 +54,51 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		return FALSE;
 	}
 
-	image->width = g3d_stream_read_int16_be(stream);
-	image->height = g3d_stream_read_int16_be(stream);
+	width = g3d_stream_read_int16_be(stream);
+	height = g3d_stream_read_int16_be(stream);
 
 	planes = g3d_stream_read_int16_be(stream); /* ZSIZE */
-	image->depth = 32;
 	g3d_stream_read_int32_be(stream); /* PIXMIN */
 	g3d_stream_read_int32_be(stream); /* PIXMAX */
 	g3d_stream_read_int32_be(stream); /* DUMMY */
+	name = g_new0(gchar, 81);
 	g3d_stream_read(stream, name, 80);
 
 	if(strlen(name) > 0) {
 #if DEBUG > 0
 		g_debug("SGI: image name: %s", name);
 #endif
-		image->name = g_strdup(name);
+		g3d_image_set_name(image, name);
 	} else {
-		image->name = g_strdup(stream->uri);
+		g3d_image_set_name(image, stream->uri);
 	}
+	g_free(name);
 
 	cmap = g3d_stream_read_int32_be(stream); /* COLORMAP */
 	g3d_stream_skip(stream, 404);
 
 #if DEBUG > 0
 	g_debug("SGI: %dx%dx%d, %d bpc, colormap: 0x%02x",
-		image->width, image->height, planes, bpc, cmap);
+		width, height, planes, bpc, cmap);
 #endif
 	/* end of header */
 
-	image->pixeldata = g_new0(guint8, image->width * image->height * 4);
+	g3d_image_set_size(image, width, height);
+	pixeldata = g3d_image_get_pixels(image);
 
 	if(storage == SGI_STORAGE_VERBATIM) {
 		for(p = 0; p < planes; p ++) {
-			for(y = 0; y < image->height; y ++) {
-				for(x = 0; x < image->width; x ++) {
-					image->pixeldata[(y * image->width + x) * 4 + p] =
+			for(y = 0; y < height; y ++) {
+				for(x = 0; x < width; x ++) {
+					pixeldata[(y * width + x) * 4 + p] =
 						g3d_stream_read_int8(stream);
 
 					if(planes == 1) {
 						/* greyscale: g = r; b = r; */
-						image->pixeldata[(y * image->width + x) * 4 + 1] =
-							image->pixeldata[(y * image->width + x) * 4];
-						image->pixeldata[(y * image->width + x) * 4 + 2] =
-							image->pixeldata[(y * image->width + x) * 4];
+						pixeldata[(y * width + x) * 4 + 1] =
+							pixeldata[(y * width + x) * 4];
+						pixeldata[(y * width + x) * 4 + 2] =
+							pixeldata[(y * width + x) * 4];
 					}
 				} /* x */
 			} /* y */
@@ -104,21 +108,21 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		guint32 *starttab, *lengthtab, rleoff, rlelen;
 		guint8 cnt, pixel;
 
-		starttab = g_new0(guint32, image->height * planes);
-		lengthtab = g_new0(guint32, image->height * planes);
+		starttab = g_new0(guint32, height * planes);
+		lengthtab = g_new0(guint32, height * planes);
 
 		/* read starttab */
 		for(p = 0; p < planes; p ++)
-			for(y = 0; y < image->height; y ++)
+			for(y = 0; y < height; y ++)
 				starttab[y * planes + p] = g3d_stream_read_int32_be(stream);
 		/* read lengthtab */
 		for(p = 0; p < planes; p ++)
-			for(y = 0; y < image->height; y ++)
+			for(y = 0; y < height; y ++)
 				lengthtab[y * planes + p] = g3d_stream_read_int32_be(stream);
 
 		/* read image data */
 		for(p = 0; p < planes; p ++)
-			for(y = 0; y < image->height; y ++)
+			for(y = 0; y < height; y ++)
 			{
 				rleoff = starttab[y * planes + p];
 				rlelen = lengthtab[y * planes + p];
@@ -137,7 +141,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 					if(pixel & 0x80) {
 						/* copy n bytes */
 						while(cnt --) {
-							image->pixeldata[(y * image->width + x) * 4 + p] =
+							pixeldata[(y * width + x) * 4 + p] =
 		                        g3d_stream_read_int8(stream);
 							x ++;
 						}
@@ -145,8 +149,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 						/* repeat next byte n times */
 						pixel = g3d_stream_read_int8(stream);
 						while(cnt --) {
-							image->pixeldata[(y * image->width + x) * 4 + p] =
-								pixel;
+							pixeldata[(y * width + x) * 4 + p] = pixel;
 							x ++;
 						}
 					}
@@ -159,9 +162,9 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	/* set alpha to 1.0 */
 	if(planes < 4)
-		for(y = 0; y < image->height; y ++)
-			for(x = 0; x < image->width; x ++)
-				image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
+		for(y = 0; y < height; y ++)
+			for(x = 0; x < width; x ++)
+				pixeldata[(y * width + x) * 4 + 3] = 0xFF;
 
 	return TRUE;
 }

@@ -29,6 +29,7 @@
 
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/image.h>
 
 static gboolean gdkpixbuf_init(void);
 static gboolean gdkpixbuf_postprocess(GdkPixbuf *pixbuf, G3DImage *image,
@@ -148,8 +149,10 @@ static gboolean gdkpixbuf_init(void)
 static gboolean gdkpixbuf_postprocess(GdkPixbuf *pixbuf, G3DImage *image,
 	const gchar *uri)
 {
-	guint32 x, y, nchannels;
+	guint32 x, y, nchannels, width, height;
 	guchar *p;
+	guint8 *pixeldata;
+	gchar *name;
 
 	if(gdk_pixbuf_get_colorspace(pixbuf) != GDK_COLORSPACE_RGB) {
 		g_warning("GdkPixbuf: %s: colorspace is not RGB", uri);
@@ -166,37 +169,36 @@ static gboolean gdkpixbuf_postprocess(GdkPixbuf *pixbuf, G3DImage *image,
 		return FALSE;
 	}
 
-	image->width = gdk_pixbuf_get_width(pixbuf);
-	image->height = gdk_pixbuf_get_height(pixbuf);
-	image->depth = 32;
-	image->name = g_path_get_basename(uri);
-	image->pixeldata = g_new0(guint8, image->width * image->height * 4);
+	width = gdk_pixbuf_get_width(pixbuf);
+	height = gdk_pixbuf_get_height(pixbuf);
+	name = g_path_get_basename(uri);
 
-	for(y = 0; y < image->height; y ++)
-		for(x = 0; x < image->width; x ++)
+	g3d_image_set_name(image, name);
+	g3d_image_set_size(image, width, height);
+	pixeldata = g3d_image_get_pixels(image);
+
+	for(y = 0; y < height; y ++)
+		for(x = 0; x < width; x ++)
 		{
 			p = gdk_pixbuf_get_pixels(pixbuf) + y *
 				gdk_pixbuf_get_rowstride(pixbuf) + x * nchannels;
 
-			image->pixeldata[(y * image->width + x) * 4 + 0] = p[0];
-			image->pixeldata[(y * image->width + x) * 4 + 1] = p[1];
-			image->pixeldata[(y * image->width + x) * 4 + 2] = p[2];
+			pixeldata[(y * width + x) * 4 + 0] = p[0];
+			pixeldata[(y * width + x) * 4 + 1] = p[1];
+			pixeldata[(y * width + x) * 4 + 2] = p[2];
 			if(gdk_pixbuf_get_n_channels(pixbuf) >= 4)
-				image->pixeldata[(y * image->width + x) * 4 + 3] = p[3];
+				pixeldata[(y * width + x) * 4 + 3] = p[3];
+			else
+				pixeldata[(y * width + x) * 4 + 3] = 0xFF;
 		}
-
-	/* set alpha to 1.0 */
-	if(gdk_pixbuf_get_n_channels(pixbuf) < 4)
-		for(y = 0; y < image->height; y ++)
-			for(x = 0; x < image->width; x ++)
-				image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
 
 	gdk_pixbuf_unref(pixbuf);
 
 #if DEBUG > 0
 	g_print("GdkPixbuf: image '%s' loaded (%dx%d)\n",
-		image->name, image->width, image->height);
+		name, width, height);
 #endif
+	g_free(name);
 
 	return TRUE;
 }

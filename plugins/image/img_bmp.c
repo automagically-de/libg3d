@@ -26,13 +26,15 @@
 
 #include <g3d/types.h>
 #include <g3d/stream.h>
+#include <g3d/image.h>
 
 gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	G3DImage *image, gpointer user_data)
 {
 	guint32 filesize, offset, headsize, compression;
 	gint32 x, y, i;
-	guint32 ncolplanes, c;
+	guint32 ncolplanes, c, width, height, depth, rowstride;
+	guint8 *pixeldata;
 
 	/* bitmap file always starts with 'BM' */
 	if(g3d_stream_read_int16_le(stream) != ('B' | ('M' << 8))) {
@@ -40,49 +42,40 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		return FALSE;
 	}
 
-	image->name = g_strdup(stream->uri);
+	g3d_image_set_name(image, stream->uri);
 
 	filesize = g3d_stream_read_int32_le(stream);      /* file size */
 	g3d_stream_read_int32_le(stream);                 /* 2 x UINT16 reserved */
 	offset   = g3d_stream_read_int32_le(stream);      /* offset of data */
 	headsize = g3d_stream_read_int32_le(stream);      /* size of header */
-	image->width  = g3d_stream_read_int32_le(stream); /* width */
-	image->height = g3d_stream_read_int32_le(stream); /* height */
+	width  = g3d_stream_read_int32_le(stream);        /* width */
+	height = g3d_stream_read_int32_le(stream);        /* height */
 	ncolplanes = g3d_stream_read_int16_le(stream);    /* num of color planes */
-	image->depth  = g3d_stream_read_int16_le(stream); /* bits per pixel */
+	depth  = g3d_stream_read_int16_le(stream);        /* bits per pixel */
 	compression   = g3d_stream_read_int32_le(stream); /* compression */
 	g3d_stream_read_int32_le(stream);                 /* image size */
 	g3d_stream_read_int32_le(stream);                 /* v/res (dpi) */
 	g3d_stream_read_int32_le(stream);                 /* h/res (dpi) */
 
 #if DEBUG > 0
-	g_debug("BMP: %dx%dx%d (%d, 0x%x)", image->width, image->height,
-		image->depth, ncolplanes, compression);
+	g_debug("BMP: %dx%dx%d (%d, 0x%x)", width, height,
+		depth, ncolplanes, compression);
 #endif
 
 	g3d_stream_seek(stream, offset, G_SEEK_SET);
 
-#define ALL32BIT
-#ifndef ALL32BIT /* always 32bit for now.. */
-	image->pixeldata = g_new0(guint8,
-		image->width * image->height * (image->depth / 8));
-#else
-	image->pixeldata = g_new0(guint8, image->width * image->height * 4);
-#endif
+	g3d_image_set_size(image, width, height);
+	pixeldata = g3d_image_get_pixels(image);
+	rowstride = width * height * 4;
 
-	for(y = (image->height - 1); y >= 0; y --) {
-		for(x = 0; x < image->width; x ++) {
-			switch(image->depth) {
+	for(y = (height - 1); y >= 0; y --) {
+		for(x = 0; x < width; x ++) {
+			switch(depth) {
 				case 8:
-#ifndef ALL32BIT
-					image->pixeldata[y * image->width + x] =
-						g3d_stream_read_int8(stream);
-#else
 					c = g3d_stream_read_int8(stream);
 					for(i = 0; i < 3; i ++)
-						image->pixeldata[(y * image->width + x) * 4 + i] = c;
-					image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
-#endif
+						pixeldata[y * rowstride + x * 4 + i] = c;
+					pixeldata[y * rowstride + x * 4 + 3] = 0xFF;
 					break;
 				case 24:
 #if 1
@@ -91,9 +84,9 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 #else
 					for(i = 0; i < 3; i ++)
 #endif
-						image->pixeldata[(y * image->width + x) * 4 + i] =
+						pixeldata[y * rowstride + x * 4 + i] =
 							g3d_stream_read_int8(stream);
-					image->pixeldata[(y * image->width + x) * 4 + 3] = 0xFF;
+					pixeldata[y * rowstride + x * 4 + 3] = 0xFF;
 					break;
 				default:
 					break;
@@ -101,11 +94,10 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		} /* x */
 #if 1
 		/* padding */
-		for(i = x; i < ((image->width + 3) & ~(3)); i ++)
+		for(i = x; i < ((width + 3) & ~(3)); i ++)
 			g3d_stream_read_int8(stream);
 #endif
 	} /* y */
-	image->depth = 32;
 #if DEBUG > 2
 	g_debug("bitmap successfully loaded");
 #endif

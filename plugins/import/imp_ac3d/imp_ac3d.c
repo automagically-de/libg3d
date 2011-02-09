@@ -31,6 +31,7 @@
 #include <g3d/context.h>
 #include <g3d/stream.h>
 #include <g3d/material.h>
+#include <g3d/image.h>
 #include <g3d/texture.h>
 #include <g3d/face.h>
 #include <g3d/debug.h>
@@ -179,6 +180,7 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 	gfloat crease = 0.0;
 	guint32 len, facecnt = 0;
 	gchar *filename, *tmps;
+	const gchar *name;
 	gint32 kidsread, objectcount = 0;
 	gfloat pcnt, prev_pcnt = 0.0;
 
@@ -350,9 +352,9 @@ static gint32 ac3d_read_object(G3DStream *stream, G3DContext *context,
 							}
 
 							if(face->tex_image) {
-								tmps = face->tex_image->name;
+								name = g3d_image_get_name(face->tex_image);
 								if(g_ascii_strcasecmp(
-									tmps + strlen(tmps) - 4, ".rgb")) {
+									name + strlen(name) - 4, ".rgb")) {
 									face->tex_vertex_data[i * 2 + 1] =
 										1.0 - face->tex_vertex_data[i * 2 + 1];
 								}

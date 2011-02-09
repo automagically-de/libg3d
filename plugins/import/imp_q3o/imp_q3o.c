@@ -26,6 +26,7 @@
 #include <g3d/types.h>
 #include <g3d/context.h>
 #include <g3d/material.h>
+#include <g3d/image.h>
 #include <g3d/stream.h>
 
 /*
@@ -147,7 +148,7 @@ static void q3o_update_face_textures(G3DModel *model, G3DContext *context)
 		{
 			face = (G3DFace *)fitem->data;
 			face->tex_image = face->material->tex_image;
-			if(face->tex_image && face->tex_image->width)
+			if(face->tex_image && g3d_image_get_width(face->tex_image))
 				face->flags |= G3D_FLAG_FAC_TEXMAP;
 			else
 			{
@@ -167,6 +168,7 @@ static G3DImage *q3o_get_texture_nth(G3DModel *model, guint32 n)
 {
 	gchar number[32];
 	G3DImage *image;
+	gchar *name;
 
 	if(model->tex_images == NULL)
 		model->tex_images = g_hash_table_new(g_str_hash, g_str_equal);
@@ -188,10 +190,13 @@ static G3DImage *q3o_get_texture_nth(G3DModel *model, guint32 n)
 	g_debug("Q3O: texture #%d created", n);
 #endif
 
-	image = g_new0(G3DImage, 1);
+	image = g3d_image_new();
 	image->tex_scale_u = 1.0;
 	image->tex_scale_v = 1.0;
-	image->name = g_strdup_printf("would be %d", n + 1);
+
+	name = g_strdup_printf("would be %d", n + 1);
+	g3d_image_set_name(image, name);
+	g_free(name);
 
 	g_hash_table_insert(model->tex_images, g_strdup(number), image);
 
@@ -447,6 +452,7 @@ static gboolean q3o_read_texture(G3DStream *stream, G3DModel *model,
 	gchar *ppmname;
 #endif
 	guint32 width, height, y, x;
+	guint8 *pixeldata;
 
 	memset(buffer, 0, 2048);
 	bufp = buffer;
@@ -462,22 +468,20 @@ static gboolean q3o_read_texture(G3DStream *stream, G3DModel *model,
 	image = q3o_get_texture_nth(model, *idx);
 	(*idx) ++;
 
-	image->name = g_strdup(buffer);
-	image->width = width;
-	image->height = height;
-	image->depth = 32;
-	image->pixeldata = g_new0(guint8, width * height * 4);
+	g3d_image_set_name(image, buffer);
+	g3d_image_set_size(image, width, height);
+	pixeldata = g3d_image_get_pixels(image);
 	image->tex_id = *idx;
 
 	for(y = 0; y < height; y ++)
 		for(x = 0; x < width; x ++) {
-			image->pixeldata[(y * width + x) * 4 + 0] =
+			pixeldata[(y * width + x) * 4 + 0] =
 				g3d_stream_read_int8(stream);
-			image->pixeldata[(y * width + x) * 4 + 1] =
+			pixeldata[(y * width + x) * 4 + 1] =
 				g3d_stream_read_int8(stream);
-			image->pixeldata[(y * width + x) * 4 + 2] =
+			pixeldata[(y * width + x) * 4 + 2] =
 				g3d_stream_read_int8(stream);
-			image->pixeldata[(y * width + x) * 4 + 3] = 0xFF;
+			pixeldata[(y * width + x) * 4 + 3] = 0xFF;
 		}
 
 #if DEBUG > 2

@@ -22,6 +22,7 @@
 #include <string.h>
 #include <signal.h>
 #include <g3d/g3d.h>
+#include <g3d/image.h>
 #include <g3d/texture.h>
 
 static void _g_print(const gchar *str)
@@ -51,6 +52,8 @@ int main(int argc, char *argv[])
 	G3DContext *context;
 	G3DImage *image;
 	gint x, y;
+	guint32 width, height;
+	guint8 *pixeldata;
 	
 	if (argc < 2) {
 		show_help(argv[0]);
@@ -68,13 +71,16 @@ int main(int argc, char *argv[])
 		g3d_context_free(context);
 		return EXIT_FAILURE;
 	}
-	printf("P6\n%d %d\n255\n",
-		image->width,
-		image->height);
 
-	for (y = 0; y < image->height; y ++) {
-		for (x = 0; x < image->width; x ++) {
-			fwrite(image->pixeldata + (y * image->width + x) * 4, 1, 3, stdout);
+	width = g3d_image_get_width(image);
+	height = g3d_image_get_height(image);
+	pixeldata = g3d_image_get_pixels(image);
+
+	printf("P6\n%d %d\n255\n", width, height);
+
+	for (y = 0; y < height; y ++) {
+		for (x = 0; x < width; x ++) {
+			fwrite(pixeldata + (y * width + x) * 4, 1, 3, stdout);
 		}
 	}
 

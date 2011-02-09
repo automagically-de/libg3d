@@ -26,6 +26,7 @@
 #include <g3d/plugins.h>
 #include <g3d/stream.h>
 #include <g3d/texture.h>
+#include <g3d/image.h>
 
 #ifdef G3D_DEBUG_DUMP_IMAGE
 static gboolean dump_ppm(G3DImage *image, const gchar *filename);
@@ -173,28 +174,34 @@ G3DImage *g3d_texture_load_cached(G3DContext *context, G3DModel *model,
 
 gboolean g3d_texture_cache_remove(G3DModel *model, G3DImage *image)
 {
-	g_return_val_if_fail(model->tex_images != NULL, FALSE);
-	g_return_val_if_fail(image->name != NULL, FALSE);
+	const gchar *name;
 
-	return g_hash_table_remove(model->tex_images, image->name);
+	name = g3d_image_get_name(image);
+	g_return_val_if_fail(model->tex_images != NULL, FALSE);
+	g_return_val_if_fail(name != NULL, FALSE);
+
+	return g_hash_table_remove(model->tex_images, name);
 }
 
 void g3d_texture_free(G3DImage *texture)
 {
-	if(texture->name) g_free(texture->name);
-	if(texture->pixeldata) g_free(texture->pixeldata);
-	g_free(texture);
+	g3d_image_free(texture);
 }
 
 gboolean g3d_texture_prepare(G3DImage *texture)
 {
 	guint32 nw = 1, nh = 1, y;
-	guint8 *np;
+	guint32 width, height;
+	guint8 *np, *pixeldata;
 
-	while(nw < texture->width) nw *= 2;
-	while(nh < texture->height) nh *= 2;
+	width = g3d_image_get_width(texture);
+	height = g3d_image_get_height(texture);
+	pixeldata = g3d_image_get_pixels(texture);
 
-	if((nw != texture->width) || (nh != texture->height))
+	while(nw < width) nw *= 2;
+	while(nh < height) nh *= 2;
+
+	if((nw != width) || (nh != height))
 	{
 		/* blow up texture image to dimensions with a power of two */
 		np = g_malloc(nw * nh * 4);
@@ -203,25 +210,23 @@ gboolean g3d_texture_prepare(G3DImage *texture)
 		/* copy image data */
 		for(y = 0; y < nh; y ++)
 			memcpy(np + ((nh - y - 1) * nw * 4),
-				texture->pixeldata +
-					(((texture->height - y - 1) % texture->height) *
-					texture->width * 4),
-				texture->width * 4);
+				pixeldata +
+					(((height - y - 1) % height) *
+					width * 4),
+				width * 4);
 
 		/* calculate scaling factor */
-		texture->tex_scale_u = ((G3DFloat)texture->width / (G3DFloat)nw);
-		texture->tex_scale_v = ((G3DFloat)texture->height / (G3DFloat)nh);
+		texture->tex_scale_u = ((G3DFloat)width / (G3DFloat)nw);
+		texture->tex_scale_v = ((G3DFloat)height / (G3DFloat)nh);
 
 #if DEBUG > 0
 		g_debug("texture scaling factor for '%s' set to %.2f,%.2f",
-			texture->name, texture->tex_scale_u, texture->tex_scale_v);
+			g3d_image_get_name(texture),
+			texture->tex_scale_u, texture->tex_scale_v);
 #endif
 
 		/* update image */
-		g_free(texture->pixeldata);
-		texture->pixeldata = np;
-		texture->width = nw;
-		texture->height = nh;
+		g3d_image_set_pixels(texture, nw, nh, np);
 
 		return TRUE;
 	}
@@ -230,24 +235,27 @@ gboolean g3d_texture_prepare(G3DImage *texture)
 
 gboolean g3d_texture_flip_y(G3DImage *texture)
 {
-	guint8 *newpixel;
+	guint32 width, height;
+	guint8 *newpixel, *pixeldata;
 	gint32 y;
 
 	g_return_val_if_fail(texture != NULL, FALSE);
 
-	newpixel = g_new0(guint8, texture->width * texture->height * 4);
+	width = g3d_image_get_width(texture);
+	height = g3d_image_get_height(texture);
+	pixeldata = g3d_image_get_pixels(texture);
 
-	for(y = 0; y < texture->height; y ++)
+	newpixel = g_new0(guint8, width * height * 4);
+
+	for(y = 0; y < height; y ++)
 	{
 		memcpy(
-			newpixel + (y * texture->width * 4),
-			texture->pixeldata + (
-				(texture->height - y - 1) * texture->width * 4),
-			texture->width * 4);
+			newpixel + (y * width * 4),
+			pixeldata + ((height - y - 1) * width * 4),
+			width * 4);
 	}
 
-	g_free(texture->pixeldata);
-	texture->pixeldata = newpixel;
+	g3d_image_set_pixels(texture, width, height, newpixel);
 
 	return TRUE;
 }
@@ -257,6 +265,8 @@ static gboolean dump_ppm(G3DImage *image, const gchar *filename)
 {
 	FILE *f;
 	guint32 x, y;
+	guint32 width, height;
+	guint8 *pixeldata;
 
 	f = fopen(filename, "w");
 	if(f == NULL)
@@ -265,15 +275,19 @@ static gboolean dump_ppm(G3DImage *image, const gchar *filename)
 		return FALSE;
 	}
 
-	fprintf(f, "P3\n# CREATOR: g3dviewer\n%d %d\n%d\n",
-		image->width, image->height, 255);
+	width = g3d_image_get_width(image);
+	height = g3d_image_get_height(image);
+	pixeldata = g3d_image_get_pixels(image);
 
-	for(y = 0; y < image->height; y ++)
-		for(x = 0; x < image->width; x ++)
+	fprintf(f, "P3\n# CREATOR: g3dviewer\n%d %d\n%d\n",
+		width, height, 255);
+
+	for(y = 0; y < height; y ++)
+		for(x = 0; x < width; x ++)
 			fprintf(f, "%d\n%d\n%d\n",
-				image->pixeldata[(y * image->width + x) * 4 + 0],
-				image->pixeldata[(y * image->width + x) * 4 + 1],
-				image->pixeldata[(y * image->width + x) * 4 + 2]);
+				pixeldata[(y * width + x) * 4 + 0],
+				pixeldata[(y * width + x) * 4 + 1],
+				pixeldata[(y * width + x) * 4 + 2]);
 
 	fclose(f);
 	return TRUE;
@@ -285,12 +299,17 @@ G3DImage *g3d_texture_merge_alpha(G3DImage *image, G3DImage *aimage)
 	G3DImage *texture;
 	gint32 x, y;
 	gboolean negative;
+	guint32 width, height;
+	guint8 *apixeldata, *tpixeldata;
 
 	g_return_val_if_fail(aimage != NULL, NULL);
 
+	width = g3d_image_get_width(aimage);
+	height = g3d_image_get_height(aimage);
+
 	if(image && (
-			(image->width != aimage->width) ||
-			(image->height != aimage->height)))
+		(g3d_image_get_width(image) != width) ||
+		(g3d_image_get_height(image) != height)))
 	{
 		/* size doesn't match, don't do something */
 		return image;
@@ -302,29 +321,29 @@ G3DImage *g3d_texture_merge_alpha(G3DImage *image, G3DImage *aimage)
 	}
 	else
 	{
-		texture = g_new0(G3DImage, 1);
+		texture = g3d_image_new();
+		g3d_image_set_size(texture, width, height);
 		texture->tex_scale_u = 1.0;
 		texture->tex_scale_v = 1.0;
-		texture->width = aimage->width;
-		texture->height = aimage->height;
-		texture->depth = 4;
-		texture->pixeldata = g_malloc(texture->width * texture->height * 4);
 	}
+
+	apixeldata = g3d_image_get_pixels(aimage);
+	tpixeldata = g3d_image_get_pixels(texture);
 
 	/* negative map? */
 	/* FIXME: better solution? */
-	if(aimage->pixeldata[0] == 0)
+	if(apixeldata[0] == 0)
 		negative = TRUE;
 	else
 		negative = FALSE;
 
-	for(y = 0; y < texture->height; y ++)
+	for(y = 0; y < height; y ++)
 	{
-		for(x = 0; x < texture->width; x ++)
+		for(x = 0; x < width; x ++)
 		{
-			texture->pixeldata[(y * image->width + x) * 4 + 3] = (negative ?
-				255 - aimage->pixeldata[(y * image->width + x) * 4 + 0] :
-				aimage->pixeldata[(y * image->width + x) * 4 + 0]);
+			tpixeldata[(y * width + x) * 4 + 3] = (negative ?
+				255 - apixeldata[(y * width + x) * 4 + 0] :
+				apixeldata[(y * width + x) * 4 + 0]);
 		}
 	}
 

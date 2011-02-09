@@ -1,7 +1,6 @@
 noinst_PROGRAMS = \
 	test_lib \
 	test_buf \
-	test_imgdump \
 	test_vector
 
 if HAVE_CXX

@@ -44,7 +44,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	goffset off_start;
 	G3DImage *image = NULL;
 	G3DMaterial *material, *mat;
-	G3DFace *face;
 	GSList *mitem;
 	gfloat *normals;
 	int i;

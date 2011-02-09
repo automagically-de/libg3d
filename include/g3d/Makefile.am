@@ -15,6 +15,7 @@ g3dinclude_HEADERS = \
 	stream-scanner.h \
 	read.h \
 	iff.h \
+	image.h \
 	primitive.h \
 	vector.h \
 	matrix.h \

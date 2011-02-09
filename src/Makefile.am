@@ -12,6 +12,7 @@ libg3d_la_SOURCES = \
 	stream-scanner.c \
 	read.c \
 	iff.c \
+	image.c \
 	primitive.c \
 	vector.c \
 	matrix.c \

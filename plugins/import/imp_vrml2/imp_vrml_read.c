@@ -28,6 +28,8 @@
 #include "imp_vrml2_nodes.h"
 #include "imp_vrml2_types.h"
 
+static gchar *vrml_read_padding = "                                          ";
+
 gboolean vrml_read_check_buffer(VrmlReader *reader)
 {
 	if(reader->bufsize > 0)

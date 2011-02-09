@@ -51,6 +51,4 @@ static inline void vrml_read_dec(VrmlReader *reader)
 	reader->bufsize --;
 }
 
-static gchar vrml_read_padding[] = "                                         ";
-
 #endif /* _IMP_VRML_READ_H */

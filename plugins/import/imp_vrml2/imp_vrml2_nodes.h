@@ -24,6 +24,7 @@
 
 #include "imp_vrml_types.h"
 
+#if 0
 static VrmlNodeDef vrml2_nodes[] = {
 	{ "Appearence",                        NULL },
 	{ "Background",                        NULL },
@@ -38,5 +39,6 @@ static VrmlNodeDef vrml2_nodes[] = {
 
 	{ NULL, NULL }
 };
+#endif
 
 #endif

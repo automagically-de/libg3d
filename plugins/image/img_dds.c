@@ -41,10 +41,10 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	magic = g3d_stream_read_int32_be(stream);
 	if(magic != G3D_IFF_MKID('D','D','S',' ')) {
-		g_warning("%s is not a DDS file", stream->uri);
+		g_warning("%s is not a DDS file", g3d_stream_get_uri(stream));
 		return FALSE;
 	}
-	g3d_image_set_name(image, stream->uri);
+	g3d_image_set_name(image, g3d_stream_get_uri(stream));
 
 	/* 0x0004 */
 	size = g3d_stream_read_int32_le(stream);

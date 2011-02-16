@@ -41,7 +41,8 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	gchar *name;
 
 	if(g3d_stream_read_int16_be(stream) != 474) {
-		g_warning("file '%s' is not a SGI RGB file", stream->uri);
+		g_warning("file '%s' is not a SGI RGB file",
+			g3d_stream_get_uri(stream));
 		return FALSE;
 	}
 
@@ -50,7 +51,8 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	dims = g3d_stream_read_int16_be(stream);
 
 	if(bpc != 1) {
-		g_warning("SGI: %s: bpc != 1 -- unsupported", stream->uri);
+		g_warning("SGI: %s: bpc != 1 -- unsupported",
+			g3d_stream_get_uri(stream));
 		return FALSE;
 	}
 
@@ -70,7 +72,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 #endif
 		g3d_image_set_name(image, name);
 	} else {
-		g3d_image_set_name(image, stream->uri);
+		g3d_image_set_name(image, g3d_stream_get_uri(stream));
 	}
 	g_free(name);
 

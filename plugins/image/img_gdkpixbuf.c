@@ -75,7 +75,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
 	gdk_pixbuf_ref(pixbuf);
 
-	retval = gdkpixbuf_postprocess(pixbuf, image, stream->uri);
+	retval = gdkpixbuf_postprocess(pixbuf, image, g3d_stream_get_uri(stream));
 
 	g_object_unref(loader);
 	return retval;

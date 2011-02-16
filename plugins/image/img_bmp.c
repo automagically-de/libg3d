@@ -42,7 +42,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		return FALSE;
 	}
 
-	g3d_image_set_name(image, stream->uri);
+	g3d_image_set_name(image, g3d_stream_get_uri(stream));
 
 	filesize = g3d_stream_read_int32_le(stream);      /* file size */
 	g3d_stream_read_int32_le(stream);                 /* 2 x UINT16 reserved */

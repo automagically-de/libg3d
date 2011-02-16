@@ -156,8 +156,8 @@ typedef struct {
 	gchar *name;
 	guint32 width;
 	guint32 height;
-	guint8 depth;
-	guint32 flags;
+	guint8 depth; /* deprecated: always 32 bit */
+	guint32 flags; /* unused */
 	guint8 *pixeldata;
 
 	guint32 tex_id;

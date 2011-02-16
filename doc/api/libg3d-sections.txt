@@ -79,6 +79,21 @@ g3d_material_free
 </SECTION>
 
 <SECTION>
+<FILE>image</FILE>
+g3d_image_new
+g3d_image_free
+
+g3d_image_get_name
+g3d_image_get_width
+g3d_image_get_height
+g3d_image_get_pixels
+
+g3d_image_set_name
+g3d_image_set_size
+g3d_image_set_pixels
+</SECTION>
+
+<SECTION>
 <FILE>texture</FILE>
 G3D_FLAG_IMG_GREYSCALE
 G3DTexEnv

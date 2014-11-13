@@ -15,7 +15,7 @@ AM_CFLAGS = \
 	@DBG_CFLAGS@ -DDEBUG=@DEBUG@ \
 	@GLIB_CFLAGS@
 
-INCLUDES = -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include
 
 AM_LDFLAGS = \
 	-no-undefined -module \

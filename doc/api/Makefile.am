@@ -28,7 +28,7 @@ content_files =
 expand_content_files =
 
 AM_CFLAGS = @GLIB_CFLAGS@
-INCLUDES = -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include
 GTKDOC_LIBS = @GLIB_LIBS@
 
 include $(top_srcdir)/gtk-doc.make

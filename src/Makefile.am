@@ -19,7 +19,7 @@ libg3d_la_SOURCES = \
 	quat.c \
 	debug.c
 
-INCLUDES = -I$(top_srcdir)/include -I$(top_builddir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include
 
 libg3d_la_CFLAGS = \
 	-Wall -ansi -pedantic \

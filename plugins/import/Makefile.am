@@ -31,6 +31,7 @@ SUBDIRS = \
 	imp_obj \
 	imp_osm \
 	imp_pie \
+	imp_ply \
 	imp_q3o \
 	imp_r4 \
 	imp_rbh \

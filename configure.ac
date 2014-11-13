@@ -213,6 +213,7 @@ AC_OUTPUT(
 	plugins/import/imp_obj/Makefile
 	plugins/import/imp_osm/Makefile
 	plugins/import/imp_pie/Makefile
+	plugins/import/imp_ply/Makefile
 	plugins/import/imp_q3o/Makefile
 	plugins/import/imp_r4/Makefile
 	plugins/import/imp_rbh/Makefile

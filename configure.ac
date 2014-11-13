@@ -1,5 +1,6 @@
 
-AC_INIT(configure.in)
+AC_INIT(configure.ac)
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 
 # versioning stuff

@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = . doc m4 include src plugins programs tests
 
 pkgconfigdir=${libdir}/pkgconfig

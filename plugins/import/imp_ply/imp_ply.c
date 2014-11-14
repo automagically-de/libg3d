@@ -246,6 +246,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 	/* load model */
 	object = g_new0(G3DObject, 1);
+	object->name = g_strdup("(default object)");
 	model->objects = g_slist_append(model->objects, object);
 
 	if (model->materials) {
@@ -475,7 +476,7 @@ gchar **plugin_extensions(G3DContext *context)
 
 static gboolean ply_read_line(G3DStream *stream, gchar *buf, guint32 buflen)
 {
-	return ply_read_token(stream, buf, buflen, "\n");
+	return ply_read_token(stream, buf, buflen, "\n\r");
 }
 
 static gboolean ply_read_token(G3DStream *stream, gchar *buf, guint32 buflen, gchar *splitters)
@@ -493,6 +494,9 @@ static gboolean ply_read_token(G3DStream *stream, gchar *buf, guint32 buflen, gc
 		for (sp = splitters; *sp; sp ++) {
 			if (c == *sp) {
 				buf[idx] = '\0';
+				/* some hack to detect CRLF */
+				if (idx == 0 && c == '\n')
+					return ply_read_token(stream, buf, buflen, splitters);
 				return TRUE;
 			}
 		}

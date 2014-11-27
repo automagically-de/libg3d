@@ -105,7 +105,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	GHashTable *material_by_color, *material_by_tex_index;
 	G3DImage *image;
 	guint32 tex_id = 0;
-	G3DVector *vertex_colors = NULL;
+	gboolean have_vertex_colors = FALSE;
 	G3DVector *custom_normals = NULL;
 
 	if (!ply_read_line(stream, buf, BUFSIZ) || strcmp(buf, "ply")) {
@@ -226,10 +226,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			prop->field = ply_parse_field(prop->name);
 
 			if (!strcmp(current_elem->name, "vertex") && prop->field == R) {
-				/* have per-vertex colors */
-#if 0
-				vertex_colors = g_new0(G3DVector, 3 * current_elem->num_elements);
-#endif
+				have_vertex_colors = TRUE;
 			}
 
 			if (!strcmp(current_elem->name, "vertex") && prop->field == NX) {
@@ -266,8 +263,14 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		if (!strcmp(current_elem->name, "vertex")) {
 			object->vertex_count = current_elem->num_elements;
 			object->vertex_data = g_new0(G3DVector, current_elem->num_elements * 3);
+			if (have_vertex_colors) {
+				object->vertex_color_data = g_new0(G3DVector, object->vertex_count * 4);
+			}
 
 			for (i = 0; i < current_elem->num_elements; i ++) {
+				if (have_vertex_colors)
+					object->vertex_color_data[i * 4 + 3] = 1.0;
+
 				for (j = 0; j < current_elem->num_props; j ++) {
 					prop = &(current_elem->properties[j]);
 					if (prop->proptype == LIST) {
@@ -300,10 +303,9 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 						case R:
 						case G:
 						case B:
-#if 0
-							g_assert(vertex_colors);
-							vertex_colors[i * 3 + (prop->field - R)] = ply_normalize(f, prop->proptype);
-#endif
+							g_assert(object->vertex_color_data);
+							object->vertex_color_data[i * 4 + (prop->field - R)] =
+								ply_normalize(f, prop->proptype);
 							break;
 						default:
 							break;
@@ -382,34 +384,6 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 							}
 						}
 					}
-				}
-
-				if (vertex_colors) {
-					G3DVector r = 0, g = 0, b = 0;
-					gchar *colname;
-					for (j = 0; j < face->vertex_count; j ++) {
-						r += vertex_colors[face->vertex_indices[j] * 3 + 0];
-						g += vertex_colors[face->vertex_indices[j] * 3 + 1];
-						b += vertex_colors[face->vertex_indices[j] * 3 + 2];
-					}
-					r /= face->vertex_count;
-					g /= face->vertex_count;
-					b /= face->vertex_count;
-					colname = g_strdup_printf("#%02x%02x%02x",
-						(int)(r * 255), (int)(g * 255), (int)(b * 255));
-					mat = g_hash_table_lookup(material_by_color, colname);
-					if (mat) {
-						g_free(colname);
-					}
-					else {
-						mat = g3d_material_new();
-						mat->name = colname;
-						mat->r = r;
-						mat->g = g;
-						mat->b = b;
-						g_hash_table_insert(material_by_color, mat->name, mat);
-					}
-					face->material = mat;
 				}
 
 				if (face->material->tex_image && face->tex_vertex_count) {

@@ -318,6 +318,9 @@ typedef struct {
 	guint32 vertex_count;
 	G3DVector *vertex_data;
 
+	/* per-vertex color data: vertex_count * 4 (RGBA) */
+	G3DVector *vertex_color_data;
+
 	/*< private >*/
 	/* FIXME: texture stuff: temporary storage, should be in G3DFace items */
 	guint32 tex_vertex_count;

@@ -181,7 +181,8 @@ static gboolean plugins_magic_init(G3DContext *context)
 	}
 
 	if(magic_load(context->magic_cookie, MAGIC_FILENAME) != 0) {
-		g_warning("magic_load() failed: %s (%d)",
+		g_warning("magic_load(..., %s) failed: %s (%d)",
+			MAGIC_FILENAME,
 			magic_error(context->magic_cookie),
 			magic_errno(context->magic_cookie));
 		magic_close(context->magic_cookie);

@@ -89,7 +89,7 @@ AC_CHECK_LIB([magic], [magic_open], have_magic_open=true)
 if test "x$have_magic_h" = "xtrue" && test "x$have_magic_open" = "xtrue"; then
 have_libmagic=true
 AC_DEFINE([USE_LIBMAGIC], 1, [use libmagic for file type detection])
-AC_DEFINE_DIR([MAGIC_FILENAME], libdir/$PACKAGE/libg3d.magic, [magic file])
+AC_DEFINE_DIR([MAGIC_FILENAME], datadir/$PACKAGE/libg3d.magic, [magic file])
 MAGIC_LIBS=-lmagic
 fi
 fi

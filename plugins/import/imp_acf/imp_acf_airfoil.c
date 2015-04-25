@@ -41,12 +41,15 @@ AcfAirfoilDb *acf_airfoil_init(void)
 
 	setlocale(LC_NUMERIC, "C");
 
+	db = g_new0(AcfAirfoilDb, 1);
+	db->db = g_hash_table_new(g_str_hash, g_str_equal);
+
 	dirname = g_getenv("AIRFOIL_DIR");
 	if(!(dirname && g_file_test(dirname, G_FILE_TEST_IS_DIR))) {
 #if DEBUG > 0
 		g_warning("ACF: could not load airfoils");
 #endif
-		return NULL;
+		return db;
 	}
 
 	dir = g_dir_open(dirname, 0, &error);
@@ -54,11 +57,8 @@ AcfAirfoilDb *acf_airfoil_init(void)
 		g_warning("ACF: failed to open airfoil directory '%s': %s",
 			dirname, error->message);
 		g_error_free(error);
-		return NULL;
+		return db;
 	}
-
-	db = g_new0(AcfAirfoilDb, 1);
-	db->db = g_hash_table_new(g_str_hash, g_str_equal);
 
 	filename = g_dir_read_name(dir);
 	while(filename != NULL) {

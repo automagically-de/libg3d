@@ -29,6 +29,7 @@
 #include <g3d/context.h>
 #include <g3d/types.h>
 #include <g3d/material.h>
+#include <g3d/texture.h>
 #include <g3d/face.h>
 #include <g3d/stream.h>
 
@@ -53,7 +54,7 @@ static gboolean line_startswith(const gchar *line, const gchar *part);
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
 {
-	gchar line[2048], matname[128], matfile[1024];
+	gchar line[2048], matname[128], matfile[1024], buf[2048];
 	gchar *filename;
 	G3DObject *object = NULL;
 	G3DMaterial *material = NULL;
@@ -68,6 +69,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	goffset global_vertex_count = 0;
 	guint32 index_table_count = 0;
 	guint32 *index_table = NULL;
+	guint32 normal_count = 0;
+	G3DVector *normal_data = NULL;
 
 	setlocale(LC_NUMERIC, "C");
 	filename = g3d_stream_get_uri(stream);
@@ -116,9 +119,23 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			goto next;
 		}
 
+		if (line_startswith(line, "TEXTURE")) {
+			/* TEXTURE <texture file> */
+			if (sscanf(line + 8, "%s", buf) == 1) {
+				G3DMaterial *defmat = g_slist_nth_data(object->materials, 0);
+				defmat->tex_image = g3d_texture_load_cached(context, model, buf);
+				if (defmat->tex_image)
+					g3d_texture_flip_y(defmat->tex_image);
+			}
+			else
+				g_warning("parse error in line: %s", line);
+			goto next;
+		}
+
 		if (line_startswith(line, "TRIS")) {
-			guint32 i;
+			guint32 i, j;
 			G3DFace *face;
+			G3DMaterial *mat;
 
 			/* TRIS <offset> <count> */
 			if (sscanf(line + 5, "%u %u", &v_off, &num_v) != 2) {
@@ -129,13 +146,37 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 				g_warning("TRIS: (%u + %u) > %u", v_off, num_v, index_table_count);
 				continue;
 			}
+
+			mat = material ? material : g_slist_nth_data(object->materials, 0);
+
 			for (i = 0; i < (num_v / 3); i ++) {
-				face = g3d_face_new_tri(
-					material ? material : g_slist_nth_data(object->materials, 0),
+				face = g3d_face_new_tri(mat,
 					index_table[v_off + i * 3 + 0],
 					index_table[v_off + i * 3 + 1],
 					index_table[v_off + i * 3 + 2]);
 
+				if (mat->tex_image) {
+					face->tex_image = mat->tex_image;
+					face->tex_vertex_count = 3;
+					face->tex_vertex_data = g_new0(G3DVector, 3 * 2);
+					face->flags |= G3D_FLAG_FAC_TEXMAP;
+					for (j = 0; j < 3; j ++) {
+						guint32 idx = index_table[v_off + i * 3 + j];
+						face->tex_vertex_data[j * 2 + 0] = object->tex_vertex_data[idx * 2 + 0];
+						face->tex_vertex_data[j * 2 + 1] = object->tex_vertex_data[idx * 2 + 1];
+					}
+				}
+
+				if (normal_data) {
+					face->normals = g_new0(G3DVector, 3 * 3);
+					face->flags |= G3D_FLAG_FAC_NORMALS;
+					for (j = 0; j < 3; j ++) {
+						guint32 idx = index_table[v_off + i * 3 + j];
+						face->normals[j * 3 + 0] = normal_data[idx * 3 + 0];
+						face->normals[j * 3 + 1] = normal_data[idx * 3 + 1];
+						face->normals[j * 3 + 2] = normal_data[idx * 3 + 2];
+					}
+				}
 #if 0
 				printf("TRI: [%i, %i, %i]: %f %f %f\n",
 					face->vertex_indices[0],
@@ -161,11 +202,24 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 
 			object->vertex_count ++;
 			object->vertex_data = g_realloc(object->vertex_data,
-				object->vertex_count * 3 * sizeof(gfloat));
+				object->vertex_count * 3 * sizeof(G3DVector));
 			object->vertex_data[v_cnt * 3 + 0] = x;
 			object->vertex_data[v_cnt * 3 + 1] = y;
 			object->vertex_data[v_cnt * 3 + 2] = z;
 
+			normal_count ++;
+			g_assert(object->vertex_count == normal_count);
+			normal_data = g_realloc(normal_data, normal_count * 3 * sizeof(G3DVector));
+			normal_data[v_cnt * 3 + 0] = nx;
+			normal_data[v_cnt * 3 + 1] = ny;
+			normal_data[v_cnt * 3 + 2] = nz;
+
+			object->tex_vertex_count ++;
+			g_assert(object->vertex_count == object->tex_vertex_count);
+			object->tex_vertex_data = g_realloc(object->tex_vertex_data,
+				object->tex_vertex_count * 2 * sizeof(G3DVector));
+			object->tex_vertex_data[v_cnt * 2 + 0] = u;
+			object->tex_vertex_data[v_cnt * 2 + 1] = v;
 #if 0
 			printf("VT: %f, %f, %f\n",
 				object->vertex_data[v_cnt * 3 + 0],
@@ -322,6 +376,12 @@ next:
 #endif
 		g3d_context_update_interface(context);
 	} /* !eof(stream) */
+
+	if (index_table)
+		g_free(index_table);
+	if (normal_data)
+		g_free(normal_data);
+
 	return TRUE;
 }
 

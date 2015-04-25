@@ -48,6 +48,7 @@ static G3DObject *obj_object_by_name(G3DModel *model, const gchar *name);
 static G3DObject *obj_get_offset(GSList *group_list, guint32 *voffp,
 	guint32 index, G3DObject *defobj);
 #endif
+static gboolean line_startswith(const gchar *line, const gchar *part);
 
 gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DModel *model, gpointer user_data)
@@ -57,7 +58,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DObject *object = NULL;
 	G3DMaterial *material = NULL;
 	gfloat pcnt, prev_pcnt = 0.0;
-	gdouble x,y,z;
+	G3DFloat x,y,z, nx,ny,nz, u,v;
 	guint32 num_v, v_off = 1, v_cnt = 0;
 #if OBJ_USE_GROUPING
 	gchar oname[128];
@@ -65,6 +66,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	GSList *group_list = NULL;
 #endif
 	goffset global_vertex_count = 0;
+	guint32 index_table_count = 0;
+	guint32 *index_table = NULL;
 
 	setlocale(LC_NUMERIC, "C");
 	filename = g3d_stream_get_uri(stream);
@@ -82,147 +85,233 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		g3d_stream_read_line(stream, line, 2048);
 		/* remove leading and trailing whitespace characters */
 		g_strstrip(line);
-		if(strlen(line) > 0) {
-			switch(line[0]) {
-				case '#':
-					continue;
-					break;
 
-				case 'g': /* group */
-#if OBJ_USE_GROUPING
-					if(strlen(line) == 1)
-						strcpy(oname, "(default)");
-					else
-						sscanf(line, "g %s", oname);
+		if (strlen(line) == 0)
+			continue;
 
-					material = obj_usemat(model, oname);
+		if (line[0] == '#')
+			continue;
 
-					grpoff = g_new0(ObjGroupOffset, 1);
-					grpoff->object = obj_object_by_name(model, oname);
-					grpoff->goff = global_vertex_count;
-					grpoff->ooff = grpoff->object->vertex_count;
-					group_list = g_slist_append(group_list, grpoff);
-#if DEBUG > 0
-					g_debug("[g] 0x%08x / 0x%08x: \"%s\"",
-						(guint32)grpoff->goff,
-						(guint32)grpoff->ooff, grpoff->object->name);
-#endif
-					object = grpoff->object;
-					v_cnt = grpoff->ooff;
-#endif
-					break;
-
-				case 'l': /* line */
-					break;
-
-				case 'o': /* object */
-					break;
-
-				case 'v': /* vertex */
-					if(strncmp(line, "vn ", 3) == 0)
-					{
-						/* normal ? */
-					}
-					else if(strncmp(line, "vt ", 3) == 0)
-					{
-						/* ?? */
-					}
-					else if(sscanf(line, "v %lf %lf %lf", &x, &y, &z) == 3)
-					{
-						object->vertex_count ++;
-						object->vertex_data = g_realloc(object->vertex_data,
-							object->vertex_count * 3 * sizeof(gfloat));
-						object->vertex_data[v_cnt * 3 + 0] = x;
-						object->vertex_data[v_cnt * 3 + 1] = y;
-						object->vertex_data[v_cnt * 3 + 2] = z;
-
-						v_cnt ++;
-						global_vertex_count ++;
-					}
-					else g_warning("parse error in line: %s", line);
-					break;
-
-				case 'f': /* face */
-					if(strncmp("f ", line, 2) == 0)
-					{
-						G3DFace *face;
-						gchar **vertex, **vstrs = g_strsplit(line, " ", 0);
-						int i;
-
-						num_v = 0;
-						face = g_new0(G3DFace, 1);
-						if(material != NULL)
-							face->material = material;
-						else face->material =
-							g_slist_nth_data(object->materials, 0);
-
-						/* find number of vertices in line */
-						vertex = vstrs;
-						while(*vertex != NULL) { num_v++; vertex++; }
-						face->vertex_count = num_v - 1;
-
-						/* next one if # of vertices < 3 */
-						if(face->vertex_count < 3) {
-							g3d_face_free(face);
-							continue;
-						}
-
-						/* calculate object-local vertex offset, indices
-						 * in .obj files are absolute */
-						i = strtol(vstrs[1], NULL, 10);
-#if OBJ_USE_GROUPING
-						object = obj_get_offset(group_list, &v_off,
-							(i < 0) ? global_vertex_count - i - 1 : i,
-							object);
-#else
-						v_off = 0;
-#endif
-						if(object == NULL) {
-							g_warning("error: face before object");
-							g3d_face_free(face);
-							return FALSE;
-						}
-
-						/* read vertices */
-						face->vertex_indices = g_new0(guint32, num_v - 1);
-						for(i = 1; i < num_v; i ++) {
-							gint32 index = strtol(vstrs[i], NULL, 10);
-
-							if(index < 0)
-								face->vertex_indices[i - 1] =
-									global_vertex_count + index + v_off - 1;
-							else
-								face->vertex_indices[i - 1] = MIN(
-									(index - 1) + v_off,
-									object->vertex_count - 1);
-						}
-						g_strfreev(vstrs);
-						object->faces = g_slist_prepend(object->faces, face);
-					}
-					else
-						g_warning("parse error in line: %s", line);
-					break;
-
-				case 'u': /* usemat? */
-				case 'm':
-				case 's':
-					if(sscanf(line, "usemtl %s", matname) == 1) {
-						material = obj_usemat(model, matname);
-					} else if(sscanf(line, "mtllib %s", matfile) == 1) {
-						/* loads external material library */
-						if(obj_tryloadmat(model, matfile) != TRUE)
-							g_warning("error loading material library '%s'",
-								matfile);
-					}
-					break;
-				default:
-#if DEBUG > 0
-					g_debug("unknown type of line: %s", line);
-#endif
-					break;
-			}
+		if (line_startswith(line, "IDX")) {
+			index_table_count ++;
+			index_table = g_realloc(index_table, index_table_count * sizeof(guint32));
+			if (sscanf(line + 4, "%u", index_table + (index_table_count - 1)) != 1)
+				g_warning("parse error in line: %s", line);
+			goto next;
 		}
 
+		if (line_startswith(line, "IDX10")) {
+			/* IDX10: 10 index table entries */
+			guint32 off = index_table_count;
+			index_table_count += 10;
+			index_table = g_realloc(index_table, index_table_count * sizeof(guint32));
+			if (sscanf(line + 6, "%u %u %u %u %u %u %u %u %u %u",
+				index_table + off + 0, index_table + off + 1,
+				index_table + off + 2, index_table + off + 3,
+				index_table + off + 4, index_table + off + 5,
+				index_table + off + 6, index_table + off + 7,
+				index_table + off + 8, index_table + off + 9) != 10) {
+				g_warning("parse error in line: %s", line);
+			}
+			goto next;
+		}
+
+		if (line_startswith(line, "TRIS")) {
+			guint32 i;
+			G3DFace *face;
+
+			/* TRIS <offset> <count> */
+			if (sscanf(line + 5, "%u %u", &v_off, &num_v) != 2) {
+				g_warning("parse error in line: %s", line);
+				continue;
+			}
+			if ((v_off + num_v) > index_table_count) {
+				g_warning("TRIS: (%u + %u) > %u", v_off, num_v, index_table_count);
+				continue;
+			}
+			for (i = 0; i < (num_v / 3); i ++) {
+				face = g3d_face_new_tri(
+					material ? material : g_slist_nth_data(object->materials, 0),
+					index_table[v_off + i * 3 + 0],
+					index_table[v_off + i * 3 + 1],
+					index_table[v_off + i * 3 + 2]);
+
+#if 0
+				printf("TRI: [%i, %i, %i]: %f %f %f\n",
+					face->vertex_indices[0],
+					face->vertex_indices[1],
+					face->vertex_indices[2],
+					object->vertex_data[face->vertex_indices[0]],
+					object->vertex_data[face->vertex_indices[1]],
+					object->vertex_data[face->vertex_indices[2]]);
+#endif
+
+				object->faces = g_slist_prepend(object->faces, face);
+			}
+			goto next;
+		}
+
+		if (line_startswith(line, "VT")) {
+			/* VT <x> <y> <z> <nx> <ny> <nz> <s> <t> */
+			if (sscanf(line + 3, "%g %g %g %g %g %g %g %g",
+				&x, &y, &z, &nx, &ny, &nz, &u, &v) != 8) {
+				g_warning("parse error in line: %s", line);
+				continue;
+			}
+
+			object->vertex_count ++;
+			object->vertex_data = g_realloc(object->vertex_data,
+				object->vertex_count * 3 * sizeof(gfloat));
+			object->vertex_data[v_cnt * 3 + 0] = x;
+			object->vertex_data[v_cnt * 3 + 1] = y;
+			object->vertex_data[v_cnt * 3 + 2] = z;
+
+#if 0
+			printf("VT: %f, %f, %f\n",
+				object->vertex_data[v_cnt * 3 + 0],
+				object->vertex_data[v_cnt * 3 + 1],
+				object->vertex_data[v_cnt * 3 + 2]);
+#endif
+
+			v_cnt ++;
+			global_vertex_count ++;
+			goto next;
+		}
+
+		switch(line[0]) {
+
+			case 'g': /* group */
+#if OBJ_USE_GROUPING
+				if(strlen(line) == 1)
+					strcpy(oname, "(default)");
+				else
+					sscanf(line, "g %s", oname);
+
+				material = obj_usemat(model, oname);
+
+				grpoff = g_new0(ObjGroupOffset, 1);
+				grpoff->object = obj_object_by_name(model, oname);
+				grpoff->goff = global_vertex_count;
+				grpoff->ooff = grpoff->object->vertex_count;
+				group_list = g_slist_append(group_list, grpoff);
+#if DEBUG > 0
+				g_debug("[g] 0x%08x / 0x%08x: \"%s\"",
+					(guint32)grpoff->goff,
+					(guint32)grpoff->ooff, grpoff->object->name);
+#endif
+				object = grpoff->object;
+				v_cnt = grpoff->ooff;
+#endif
+				break;
+
+			case 'l': /* line */
+				break;
+
+			case 'o': /* object */
+				break;
+
+			case 'v': /* vertex */
+			case 'V':
+				if(strncmp(line, "vn ", 3) == 0)
+				{
+					/* normal ? */
+				}
+				else if(sscanf(line, "v %g %g %g", &x, &y, &z) == 3)
+				{
+					object->vertex_count ++;
+					object->vertex_data = g_realloc(object->vertex_data,
+						object->vertex_count * 3 * sizeof(gfloat));
+					object->vertex_data[v_cnt * 3 + 0] = x;
+					object->vertex_data[v_cnt * 3 + 1] = y;
+					object->vertex_data[v_cnt * 3 + 2] = z;
+
+					v_cnt ++;
+					global_vertex_count ++;
+				}
+				else g_warning("parse error in line: %s", line);
+				break;
+
+			case 'f': /* face */
+				if(strncmp("f ", line, 2) == 0)
+				{
+					G3DFace *face;
+					gchar **vertex, **vstrs = g_strsplit(line, " ", 0);
+					int i;
+
+					num_v = 0;
+					face = g_new0(G3DFace, 1);
+					if(material != NULL)
+						face->material = material;
+					else face->material =
+						g_slist_nth_data(object->materials, 0);
+
+					/* find number of vertices in line */
+					vertex = vstrs;
+					while(*vertex != NULL) { num_v++; vertex++; }
+					face->vertex_count = num_v - 1;
+
+					/* next one if # of vertices < 3 */
+					if(face->vertex_count < 3) {
+						g3d_face_free(face);
+						continue;
+					}
+
+					/* calculate object-local vertex offset, indices
+					 * in .obj files are absolute */
+					i = strtol(vstrs[1], NULL, 10);
+#if OBJ_USE_GROUPING
+					object = obj_get_offset(group_list, &v_off,
+						(i < 0) ? global_vertex_count - i - 1 : i,
+						object);
+#else
+					v_off = 0;
+#endif
+					if(object == NULL) {
+						g_warning("error: face before object");
+						g3d_face_free(face);
+						return FALSE;
+					}
+
+					/* read vertices */
+					face->vertex_indices = g_new0(guint32, num_v - 1);
+					for(i = 1; i < num_v; i ++) {
+						gint32 index = strtol(vstrs[i], NULL, 10);
+
+						if(index < 0)
+							face->vertex_indices[i - 1] =
+								global_vertex_count + index + v_off - 1;
+						else
+							face->vertex_indices[i - 1] = MIN(
+								(index - 1) + v_off,
+								object->vertex_count - 1);
+					}
+					g_strfreev(vstrs);
+					object->faces = g_slist_prepend(object->faces, face);
+				}
+				else
+					g_warning("parse error in line: %s", line);
+				break;
+
+			case 'u': /* usemat? */
+			case 'm':
+			case 's':
+				if(sscanf(line, "usemtl %s", matname) == 1) {
+					material = obj_usemat(model, matname);
+				} else if(sscanf(line, "mtllib %s", matfile) == 1) {
+					/* loads external material library */
+					if(obj_tryloadmat(model, matfile) != TRUE)
+						g_warning("error loading material library '%s'",
+							matfile);
+				}
+				break;
+			default:
+#if DEBUG > 0
+				g_debug("unknown type of line: %s", line);
+#endif
+				break;
+		}
+
+next:
 #if 1
 		pcnt = (gfloat)g3d_stream_tell(stream) /
 			(gfloat)g3d_stream_size(stream);
@@ -403,3 +492,13 @@ static G3DObject *obj_get_offset(GSList *group_list, guint32 *voffp,
 }
 #endif
 
+static gboolean line_startswith(const gchar *line, const gchar *part) {
+	guint32 l = strlen(part);
+	if (strncmp(line, part, l) != 0)
+		return FALSE;
+	if (strlen(line) < (l + 1))
+		return FALSE;
+	if (line[l] != ' ' && line[l] != '\t')
+		return FALSE;
+	return TRUE;
+}

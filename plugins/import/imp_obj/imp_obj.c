@@ -32,6 +32,8 @@
 #include <g3d/texture.h>
 #include <g3d/face.h>
 #include <g3d/stream.h>
+#include <g3d/vector.h>
+#include <g3d/matrix.h>
 
 #define OBJ_USE_GROUPING 0
 
@@ -60,6 +62,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	G3DMaterial *material = NULL;
 	gfloat pcnt, prev_pcnt = 0.0;
 	G3DFloat x,y,z, nx,ny,nz, u,v;
+	G3DMatrix *matrix;
 	guint32 num_v, v_off = 1, v_cnt = 0;
 #if OBJ_USE_GROUPING
 	gchar oname[128];
@@ -71,6 +74,8 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	guint32 *index_table = NULL;
 	guint32 normal_count = 0;
 	G3DVector *normal_data = NULL;
+	GQueue *anim_queue = g_queue_new();
+	gboolean *transformed_map = NULL;
 
 	setlocale(LC_NUMERIC, "C");
 	filename = g3d_stream_get_uri(stream);
@@ -100,6 +105,55 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 			index_table = g_realloc(index_table, index_table_count * sizeof(guint32));
 			if (sscanf(line + 4, "%u", index_table + (index_table_count - 1)) != 1)
 				g_warning("parse error in line: %s", line);
+			goto next;
+		}
+
+		if (strcmp(line, "ANIM_begin") == 0) {
+			matrix = g3d_matrix_new();
+			g_queue_push_tail(anim_queue, matrix);
+			goto next;
+		}
+
+		if (strcmp(line, "ANIM_end") == 0) {
+			if (g_queue_is_empty(anim_queue))
+				g_warning("ANIM_end: anim_queue is empty");
+			else {
+				matrix = g_queue_pop_tail(anim_queue);
+				g3d_matrix_free(matrix);
+			}
+			goto next;
+		}
+
+		if (line_startswith(line, "ANIM_trans")) {
+			/* ANIM_trans <x1> <y1> <z1> <x2> <y2> <z2> <v1> <v2> <dataref> */
+			if (sscanf(line + 11, "%g %g %g %g %g %g %g %g %s",
+				&x, &y, &z, &nx, &ny, &nz, &u, &v, buf) != 9) {
+				g_warning("parse error in line: %s", line);
+				continue;
+			}
+			printf("ANIM_trans: (%g, %g, %g) (%g, %g, %g) %s = [%g, %g]\n",
+				x, y, z, nx, ny, nz, buf, u, v);
+			/* ignore v2 for now, always use v1 state */
+			matrix = g_queue_peek_tail(anim_queue);
+			if (!matrix)
+				g_warning("ANIM_trans: anim_queue is empty");
+			else
+				g3d_matrix_translate(x, y, z, matrix);
+			goto next;
+		}
+
+		if (line_startswith(line, "ANIM_rotate")) {
+			/* ANIM_rotate <x> <y> <z> <r1> <r2> <v1> <v2> <dataref> */
+			if (sscanf(line + 12, "%g %g %g %g %g %g %g %s",
+				&x, &y, &z, &nx, &ny, &u, &v, buf) != 8) {
+				g_warning("parse error in line: %s", line);
+				continue;
+			}
+			matrix = g_queue_peek_tail(anim_queue);
+			if (!matrix)
+				g_warning("ANIM_trans: anim_queue is empty");
+			else
+				g3d_matrix_rotate(nx, x, y, z, matrix);
 			goto next;
 		}
 
@@ -133,7 +187,7 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 		}
 
 		if (line_startswith(line, "TRIS")) {
-			guint32 i, j;
+			guint32 i, j, k;
 			G3DFace *face;
 			G3DMaterial *mat;
 
@@ -154,6 +208,25 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 					index_table[v_off + i * 3 + 0],
 					index_table[v_off + i * 3 + 1],
 					index_table[v_off + i * 3 + 2]);
+
+				for (j = 0; j < g_queue_get_length(anim_queue); j ++) {
+					matrix = g_queue_peek_nth(anim_queue, j);
+					/*printf("TRIS: apply matrix %u\n", j);*/
+					for (k = 0; k < 3; k ++) {
+						guint32 idx = index_table[v_off + i * 3 + k];
+						if (!transformed_map)
+							transformed_map = g_new0(gboolean, object->vertex_count);
+						if (transformed_map[idx])
+							continue;
+						transformed_map[idx] = TRUE;
+
+						g3d_vector_transform(
+							object->vertex_data + idx * 3 + 0,
+							object->vertex_data + idx * 3 + 1,
+							object->vertex_data + idx * 3 + 2,
+							matrix);
+					}
+				}
 
 				if (mat->tex_image) {
 					face->tex_image = mat->tex_image;
@@ -381,6 +454,10 @@ next:
 		g_free(index_table);
 	if (normal_data)
 		g_free(normal_data);
+	if (transformed_map)
+		g_free(transformed_map);
+
+	g_queue_free(anim_queue);
 
 	return TRUE;
 }

@@ -1,5 +1,7 @@
 #include <string.h>
+#include <g3d/material.h>
 #include <g3d/stream.h>
+#include <g3d/face.h>
 
 #include "imp_msfsmdl_bgl.h"
 
@@ -91,6 +93,7 @@ typedef struct {
 	goffset base_address;
 	GQueue *call_stack;
 	GHashTable *vars;
+	G3DObject *current_object;
 } BglState;
 
 gboolean msfsmdl_parse_bgl(G3DIffGlobal *global, G3DIffLocal *local) {
@@ -113,8 +116,8 @@ gboolean msfsmdl_parse_bgl(G3DIffGlobal *global, G3DIffLocal *local) {
 	while (TRUE) {
 		goffset pos = g3d_stream_tell(global->stream) - state->base_address;
 		if (pos >= local->nb) {
-			g_error("out of chunk");
-			return FALSE;
+			g_warning("out of chunk %u/%u", pos, local->nb);
+			return TRUE;
 		}
 
 		opcode = g3d_stream_read_int16_le(global->stream);
@@ -331,16 +334,28 @@ gboolean msfsmdl_bgl_cb_crash_octree(G3DIffGlobal *global, G3DIffLocal *local) {
 }
 
 gboolean msfsmdl_bgl_cb_vertex_list(G3DIffGlobal *global, G3DIffLocal *local) {
-	guint32 n_elems, i;
+	BglState *state = global->user_data;
+	guint32 n_elems, i, j;
+	G3DObject *object;
+
+	object = g_new0(G3DObject, 1);
+	object->name = g_strdup_printf("object 0x%08x",
+		g3d_stream_tell(global->stream) - 2 - state->base_address);
+
+	global->model->objects = g_slist_append(global->model->objects, object);
+	state->current_object = object;
 
 	n_elems = g3d_stream_read_int16_le(global->stream);
 	g3d_stream_read_int32_le(global->stream);
 
+	object->vertex_count = n_elems;
+	object->vertex_data = g_new0(G3DVector, n_elems * 3);
+
 	for (i = 0; i < n_elems; i ++) {
 		/* x, y, z */
-		g3d_stream_read_float_le(global->stream);
-		g3d_stream_read_float_le(global->stream);
-		g3d_stream_read_float_le(global->stream);
+		for (j = 0; j < 3; j ++)
+			object->vertex_data[i * 3 + j] = g3d_stream_read_float_le(global->stream);
+
 		/* nx, ny, nz */
 		g3d_stream_read_float_le(global->stream);
 		g3d_stream_read_float_le(global->stream);
@@ -356,6 +371,7 @@ gboolean msfsmdl_bgl_cb_vertex_list(G3DIffGlobal *global, G3DIffLocal *local) {
 gboolean msfsmdl_bgl_cb_material_list(G3DIffGlobal *global, G3DIffLocal *local) {
 	guint32 n_elems, i, j;
 	G3DFloat d[4], a[4], s[4], e[4];
+	G3DMaterial *mat;
 
 	n_elems = g3d_stream_read_int16_le(global->stream);
 	g3d_stream_read_int32_le(global->stream);
@@ -373,6 +389,13 @@ gboolean msfsmdl_bgl_cb_material_list(G3DIffGlobal *global, G3DIffLocal *local) 
 		g3d_stream_read_float_le(global->stream); /* specular power */
 
 		g_debug("| material d=(%02f,%02f,%02f,%02f)", d[0], d[1], d[2], d[3]);
+
+		mat = g3d_material_new();
+		mat->r = d[0];
+		mat->g = d[1];
+		mat->b = d[2];
+		mat->a = d[3];
+		global->model->materials = g_slist_append(global->model->materials, mat);
 	}
 
 	return TRUE;
@@ -401,8 +424,12 @@ gboolean msfsmdl_bgl_cb_texture_list(G3DIffGlobal *global, G3DIffLocal *local) {
 }
 
 gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
 	guint32 n_elems, i;
 	gint16 vbase, vcount;
+	G3DMaterial *mat;
+	G3DObject *object;
+	G3DFace *face;
 
 	/* vertex_base, vertex_count */
 	vbase = g3d_stream_read_int16_le(global->stream);
@@ -410,18 +437,27 @@ gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local) {
 
 	n_elems = g3d_stream_read_int16_le(global->stream);
 
-	g_debug("| DRAW_TRILIST  %i,%i,%i", n_elems, vbase, vcount);
+	g_debug("| DRAW_TRILIST  %i,0x%04x,%i", n_elems, vbase, vcount);
 
 	if (n_elems % 3 != 0) {
 		g_error("expected vertex count to be n * 3 (%i)", n_elems);
 		return FALSE;
 	}
 
+	g_assert(global->model->materials);
+	mat = g_slist_nth_data(global->model->materials, 0);
+
+	g_assert(state->current_object);
+	object = state->current_object;
+
 	for (i = 0; i < n_elems; i += 3) {
 		gint16 v1, v2, v3;
 		v1 = g3d_stream_read_int16_le(global->stream);
 		v2 = g3d_stream_read_int16_le(global->stream);
 		v3 = g3d_stream_read_int16_le(global->stream);
+
+		face = g3d_face_new_tri(mat, vbase + v1, vbase + v2, vbase + v3);
+		object->faces = g_slist_prepend(object->faces, face);
 #if 0
 		g_debug("| %i", v1);
 #endif

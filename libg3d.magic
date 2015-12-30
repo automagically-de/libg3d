@@ -56,6 +56,10 @@
 
 # Neutral File Format (FIXME: text based without a real magic...)
 
+# MS Flight Simulator
+0             string       RIFF
+>8            string       MDL8                    msfsmdl
+
 # OpenFlight
 0             beshort      0x0001
 >16           belong       <15                     flt

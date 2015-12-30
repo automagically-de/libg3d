@@ -209,6 +209,7 @@ AC_OUTPUT(
 	plugins/import/imp_md2/Makefile
 	plugins/import/imp_md3/Makefile
 	plugins/import/imp_mesh/Makefile
+	plugins/import/imp_msfsmdl/Makefile
 	plugins/import/imp_nff/Makefile
 	plugins/import/imp_obj/Makefile
 	plugins/import/imp_osm/Makefile

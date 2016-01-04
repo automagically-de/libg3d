@@ -65,14 +65,14 @@ gboolean plugin_load_model_from_stream(G3DContext *context, G3DStream *stream,
 	global->context = context;
 	global->model = model;
 	global->stream = stream;
-	global->flags = G3D_IFF_LE | G3D_IFF_PAD2;
+	global->flags = G3D_IFF_LE | G3D_IFF_PAD1;
 	global->user_data = NULL;
 
 	local = g_new0(G3DIffLocal, 1);
 	local->id = type;
 	local->nb = len;
 
-	ret =  g3d_iff_read_ctnr(global, local, mdl_chunks, G3D_IFF_LE);
+	ret =  g3d_iff_read_ctnr(global, local, mdl_chunks, G3D_IFF_LE | G3D_IFF_PAD1);
 
 	g_free(local);
 	g_free(global);

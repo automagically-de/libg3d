@@ -1,6 +1,8 @@
 #include <string.h>
 #include <g3d/material.h>
 #include <g3d/stream.h>
+#include <g3d/matrix.h>
+#include <g3d/vector.h>
 #include <g3d/face.h>
 
 #include "imp_msfsmdl_bgl.h"
@@ -12,6 +14,7 @@ typedef struct {
 	G3DIffChunkCallback callback;
 } BglOpCode;
 
+gboolean msfsmdl_bgl_cb_animate(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_call(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_call_32(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_case(G3DIffGlobal *global, G3DIffLocal *local);
@@ -20,15 +23,23 @@ gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_draw_linelist(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_ifin1(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_ifin2(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_ifinf1(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_ifmask(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_jump(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_jump_32(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_material_list(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_mouserect_list(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_point_vicall(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_return(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_set_material(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_super_scale(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_tag(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_texture_list(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_transform_end(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_transform_mat(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_vertex_list(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_vinstance_call(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_vposition(G3DIffGlobal *global, G3DIffLocal *local);
 
 static BglOpCode bgl_opcodes[] = {
 	{ 0x0000,    0, "EOF" },
@@ -48,16 +59,17 @@ static BglOpCode bgl_opcodes[] = {
 	{ 0x0024,    0, "IFIN1", msfsmdl_bgl_cb_ifin1 },
 	{ 0x0026,    4, "SETWRD" },
 	{ 0x002e,    4, "LCOLOR24" },
-	{ 0x0034,    8, "SUPER_SCALE" },
+	{ 0x0034,    0, "SUPER_SCALE", msfsmdl_bgl_cb_super_scale },
 	{ 0x0039,    0, "IFMASK", msfsmdl_bgl_cb_ifmask },
-	{ 0x003a,   10, "VPOSITION" },
+	{ 0x003a,    0, "VPOSITION", msfsmdl_bgl_cb_vposition },
 	{ 0x003b,    0, "VINSTANCE_CALL", msfsmdl_bgl_cb_vinstance_call },
 	{ 0x0040,    2, "SHADOW_VPOSITION" },
 	{ 0x0041,    4, "SHADOW_VICALL" },
-	{ 0x0046,   20, "POINT_VICALL" },
+	{ 0x0046,    0, "POINT_VICALL", msfsmdl_bgl_cb_point_vicall },
 	{ 0x004a,   10, "LANDING_LIGHTS" },
 	{ 0x004c,   14, "VSCALE" },
 	{ 0x005b,    2, "INDIRECT_CALL" },
+	{ 0x005f,    6, "IFSIZEV" },
 	{ 0x0088,    4, "JUMP_32", msfsmdl_bgl_cb_jump_32 },
 	{ 0x0089,    4, "VAR_BASE_32" },
 	{ 0x008a,    4, "CALL_32", msfsmdl_bgl_cb_call_32 },
@@ -67,16 +79,17 @@ static BglOpCode bgl_opcodes[] = {
 	{ 0x009f,    4, "OVERRIDE" },
 	{ 0x009a,   18, "TILED_ELEVATION_MAP" },
 	{ 0x00ac,    2, "ZBIAS" },
-	{ 0x00ad,   28, "ANIMATE" },
-	{ 0x00ae,    0, "TRANSFORM_END" },
-	{ 0x00af,   48, "TRANSFORM_MAT" },
+	{ 0x00ad,    0, "ANIMATE", msfsmdl_bgl_cb_animate },
+	{ 0x00ae,    0, "TRANSFORM_END", msfsmdl_bgl_cb_transform_end },
+	{ 0x00af,    0, "TRANSFORM_MAT", msfsmdl_bgl_cb_transform_mat },
 	{ 0x00b0,    0, "CRASH_OCTTREE", msfsmdl_bgl_cb_crash_octree },
+	{ 0x00b1,    0, "TAG", msfsmdl_bgl_cb_tag },
 	{ 0x00b2,   42, "LIGHT" },
-	{ 0x00b3,   14, "IFINF1" },
+	{ 0x00b3,    0, "IFINF1", msfsmdl_bgl_cb_ifinf1 },
 	{ 0x00b5,    0, "VERTEX_LIST", msfsmdl_bgl_cb_vertex_list },
 	{ 0x00b6,    0, "MATERIAL_LIST", msfsmdl_bgl_cb_material_list },
 	{ 0x00b7,    0, "TEXTURE_LIST", msfsmdl_bgl_cb_texture_list },
-	{ 0x00b8,    4, "SET_MATERIAL" },
+	{ 0x00b8,    0, "SET_MATERIAL", msfsmdl_bgl_cb_set_material },
 	{ 0x00b9,    0, "DRAW_TRILIST", msfsmdl_bgl_cb_draw_trilist },
 	{ 0x00ba,    0, "DRAW_LINELIST", msfsmdl_bgl_cb_draw_linelist },
 	{ 0x00bc,    4, "BEGIN" },
@@ -92,8 +105,16 @@ static BglOpCode bgl_opcodes[] = {
 typedef struct {
 	goffset base_address;
 	GQueue *call_stack;
+	GQueue *matrix_queue;
 	GHashTable *vars;
+	GHashTable *material_by_address;
 	G3DObject *current_object;
+	G3DMaterial *current_material;
+	gchar *current_tag;
+
+	guint32 vertex_count;
+	G3DVector *vertex_data;
+	G3DFloat scale;
 } BglState;
 
 gboolean msfsmdl_parse_bgl(G3DIffGlobal *global, G3DIffLocal *local) {
@@ -106,7 +127,10 @@ gboolean msfsmdl_parse_bgl(G3DIffGlobal *global, G3DIffLocal *local) {
 		state = g_new0(BglState, 1);
 		state->base_address = g3d_stream_tell(global->stream);
 		state->call_stack = g_queue_new();
-		state->vars = g_hash_table_new(g_int_hash, g_int_equal);
+		state->matrix_queue = g_queue_new();
+		state->vars = g_hash_table_new(g_direct_hash, g_direct_equal);
+		state->material_by_address = g_hash_table_new(g_direct_hash, g_direct_equal);
+		state->scale = 1.0;
 		global->user_data = state;
 	}
 	else {
@@ -148,6 +172,10 @@ gboolean msfsmdl_parse_bgl(G3DIffGlobal *global, G3DIffLocal *local) {
 			g_debug("got EOF");
 			break;
 		}
+		if (opcode == 0x00bd) { /* END */
+			g_debug("got END");
+			break;
+		}
 	}
 	return TRUE;
 }
@@ -158,7 +186,16 @@ static gint16 bgl_get_var(G3DIffGlobal *global, gint32 avar) {
 	goffset saved_offset;
 	gint16 val;
 
-	if (g_hash_table_lookup_extended(state->vars, &avar, NULL, &valp)) {
+	if (avar == 0x68)
+		return 0x8002;
+	if (avar == 0x90)
+		return 0x000f;
+	if (avar == 0x98)
+		return 8+4;
+
+	return 0;
+
+	if (g_hash_table_lookup_extended(state->vars, GINT_TO_POINTER(avar), NULL, &valp)) {
 		return GPOINTER_TO_INT(valp);
 	}
 
@@ -167,7 +204,7 @@ static gint16 bgl_get_var(G3DIffGlobal *global, gint32 avar) {
 	val = g3d_stream_read_int16_le(global->stream);
 	g3d_stream_seek(global->stream, saved_offset, G_SEEK_SET);
 
-	g_hash_table_insert(state->vars, &avar, GINT_TO_POINTER(val));
+	g_hash_table_insert(state->vars, GINT_TO_POINTER(avar), GINT_TO_POINTER(val));
 
 	return val;
 }
@@ -205,20 +242,22 @@ gboolean msfsmdl_bgl_cb_call_32(G3DIffGlobal *global, G3DIffLocal *local) {
 gboolean msfsmdl_bgl_cb_ifin2(G3DIffGlobal *global, G3DIffLocal *local) {
 	BglState *state = global->user_data;
 	gint16 addr = g3d_stream_read_int16_le(global->stream);
-	gint16 var1 = g3d_stream_read_int16_le(global->stream);
+	guint16 var1 = g3d_stream_read_int16_le(global->stream);
 	gint16 v1_l = g3d_stream_read_int16_le(global->stream);
 	gint16 v1_h = g3d_stream_read_int16_le(global->stream);
-	gint16 var2 = g3d_stream_read_int16_le(global->stream);
+	guint16 var2 = g3d_stream_read_int16_le(global->stream);
 	gint16 v2_l = g3d_stream_read_int16_le(global->stream);
 	gint16 v2_h = g3d_stream_read_int16_le(global->stream);
+	gint16 val1 = bgl_get_var(global, var1);
+	gint16 val2 = bgl_get_var(global, var2);
 
-	g_debug("| IFIN2: %i (%i <= %i <= %i && %i <= %i <= %i)",
+	g_debug("| IFIN2: %i (%i <= %i @ 0x%04x <= %i && %i <= %i @ 0x%04x <= %i)",
 		addr,
-		v1_l, var1, v1_h,
-		v2_l, var2, v2_h);
+		v1_l, val1, var1, v1_h,
+		v2_l, val2, var2, v2_h);
 
-	if (!(var1 >= v1_l && var1 <= v1_h) ||
-		!(var2 >= v2_l && var2 <= v2_h)) {
+	if (!(val1 >= v1_l && val1 <= v1_h) ||
+		!(val2 >= v2_l && val2 <= v2_h)) {
 		goffset curr = g3d_stream_tell(global->stream);
 		goffset dest = curr + addr - 16;
 
@@ -233,19 +272,44 @@ gboolean msfsmdl_bgl_cb_ifin2(G3DIffGlobal *global, G3DIffLocal *local) {
 gboolean msfsmdl_bgl_cb_ifin1(G3DIffGlobal *global, G3DIffLocal *local) {
 	BglState *state = global->user_data;
 	gint16 addr = g3d_stream_read_int16_le(global->stream);
-	gint16 var1 = g3d_stream_read_int16_le(global->stream);
+	guint16 var1 = g3d_stream_read_int16_le(global->stream);
 	gint16 v1_l = g3d_stream_read_int16_le(global->stream);
 	gint16 v1_h = g3d_stream_read_int16_le(global->stream);
+	gint16 val1 = bgl_get_var(global, var1);
 
-	g_debug("| IFIN1: %i (%i <= %i <= %i)",
+	g_debug("| IFIN1: %i (%i <= %i @ 0x%08x <= %i)",
 		addr,
-		v1_l, var1, v1_h);
+		v1_l, val1, var1, v1_h);
 
-	if (!(var1 >= v1_l && var1 <= v1_h)) {
+	if (!(val1 >= v1_l && val1 <= v1_h)) {
 		goffset curr = g3d_stream_tell(global->stream);
 		goffset dest = curr + addr - 10;
 
 		g_debug("| IFIN1: jump to %x (%i)", curr, addr);
+
+		g3d_stream_seek(global->stream, dest, G_SEEK_SET);
+	}
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_ifinf1(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+	gint32 addr = g3d_stream_read_int32_le(global->stream);
+	guint16 var1 = g3d_stream_read_int16_le(global->stream);
+	G3DVector v1_l = g3d_stream_read_float_le(global->stream);
+	G3DVector v1_h = g3d_stream_read_float_le(global->stream);
+	gint16 val1 = bgl_get_var(global, var1);
+
+	g_debug("| IFINF1: %i (%f <= %i @ 0x%08x <= %f)",
+		addr,
+		v1_l, val1, var1, v1_h);
+
+	if (!(val1 >= v1_l && val1 <= v1_h)) {
+		goffset curr = g3d_stream_tell(global->stream);
+		goffset dest = curr + addr - 16;
+
+		g_debug("| IFINF1: jump to %x (%i)", curr, addr);
 
 		g3d_stream_seek(global->stream, dest, G_SEEK_SET);
 	}
@@ -260,7 +324,7 @@ gboolean msfsmdl_bgl_cb_ifmask(G3DIffGlobal *global, G3DIffLocal *local) {
 	guint16 mask = g3d_stream_read_int16_le(global->stream);
 	guint16 vvar = bgl_get_var(global, avar);
 
-	g_debug("| IFMASK !%i@%i & %i (to %i): %s", vvar, avar, mask, addr,
+	g_debug("| IFMASK !%i@0x%04x & 0x%04x (to %i): %s", vvar, avar, mask, addr,
 		(vvar & mask ? "no jump" : "jump"));
 
 	if (!(vvar & mask)) {
@@ -339,22 +403,26 @@ gboolean msfsmdl_bgl_cb_vertex_list(G3DIffGlobal *global, G3DIffLocal *local) {
 	G3DObject *object;
 
 	object = g_new0(G3DObject, 1);
-	object->name = g_strdup_printf("object 0x%08x",
+	object->name = g_strdup_printf("VERTEX_LIST object 0x%08x",
 		g3d_stream_tell(global->stream) - 2 - state->base_address);
-
 	global->model->objects = g_slist_append(global->model->objects, object);
 	state->current_object = object;
 
 	n_elems = g3d_stream_read_int16_le(global->stream);
 	g3d_stream_read_int32_le(global->stream);
 
-	object->vertex_count = n_elems;
-	object->vertex_data = g_new0(G3DVector, n_elems * 3);
+	if (state->vertex_count) {
+		g_free(state->vertex_data);
+		state->vertex_count = 0;
+	}
+
+	state->vertex_count = n_elems;
+	state->vertex_data = g_new0(G3DVector, n_elems * 3);
 
 	for (i = 0; i < n_elems; i ++) {
 		/* x, y, z */
 		for (j = 0; j < 3; j ++)
-			object->vertex_data[i * 3 + j] = g3d_stream_read_float_le(global->stream);
+			state->vertex_data[i * 3 + j] = g3d_stream_read_float_le(global->stream);
 
 		/* nx, ny, nz */
 		g3d_stream_read_float_le(global->stream);
@@ -369,12 +437,22 @@ gboolean msfsmdl_bgl_cb_vertex_list(G3DIffGlobal *global, G3DIffLocal *local) {
 }
 
 gboolean msfsmdl_bgl_cb_material_list(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
 	guint32 n_elems, i, j;
 	G3DFloat d[4], a[4], s[4], e[4];
 	G3DMaterial *mat;
+	guint32 addr;
 
 	n_elems = g3d_stream_read_int16_le(global->stream);
-	g3d_stream_read_int32_le(global->stream);
+	g3d_stream_read_int32_le(global->stream); /* 0 */
+
+	/* addr of first material in list */
+	addr = g3d_stream_tell(global->stream) - state->base_address;
+	mat = g_hash_table_lookup(state->material_by_address, GINT_TO_POINTER(addr));
+	if (mat) {
+		g3d_stream_skip(global->stream, n_elems * 68);
+		return TRUE;
+	}
 
 	for (i = 0; i < n_elems; i ++) {
 		for (j = 0; j < 4; j ++)
@@ -391,11 +469,16 @@ gboolean msfsmdl_bgl_cb_material_list(G3DIffGlobal *global, G3DIffLocal *local) 
 		g_debug("| material d=(%02f,%02f,%02f,%02f)", d[0], d[1], d[2], d[3]);
 
 		mat = g3d_material_new();
+		mat->name = g_strdup_printf("material @ 0x%08x", addr);
 		mat->r = d[0];
 		mat->g = d[1];
 		mat->b = d[2];
 		mat->a = d[3];
 		global->model->materials = g_slist_append(global->model->materials, mat);
+
+		g_hash_table_insert(state->material_by_address, GINT_TO_POINTER(addr), mat);
+
+		addr += 68;
 	}
 
 	return TRUE;
@@ -425,11 +508,24 @@ gboolean msfsmdl_bgl_cb_texture_list(G3DIffGlobal *global, G3DIffLocal *local) {
 
 gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local) {
 	BglState *state = global->user_data;
-	guint32 n_elems, i;
-	gint16 vbase, vcount;
+	guint32 n_elems, i, j;
+	guint16 vbase, vcount;
 	G3DMaterial *mat;
 	G3DObject *object;
 	G3DFace *face;
+	GList *item;
+
+	object = g_new0(G3DObject, 1);
+	if (state->current_tag)
+		object->name = g_strdup(state->current_tag);
+	else
+		object->name = g_strdup_printf("TRILIST object 0x%08x",
+			g3d_stream_tell(global->stream) - 2 - state->base_address);
+
+	if (state->current_object)
+		state->current_object->objects = g_slist_append(state->current_object->objects, object);
+	else
+		global->model->objects = g_slist_append(global->model->objects, object);
 
 	/* vertex_base, vertex_count */
 	vbase = g3d_stream_read_int16_le(global->stream);
@@ -444,19 +540,42 @@ gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local) {
 		return FALSE;
 	}
 
-	g_assert(global->model->materials);
-	mat = g_slist_nth_data(global->model->materials, 0);
+	g_assert(state->vertex_count >= (vbase + vcount));
 
-	g_assert(state->current_object);
-	object = state->current_object;
+	object->vertex_count = vcount;
+	object->vertex_data = g_new0(G3DVector, 3 * vcount);
+
+	g_debug("| apply %u matrices", g_list_length(state->matrix_queue->head));
+
+	for (i = 0; i < vcount; i ++) {
+		for (j = 0; j < 3; j ++)
+			object->vertex_data[i * 3 + j] =
+				state->vertex_data[(i + vbase) * 3 + j] * state->scale;
+
+		for (item = state->matrix_queue->tail; item != NULL; item = item->prev) {
+			G3DMatrix *matrix = item->data;
+			g3d_vector_transform(
+				object->vertex_data + i * 3 + 0,
+				object->vertex_data + i * 3 + 1,
+				object->vertex_data + i * 3 + 2,
+				matrix);
+		}
+	}
+
+	if (state->current_material)
+		mat = state->current_material;
+	else {
+		g_assert(global->model->materials);
+		mat = g_slist_nth_data(global->model->materials, 0);
+	}
 
 	for (i = 0; i < n_elems; i += 3) {
-		gint16 v1, v2, v3;
+		guint16 v1, v2, v3;
 		v1 = g3d_stream_read_int16_le(global->stream);
 		v2 = g3d_stream_read_int16_le(global->stream);
 		v3 = g3d_stream_read_int16_le(global->stream);
 
-		face = g3d_face_new_tri(mat, vbase + v1, vbase + v2, vbase + v3);
+		face = g3d_face_new_tri(mat, v1, v2, v3);
 		object->faces = g_slist_prepend(object->faces, face);
 #if 0
 		g_debug("| %i", v1);
@@ -505,6 +624,156 @@ gboolean msfsmdl_bgl_cb_mouserect_list(G3DIffGlobal *global, G3DIffLocal *local)
 	return TRUE;
 }
 
+gboolean msfsmdl_bgl_cb_set_material(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+	gint16 imat, itex;
+
+	imat = g3d_stream_read_int16_le(global->stream);
+	itex = g3d_stream_read_int16_le(global->stream);
+
+	g_debug("| SET_MATERIAL %i, %i", imat, itex);
+	if (imat < 0)
+		state->current_material = NULL;
+	else if (g_slist_length(global->model->materials) > imat)
+		state->current_material = g_slist_nth_data(global->model->materials, imat);
+	else
+		g_warning("out-of-bounds material index %i", imat);
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_point_vicall(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+	G3DMatrix *matrix = g3d_matrix_new();
+
+	gint16 addr = g3d_stream_read_int16_le(global->stream);
+	g_assert(addr);
+	gint16 x = g3d_stream_read_int16_le(global->stream);
+	gint16 y = g3d_stream_read_int16_le(global->stream);
+	gint16 z = g3d_stream_read_int16_le(global->stream);
+	gint16 p = g3d_stream_read_int16_le(global->stream);
+	gint16 pv = g3d_stream_read_int16_le(global->stream);
+	gint16 b = g3d_stream_read_int16_le(global->stream);
+	gint16 bv = g3d_stream_read_int16_le(global->stream);
+	gint16 h = g3d_stream_read_int16_le(global->stream);
+	gint16 hv = g3d_stream_read_int16_le(global->stream);
+	goffset curr = g3d_stream_tell(global->stream);
+	goffset dest = curr + addr - 22;
+
+	g_debug("| POINT_VICALL to 0x%04x (%i): (%i,%i,%i), ((%i,%i), (%i,%i), (%i,%i))",
+		dest,addr, x,y,z, p,pv, b,bv, h,hv);
+
+	g3d_matrix_translate(x, y, z, matrix);
+
+	g3d_matrix_dump(matrix);
+
+	g_queue_push_tail(state->matrix_queue, matrix);
+	g_queue_push_head(state->call_stack, GSIZE_TO_POINTER(curr));
+
+	g3d_stream_seek(global->stream, dest, G_SEEK_SET);
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_super_scale(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+	gint16 dest, signal, size, scale;
+
+	dest = g3d_stream_read_int16_le(global->stream);
+	signal = g3d_stream_read_int16_le(global->stream);
+	size = g3d_stream_read_int16_le(global->stream);
+	scale = g3d_stream_read_int16_le(global->stream);
+
+	g_debug("| SUPER_SCALE %i, %i, %i, %i", dest, signal, size, scale);
+
+	if (scale < 32) {
+		g_debug("| scale = %f", 1.0 / pow(2, 16 - scale));
+		state->scale = scale;
+	}
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_tag(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+	gchar *tag = g_new0(gchar, 17);
+
+	g3d_stream_read(global->stream, tag, 16);
+	g3d_stream_read_float_le(global->stream);
+
+	g_debug("| TAG %s", tag);
+
+	if (state->current_tag)
+		g_free(state->current_tag);
+	state->current_tag = tag;
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_animate(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+	G3DMatrix *matrix = g3d_matrix_new();
+	guint32 i, j;
+	G3DVector x, y, z;
+
+	/* input_base */
+	g3d_stream_read_int32_le(global->stream);
+	/* input_offset */
+	g3d_stream_read_int32_le(global->stream);
+	/* table_base */
+	g3d_stream_read_int32_le(global->stream);
+	/* table_offset */
+	g3d_stream_read_int32_le(global->stream);
+
+	x = g3d_stream_read_float_le(global->stream);
+	y = g3d_stream_read_float_le(global->stream);
+	z = g3d_stream_read_float_le(global->stream);
+
+	g3d_matrix_translate(x, y, z, matrix);
+
+	g3d_matrix_dump(matrix);
+
+	g_queue_push_tail(state->matrix_queue, matrix);
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_transform_mat(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+	G3DMatrix *matrix = g3d_matrix_new();
+	guint32 i, j;
+	G3DVector x, y, z;
+
+	x = g3d_stream_read_float_le(global->stream);
+	y = g3d_stream_read_float_le(global->stream);
+	z = g3d_stream_read_float_le(global->stream);
+
+	g3d_matrix_translate(x, y, z, matrix);
+
+	for (i = 0; i < 3; i ++)
+		for (j = 0; j < 3; j ++)
+			matrix[j * 4 + i] = g3d_stream_read_float_le(global->stream);
+
+	g3d_matrix_dump(matrix);
+
+	g_queue_push_tail(state->matrix_queue, matrix);
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_transform_end(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+
+	if (g_queue_is_empty(state->matrix_queue)) {
+		g_warning("TRANSFORM_END on empty matrix queue");
+		return FALSE;
+	}
+
+	g_queue_pop_tail(state->matrix_queue);
+
+	return TRUE;
+}
+
 gboolean msfsmdl_bgl_cb_vinstance_call(G3DIffGlobal *global, G3DIffLocal *local) {
 	BglState *state = global->user_data;
 
@@ -518,6 +787,18 @@ gboolean msfsmdl_bgl_cb_vinstance_call(G3DIffGlobal *global, G3DIffLocal *local)
 
 	g_debug("| VINSTANCE_CALL %p from %p (offset %i)", dest, curr, addr);
 	g3d_stream_seek(global->stream, dest, G_SEEK_SET);
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_vposition(G3DIffGlobal *global, G3DIffLocal *local) {
+	gint16 dest = g3d_stream_read_int16_le(global->stream);
+	gint16 sign = g3d_stream_read_int16_le(global->stream);
+	gint16 size = g3d_stream_read_int16_le(global->stream);
+	gint16 tmp1 = g3d_stream_read_int16_le(global->stream);
+	gint16 adrs = g3d_stream_read_int16_le(global->stream);
+
+	g_debug("| %i,%i,%i,%i,%i", dest, sign, size, tmp1, adrs);
 
 	return TRUE;
 }

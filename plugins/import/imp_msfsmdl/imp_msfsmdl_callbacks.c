@@ -1,7 +1,9 @@
+#include <string.h>
 #include <g3d/stream.h>
 #include <g3d/matrix.h>
 #include <g3d/material.h>
 #include <g3d/face.h>
+#include <g3d/vector.h>
 
 #include "imp_msfsmdl_callbacks.h"
 #include "imp_msfsmdl_bgl.h"
@@ -33,6 +35,9 @@ typedef struct {
 } MdlSgItem;
 
 typedef struct {
+	guint32 num_textures;
+	gchar **textures;
+
 	guint32 num_indices;
 	guint32 *indices;
 
@@ -119,17 +124,43 @@ gboolean msfsmdl_cb_lode(G3DIffGlobal *global, G3DIffLocal *local) {
 	return TRUE;
 }
 
+static G3DImage *find_load_texture(G3DContext *context, G3DModel *model, const gchar *filename) {
+	G3DImage *image = NULL;
+	const gchar *name;
+	GDir *dir = g_dir_open("../texture", 0, NULL);
+
+	if (!dir)
+		return NULL;
+
+	for (name = g_dir_read_name(dir); name != NULL; name = g_dir_read_name(dir)) {
+		if (g_ascii_strcasecmp(name, filename) == 0) {
+			gchar *path = g_strdup_printf("../texture/%s", name);
+			image = g3d_texture_load_cached(context, model, path);
+			if (image)
+				g3d_texture_flip_y(image);
+			g_debug("texture %s: %p", path, image);
+			g_free(path);
+			break;
+		}
+	}
+
+	g_dir_close(dir);
+	return image;
+}
+
 gboolean msfsmdl_cb_mate(G3DIffGlobal *global, G3DIffLocal *local) {
+	MdlState *state = get_state(global);
 	G3DMaterial *mat;
 	guint32 i;
 	guint32 num_mats = local->nb / 120;
+	gint32 diffuse_tex_index;
 
 	for (i = 0; i < num_mats; i ++) {
 		mat = g3d_material_new();
 
 		g3d_stream_read_int32_le(global->stream); /* flags */
 		g3d_stream_read_int32_le(global->stream); /* flags 2 */
-		g3d_stream_read_int32_le(global->stream); /* diffuse tex index */
+		diffuse_tex_index = g3d_stream_read_int32_le(global->stream);
 		g3d_stream_read_int32_le(global->stream); /* detail tex index */
 		g3d_stream_read_int32_le(global->stream); /* bumpmap tex index */
 		g3d_stream_read_int32_le(global->stream); /* specular tex index */
@@ -167,6 +198,18 @@ gboolean msfsmdl_cb_mate(G3DIffGlobal *global, G3DIffLocal *local) {
 		local->nb -= 120;
 
 		mat->name = g_strdup_printf("material #%i", i);
+
+		if (diffuse_tex_index >= 0) {
+			if (diffuse_tex_index >= state->num_textures) {
+				g_error("diffuse_tex_index %i out of range (%i)",
+					diffuse_tex_index, state->num_textures);
+				return FALSE;
+			}
+			g_debug("material %i wants texture %s", i, state->textures[diffuse_tex_index]);
+			mat->tex_image = find_load_texture(global->context, global->model,
+				state->textures[diffuse_tex_index]);
+		}
+
 		global->model->materials = g_slist_append(global->model->materials, mat);
 
 		g_debug("| material (%0.2f, %0.2f, %0.2f, %0.2f)", mat->r, mat->g, mat->b, mat->a);
@@ -239,6 +282,12 @@ static G3DObject *get_part(G3DModel *model, MdlState *state, MdlPart *part,
 			face->tex_vertex_data = g_new0(G3DFloat, 6);
 			face->normals = g_new0(G3DFloat, 9);
 			face->flags |= G3D_FLAG_FAC_NORMALS;
+
+			if (mat->tex_image) {
+				face->flags |= G3D_FLAG_FAC_TEXMAP;
+				face->tex_image = mat->tex_image;
+			}
+
 			for (j = 0; j < 3; j ++) {
 				guint32 off = part->vertex_offset + state->indices[ibase + j];
 
@@ -294,7 +343,7 @@ static void walk_scenegraph(G3DModel *model, MdlState *state, guint32 idx,
 		if (sgitem->trans_matrix_idx >= state->num_matrices) {
 			g_error("matrix %i out of range (%i)",
 				sgitem->trans_matrix_idx, state->num_matrices);
-			return NULL;
+			return;
 		}
 		matrix = state->matrices[sgitem->trans_matrix_idx];
 
@@ -405,16 +454,18 @@ gboolean msfsmdl_cb_scen(G3DIffGlobal *global, G3DIffLocal *local) {
 }
 
 gboolean msfsmdl_cb_text(G3DIffGlobal *global, G3DIffLocal *local) {
+	MdlState *state = get_state(global);
 	guint32 i;
-	gchar *name;
 
-	for (i = 0; i < local->nb / 64; i ++) {
-		name = g_new0(gchar, 65);
-		g3d_stream_read(global->stream, name, 64);
+	state->num_textures = local->nb / 64;
+	state->textures = g_new0(gchar*, state->num_textures);
+
+	for (i = 0; i < state->num_textures; i ++) {
+		state->textures[i] = g_new0(gchar, 65);
+		g3d_stream_read(global->stream, state->textures[i], 64);
 		local->nb -= 64;
 
-		g_debug("| texture %s", name);
-		g_free(name);
+		g_debug("| texture %s", state->textures[i]);
 	}
 
 	return TRUE;

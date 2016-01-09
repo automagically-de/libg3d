@@ -1,4 +1,5 @@
 #include <string.h>
+#include <math.h>
 #include <g3d/material.h>
 #include <g3d/stream.h>
 #include <g3d/matrix.h>
@@ -647,7 +648,6 @@ gboolean msfsmdl_bgl_cb_point_vicall(G3DIffGlobal *global, G3DIffLocal *local) {
 	G3DMatrix *matrix = g3d_matrix_new();
 
 	gint16 addr = g3d_stream_read_int16_le(global->stream);
-	g_assert(addr);
 	gint16 x = g3d_stream_read_int16_le(global->stream);
 	gint16 y = g3d_stream_read_int16_le(global->stream);
 	gint16 z = g3d_stream_read_int16_le(global->stream);
@@ -660,7 +660,7 @@ gboolean msfsmdl_bgl_cb_point_vicall(G3DIffGlobal *global, G3DIffLocal *local) {
 	goffset curr = g3d_stream_tell(global->stream);
 	goffset dest = curr + addr - 22;
 
-	g_debug("| POINT_VICALL to 0x%04x (%i): (%i,%i,%i), ((%i,%i), (%i,%i), (%i,%i))",
+	g_debug("| POINT_VICALL to 0x%08lx (%i): (%i,%i,%i), ((%i,%i), (%i,%i), (%i,%i))",
 		dest,addr, x,y,z, p,pv, b,bv, h,hv);
 
 	g3d_matrix_translate(x, y, z, matrix);
@@ -670,6 +670,7 @@ gboolean msfsmdl_bgl_cb_point_vicall(G3DIffGlobal *global, G3DIffLocal *local) {
 	g_queue_push_tail(state->matrix_queue, matrix);
 	g_queue_push_head(state->call_stack, GSIZE_TO_POINTER(curr));
 
+	g_assert(addr);
 	g3d_stream_seek(global->stream, dest, G_SEEK_SET);
 
 	return TRUE;
@@ -713,7 +714,6 @@ gboolean msfsmdl_bgl_cb_tag(G3DIffGlobal *global, G3DIffLocal *local) {
 gboolean msfsmdl_bgl_cb_animate(G3DIffGlobal *global, G3DIffLocal *local) {
 	BglState *state = global->user_data;
 	G3DMatrix *matrix = g3d_matrix_new();
-	guint32 i, j;
 	G3DVector x, y, z;
 
 	/* input_base */
@@ -778,14 +778,13 @@ gboolean msfsmdl_bgl_cb_vinstance_call(G3DIffGlobal *global, G3DIffLocal *local)
 	BglState *state = global->user_data;
 
 	gint16 addr = g3d_stream_read_int16_le(global->stream);
-	gint16 voff = g3d_stream_read_int16_le(global->stream);
-	gint16 aval = bgl_get_var(global, voff);
+	gint16 voff __attribute__((unused)) = g3d_stream_read_int16_le(global->stream);
 	goffset curr = g3d_stream_tell(global->stream);
 	goffset dest = curr + addr - 6;
 
 	g_queue_push_head(state->call_stack, GSIZE_TO_POINTER(curr));
 
-	g_debug("| VINSTANCE_CALL %p from %p (offset %i)", dest, curr, addr);
+	g_debug("| VINSTANCE_CALL 0x%08lx from 0x%08lx (offset %i)", dest, curr, addr);
 	g3d_stream_seek(global->stream, dest, G_SEEK_SET);
 
 	return TRUE;

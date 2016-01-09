@@ -175,10 +175,12 @@ gboolean msfsmdl_cb_mate(G3DIffGlobal *global, G3DIffLocal *local) {
 	return TRUE;
 }
 
-static G3DObject *get_part(G3DModel *model, MdlState *state, MdlPart *part) {
+static G3DObject *get_part(G3DModel *model, MdlState *state, MdlPart *part,
+	G3DTransformation *transformation) {
+
 	G3DObject *object = g_new0(G3DObject, 1);
 	G3DMaterial *mat;
-	guint32 i, vb;
+	guint32 i, j, vb;
 
 	object->name = g_strdup("part");
 
@@ -215,6 +217,15 @@ static G3DObject *get_part(G3DModel *model, MdlState *state, MdlPart *part) {
 		state->vertex_data[vb] + part->vertex_offset * 3,
 		part->vertex_count * 3 * sizeof(G3DFloat));
 
+	if (transformation) {
+		for (i = 0; i < part->vertex_count; i ++)
+			g3d_vector_transform(
+				object->vertex_data + i * 3 + 0,
+				object->vertex_data + i * 3 + 1,
+				object->vertex_data + i * 3 + 2,
+				transformation->matrix);
+	}
+
 	if (part->type == 1) {
 		/* triangle list */
 		for (i = 0; i < part->index_count / 3; i ++) {
@@ -223,6 +234,30 @@ static G3DObject *get_part(G3DModel *model, MdlState *state, MdlPart *part) {
 				state->indices[ibase + 0],
 				state->indices[ibase + 1],
 				state->indices[ibase + 2]);
+
+			face->tex_vertex_count = 3;
+			face->tex_vertex_data = g_new0(G3DFloat, 6);
+			face->normals = g_new0(G3DFloat, 9);
+			face->flags |= G3D_FLAG_FAC_NORMALS;
+			for (j = 0; j < 3; j ++) {
+				guint32 off = part->vertex_offset + state->indices[ibase + j];
+
+				face->normals[j * 3 + 0] = state->normal_data[vb][off * 3 + 0];
+				face->normals[j * 3 + 1] = state->normal_data[vb][off * 3 + 1];
+				face->normals[j * 3 + 2] = state->normal_data[vb][off * 3 + 2];
+#if 0
+				if (transformation)
+					g3d_vector_transform(
+						face->normals + j * 3 + 0,
+						face->normals + j * 3 + 1,
+						face->normals + j * 3 + 2,
+						transformation->matrix);
+#endif
+
+				face->tex_vertex_data[j * 2 + 0] = state->tex_vertex_data[vb][off * 2 + 0];
+				face->tex_vertex_data[j * 2 + 1] = state->tex_vertex_data[vb][off * 2 + 1];
+			}
+
 			object->faces = g_slist_prepend(object->faces, face);
 		}
 	}
@@ -266,11 +301,17 @@ static void walk_scenegraph(G3DModel *model, MdlState *state, guint32 idx,
 		object->transformation = g_new0(G3DTransformation, 1);
 		for (i = 0; i < 16; i ++)
 			object->transformation->matrix[i] = matrix[i];
+
+		if (parent_object && parent_object->transformation)
+			g3d_matrix_multiply(
+				parent_object->transformation->matrix,
+				object->transformation->matrix,
+				object->transformation->matrix);
 	}
 
 	for (item = sgitem->parts; item != NULL; item = item->next)
 		object->objects = g_slist_append(object->objects,
-			get_part(model, state, item->data));
+			get_part(model, state, item->data, object->transformation));
 
 	if (parent_object)
 		parent_object->objects = g_slist_append(parent_object->objects, object);
@@ -281,6 +322,11 @@ static void walk_scenegraph(G3DModel *model, MdlState *state, guint32 idx,
 		walk_scenegraph(model, state, sgitem->cnode_idx, object);
 	if (sgitem->pnode_idx >= 0)
 		walk_scenegraph(model, state, sgitem->pnode_idx, parent_object);
+
+	if (object->transformation) {
+		g_free(object->transformation);
+		object->transformation = NULL;
+	}
 }
 
 gboolean msfsmdl_cb_mdld(G3DIffGlobal *global, G3DIffLocal *local) {

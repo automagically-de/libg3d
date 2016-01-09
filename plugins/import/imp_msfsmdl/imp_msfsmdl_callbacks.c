@@ -36,10 +36,11 @@ typedef struct {
 	guint32 num_indices;
 	guint32 *indices;
 
-	guint32 num_vertices;
-	G3DFloat *vertex_data;
-	G3DFloat *normal_data;
-	G3DFloat *tex_vertex_data;
+	guint32 num_vertex_buffers;
+	guint32 *num_vertices;
+	G3DFloat **vertex_data;
+	G3DFloat **normal_data;
+	G3DFloat **tex_vertex_data;
 
 	guint32 num_matrices;
 	G3DMatrix **matrices;
@@ -177,7 +178,7 @@ gboolean msfsmdl_cb_mate(G3DIffGlobal *global, G3DIffLocal *local) {
 static G3DObject *get_part(G3DModel *model, MdlState *state, MdlPart *part) {
 	G3DObject *object = g_new0(G3DObject, 1);
 	G3DMaterial *mat;
-	guint32 i;
+	guint32 i, vb;
 
 	object->name = g_strdup("part");
 
@@ -186,9 +187,17 @@ static G3DObject *get_part(G3DModel *model, MdlState *state, MdlPart *part) {
 			part->material_index, g_slist_length(model->materials));
 		return NULL;
 	}
-	if ((part->vertex_offset + part->vertex_count) > state->num_vertices) {
+	if (part->vertex_buffer_index >= state->num_vertex_buffers) {
+		g_error("vertex buffer %i out of range (%i)",
+			part->vertex_buffer_index, state->num_vertex_buffers);
+		return NULL;
+	}
+
+	vb = part->vertex_buffer_index;
+
+	if ((part->vertex_offset + part->vertex_count) > state->num_vertices[vb]) {
 		g_error("vertex %i+%i out of range (%i)",
-			part->vertex_offset, part->vertex_count, state->num_vertices);
+			part->vertex_offset, part->vertex_count, state->num_vertices[vb]);
 		return NULL;
 	}
 	if ((part->index_offset + part->index_count) > state->num_indices) {
@@ -203,7 +212,7 @@ static G3DObject *get_part(G3DModel *model, MdlState *state, MdlPart *part) {
 	object->vertex_data = g_new0(G3DFloat, part->vertex_count * 3);
 	memcpy(
 		object->vertex_data,
-		state->vertex_data + part->vertex_offset * 3,
+		state->vertex_data[vb] + part->vertex_offset * 3,
 		part->vertex_count * 3 * sizeof(G3DFloat));
 
 	if (part->type == 1) {
@@ -392,29 +401,40 @@ gboolean msfsmdl_cb_tran(G3DIffGlobal *global, G3DIffLocal *local) {
 
 gboolean msfsmdl_cb_vert(G3DIffGlobal *global, G3DIffLocal *local) {
 	MdlState *state = get_state(global);
-	guint32 i;
+	guint32 i, vb;
 
-	state->num_vertices = local->nb / 32;
-	state->vertex_data = g_new0(G3DFloat, state->num_vertices * 3);
-	state->normal_data = g_new0(G3DFloat, state->num_vertices * 3);
-	state->tex_vertex_data = g_new0(G3DFloat, state->num_vertices * 2);
+	vb = state->num_vertex_buffers;
+	state->num_vertex_buffers ++;
+	state->num_vertices = g_realloc(state->num_vertices,
+		state->num_vertex_buffers * sizeof(guint32));
+	state->vertex_data = g_realloc(state->vertex_data,
+		state->num_vertex_buffers * sizeof(G3DFloat*));
+	state->normal_data = g_realloc(state->normal_data,
+		state->num_vertex_buffers * sizeof(G3DFloat*));
+	state->tex_vertex_data = g_realloc(state->tex_vertex_data,
+		state->num_vertex_buffers * sizeof(G3DFloat*));
 
-	for (i = 0; i < state->num_vertices; i ++) {
-		state->vertex_data[i * 3 + 0] = g3d_stream_read_float_le(global->stream);
-		state->vertex_data[i * 3 + 1] = g3d_stream_read_float_le(global->stream);
-		state->vertex_data[i * 3 + 2] = g3d_stream_read_float_le(global->stream);
+	state->num_vertices[vb] = local->nb / 32;
+	state->vertex_data[vb] = g_new0(G3DFloat, state->num_vertices[vb] * 3);
+	state->normal_data[vb] = g_new0(G3DFloat, state->num_vertices[vb] * 3);
+	state->tex_vertex_data[vb] = g_new0(G3DFloat, state->num_vertices[vb] * 2);
 
-		state->normal_data[i * 3 + 0] = g3d_stream_read_float_le(global->stream);
-		state->normal_data[i * 3 + 1] = g3d_stream_read_float_le(global->stream);
-		state->normal_data[i * 3 + 2] = g3d_stream_read_float_le(global->stream);
+	for (i = 0; i < state->num_vertices[vb]; i ++) {
+		state->vertex_data[vb][i * 3 + 0] = g3d_stream_read_float_le(global->stream);
+		state->vertex_data[vb][i * 3 + 1] = g3d_stream_read_float_le(global->stream);
+		state->vertex_data[vb][i * 3 + 2] = g3d_stream_read_float_le(global->stream);
 
-		state->tex_vertex_data[i * 2 + 0] = g3d_stream_read_float_le(global->stream);
-		state->tex_vertex_data[i * 2 + 1] = g3d_stream_read_float_le(global->stream);
+		state->normal_data[vb][i * 3 + 0] = g3d_stream_read_float_le(global->stream);
+		state->normal_data[vb][i * 3 + 1] = g3d_stream_read_float_le(global->stream);
+		state->normal_data[vb][i * 3 + 2] = g3d_stream_read_float_le(global->stream);
+
+		state->tex_vertex_data[vb][i * 2 + 0] = g3d_stream_read_float_le(global->stream);
+		state->tex_vertex_data[vb][i * 2 + 1] = g3d_stream_read_float_le(global->stream);
 	}
 
-	local->nb -= state->num_vertices * 32;
+	local->nb -= state->num_vertices[vb] * 32;
 
-	g_debug("| %i vertices", state->num_vertices);
+	g_debug("| %i vertices", state->num_vertices[vb]);
 
 	return TRUE;
 }

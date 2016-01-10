@@ -23,11 +23,11 @@ AM_LDFLAGS = \
 
 LIBTOOL += --quiet
 
-img_bmp_la_SOURCES = img_bmp.c
+img_bmp_la_SOURCES = img_bmp.c dxtn.c
 img_bmp_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@
 img_sgi_la_SOURCES = img_sgi.c
 img_sgi_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@
-img_dds_la_SOURCES = img_dds.c
+img_dds_la_SOURCES = img_dds.c dxtn.c
 img_dds_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@
 
 img_gdkpixbuf_la_CFLAGS = ${AM_CFLAGS} @GDKPIXBUF_CFLAGS@

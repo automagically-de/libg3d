@@ -27,6 +27,9 @@
 #include <g3d/types.h>
 #include <g3d/stream.h>
 #include <g3d/image.h>
+#include <g3d/iff.h>
+
+#include "dxtn.h"
 
 gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	G3DImage *image, gpointer user_data)
@@ -44,15 +47,18 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	g3d_image_set_name(image, g3d_stream_get_uri(stream));
 
+	/* 2 */
 	filesize = g3d_stream_read_int32_le(stream);      /* file size */
 	g3d_stream_read_int32_le(stream);                 /* 2 x UINT16 reserved */
 	offset   = g3d_stream_read_int32_le(stream);      /* offset of data */
 	headsize = g3d_stream_read_int32_le(stream);      /* size of header */
+	/* 18 */
 	width  = g3d_stream_read_int32_le(stream);        /* width */
 	height = g3d_stream_read_int32_le(stream);        /* height */
 	ncolplanes = g3d_stream_read_int16_le(stream);    /* num of color planes */
 	depth  = g3d_stream_read_int16_le(stream);        /* bits per pixel */
-	compression   = g3d_stream_read_int32_le(stream); /* compression */
+	/* 30 */
+	compression = g3d_stream_read_int32_be(stream);   /* compression, fourcc */
 	g3d_stream_read_int32_le(stream);                 /* image size */
 	g3d_stream_read_int32_le(stream);                 /* v/res (dpi) */
 	g3d_stream_read_int32_le(stream);                 /* h/res (dpi) */
@@ -67,6 +73,17 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	g3d_image_set_size(image, width, height);
 	pixeldata = g3d_image_get_pixels(image);
 	rowstride = width * height * 4;
+
+	switch (compression) {
+	case G3D_IFF_MKID('D','X','T','1'):
+	case G3D_IFF_MKID('D','X','T','5'):
+		g_debug("supported DXT%i compression %x", (compression & 0xFF) - '0', compression);
+		return decode_dxtn(image, stream, (compression & 0xFF) - '0');
+		break;
+	default:
+		g_debug("unknown compression 0x%08x, assuming uncompressed...");
+		break;
+	}
 
 	for(y = (height - 1); y >= 0; y --) {
 		for(x = 0; x < width; x ++) {

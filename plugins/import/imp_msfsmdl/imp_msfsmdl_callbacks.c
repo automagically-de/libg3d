@@ -124,7 +124,9 @@ gboolean msfsmdl_cb_lode(G3DIffGlobal *global, G3DIffLocal *local) {
 	return TRUE;
 }
 
-static G3DImage *find_load_texture(G3DContext *context, G3DModel *model, const gchar *filename) {
+static G3DImage *find_load_texture(G3DContext *context, G3DModel *model, const gchar *filename,
+	gboolean in_fallback) {
+
 	G3DImage *image = NULL;
 	const gchar *name;
 	GDir *dir = g_dir_open("../texture", 0, NULL);
@@ -148,11 +150,20 @@ static G3DImage *find_load_texture(G3DContext *context, G3DModel *model, const g
 	if (!found) {
 		guint32 extoff = strlen(filename) - 4;
 		g_warning("failed to find texture file %s", filename);
-		if (g_ascii_strcasecmp(filename + extoff, ".bmp") == 0) {
-			gchar *ddsname = g_strdup(filename);
-			memcpy(ddsname + extoff, ".dds", 4);
-			image = find_load_texture(context, model, ddsname);
-			g_free(ddsname);
+
+		if (!in_fallback) {
+			if (g_ascii_strcasecmp(filename + extoff, ".bmp") == 0) {
+				gchar *ddsname = g_strdup(filename);
+				memcpy(ddsname + extoff, ".dds", 4);
+				image = find_load_texture(context, model, ddsname, TRUE);
+				g_free(ddsname);
+			}
+			if (g_ascii_strcasecmp(filename + extoff, ".dds") == 0) {
+				gchar *bmpname = g_strdup(filename);
+				memcpy(bmpname + extoff, ".bmp", 4);
+				image = find_load_texture(context, model, bmpname, TRUE);
+				g_free(bmpname);
+			}
 		}
 	}
 
@@ -219,7 +230,7 @@ gboolean msfsmdl_cb_mate(G3DIffGlobal *global, G3DIffLocal *local) {
 			}
 			g_debug("material %i wants texture %s", i, state->textures[diffuse_tex_index]);
 			mat->tex_image = find_load_texture(global->context, global->model,
-				state->textures[diffuse_tex_index]);
+				state->textures[diffuse_tex_index], FALSE);
 		}
 
 		global->model->materials = g_slist_append(global->model->materials, mat);

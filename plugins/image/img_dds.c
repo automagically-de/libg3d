@@ -86,10 +86,9 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	switch(pffourcc) {
 		case G3D_IFF_MKID('D','X','T','1'):
-			decode_dxtn(image, stream, 1);
-			break;
+		case G3D_IFF_MKID('D','X','T','3'):
 		case G3D_IFF_MKID('D','X','T','5'):
-			decode_dxtn(image, stream, 5);
+			decode_dxtn(image, stream, (pffourcc & 0xff) - '0');
 			break;
 		default:
 			g_warning("DDS: unsupported FOURCC: %s", sfourcc);

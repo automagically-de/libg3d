@@ -76,6 +76,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	switch (compression) {
 	case G3D_IFF_MKID('D','X','T','1'):
+	case G3D_IFF_MKID('D','X','T','3'):
 	case G3D_IFF_MKID('D','X','T','5'):
 		g_debug("supported DXT%i compression %x", (compression & 0xFF) - '0', compression);
 		return decode_dxtn(image, stream, (compression & 0xFF) - '0');

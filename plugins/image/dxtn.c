@@ -24,6 +24,12 @@ gboolean decode_dxtn(G3DImage *image, G3DStream *stream, guint32 dxtn)
 
 	for(y = 0; y < height; y += 4) {
 		for(x = 0; x < width; x += 4) {
+			/* DXT3 */
+			if (dxtn == 3) {
+				g3d_stream_read_int32_le(stream);
+				g3d_stream_read_int32_le(stream);
+				/* XXX */
+			}
 			/* DXT5 */
 			if (dxtn == 5) {
 				guint8 a0 = g3d_stream_read_int8(stream);
@@ -86,6 +92,8 @@ gboolean decode_dxtn(G3DImage *image, G3DStream *stream, guint32 dxtn)
 					pixeldata[index * 4 + 1] = g * 255.0;
 					pixeldata[index * 4 + 2] = b * 255.0;
 					if (dxtn == 1)
+						pixeldata[index * 4 + 3] = 0xFF;
+					if (dxtn == 3) /* XXX */
 						pixeldata[index * 4 + 3] = 0xFF;
 				}
 			}

@@ -136,8 +136,6 @@ static G3DImage *find_load_texture(G3DContext *context, G3DModel *model, const g
 		if (g_ascii_strcasecmp(name, filename) == 0) {
 			gchar *path = g_strdup_printf("../texture/%s", name);
 			image = g3d_texture_load_cached(context, model, path);
-			if (image)
-				g3d_texture_flip_y(image);
 			g_debug("texture %s: %p", path, image);
 			g_free(path);
 			break;
@@ -380,11 +378,16 @@ static void walk_scenegraph(G3DModel *model, MdlState *state, guint32 idx,
 
 gboolean msfsmdl_cb_mdld(G3DIffGlobal *global, G3DIffLocal *local) {
 	MdlState *state = get_state(global);
+	G3DMatrix *matrix = g3d_matrix_new();
 
 	if (!local->finalize)
 		return TRUE;
 
 	walk_scenegraph(global->model, state, 0, NULL);
+
+	g3d_matrix_scale(-1.0, 1.0, 1.0, matrix);
+	g3d_model_transform(global->model, matrix);
+	g3d_matrix_free(matrix);
 
 	return TRUE;
 }
@@ -526,7 +529,7 @@ gboolean msfsmdl_cb_vert(G3DIffGlobal *global, G3DIffLocal *local) {
 		state->normal_data[vb][i * 3 + 2] = g3d_stream_read_float_le(global->stream);
 
 		state->tex_vertex_data[vb][i * 2 + 0] = g3d_stream_read_float_le(global->stream);
-		state->tex_vertex_data[vb][i * 2 + 1] = g3d_stream_read_float_le(global->stream);
+		state->tex_vertex_data[vb][i * 2 + 1] = 1.0 - g3d_stream_read_float_le(global->stream);
 	}
 
 	local->nb -= state->num_vertices[vb] * 32;

@@ -128,6 +128,7 @@ static G3DImage *find_load_texture(G3DContext *context, G3DModel *model, const g
 	G3DImage *image = NULL;
 	const gchar *name;
 	GDir *dir = g_dir_open("../texture", 0, NULL);
+	gboolean found = FALSE;
 
 	if (!dir)
 		return NULL;
@@ -136,9 +137,22 @@ static G3DImage *find_load_texture(G3DContext *context, G3DModel *model, const g
 		if (g_ascii_strcasecmp(name, filename) == 0) {
 			gchar *path = g_strdup_printf("../texture/%s", name);
 			image = g3d_texture_load_cached(context, model, path);
-			g_debug("texture %s: %p", path, image);
+			if (!image)
+				g_warning("failed to load texture %s", path);
 			g_free(path);
+			found = TRUE;
 			break;
+		}
+	}
+
+	if (!found) {
+		guint32 extoff = strlen(filename) - 4;
+		g_warning("failed to find texture file %s", filename);
+		if (g_ascii_strcasecmp(filename + extoff, ".bmp") == 0) {
+			gchar *ddsname = g_strdup(filename);
+			memcpy(ddsname + extoff, ".dds", 4);
+			image = find_load_texture(context, model, ddsname);
+			g_free(ddsname);
 		}
 	}
 

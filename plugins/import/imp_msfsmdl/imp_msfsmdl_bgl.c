@@ -26,6 +26,7 @@ gboolean msfsmdl_bgl_cb_ifin1(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_ifin2(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_ifinf1(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_ifmask(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_ifsizev(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_jump(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_jump_32(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_material_list(G3DIffGlobal *global, G3DIffLocal *local);
@@ -70,7 +71,7 @@ static BglOpCode bgl_opcodes[] = {
 	{ 0x004a,   10, "LANDING_LIGHTS" },
 	{ 0x004c,   14, "VSCALE" },
 	{ 0x005b,    2, "INDIRECT_CALL" },
-	{ 0x005f,    6, "IFSIZEV" },
+	{ 0x005f,    0, "IFSIZEV", msfsmdl_bgl_cb_ifsizev },
 	{ 0x0088,    4, "JUMP_32", msfsmdl_bgl_cb_jump_32 },
 	{ 0x0089,    4, "VAR_BASE_32" },
 	{ 0x008a,    4, "CALL_32", msfsmdl_bgl_cb_call_32 },
@@ -116,6 +117,8 @@ typedef struct {
 	guint32 vertex_count;
 	G3DVector *vertex_data;
 	G3DFloat scale;
+
+	gint32 max_objects;
 } BglState;
 
 gboolean msfsmdl_parse_bgl(G3DIffGlobal *global, G3DIffLocal *local) {
@@ -132,6 +135,7 @@ gboolean msfsmdl_parse_bgl(G3DIffGlobal *global, G3DIffLocal *local) {
 		state->vars = g_hash_table_new(g_direct_hash, g_direct_equal);
 		state->material_by_address = g_hash_table_new(g_direct_hash, g_direct_equal);
 		state->scale = 1.0;
+		state->max_objects = 128;
 		global->user_data = state;
 	}
 	else {
@@ -338,6 +342,26 @@ gboolean msfsmdl_bgl_cb_ifmask(G3DIffGlobal *global, G3DIffLocal *local) {
 	return TRUE;
 }
 
+gboolean msfsmdl_bgl_cb_ifsizev(G3DIffGlobal *global, G3DIffLocal *local) {
+	gint16 addr = g3d_stream_read_int16_le(global->stream);
+	gint16 radius = g3d_stream_read_int16_le(global->stream);
+	gint16 pixels = g3d_stream_read_int16_le(global->stream);
+	G3DFloat rpp = (float)radius / (float)pixels;
+	gboolean jump = (rpp < 0.5);
+
+	g_debug("| IFSIZEV to %i, radius %i, pixels %i, rpp = %0.2f: %s",
+		addr, radius, pixels, rpp, jump ? "jump" : "no jump");
+
+	if (jump) {
+		goffset curr = g3d_stream_tell(global->stream);
+		goffset dest = curr + addr - 8;
+
+		g3d_stream_seek(global->stream, dest, G_SEEK_SET);
+	}
+
+	return TRUE;
+}
+
 gboolean msfsmdl_bgl_cb_jump(G3DIffGlobal *global, G3DIffLocal *local) {
 	gint16 addr = g3d_stream_read_int16_le(global->stream);
 	goffset curr = g3d_stream_tell(global->stream);
@@ -516,6 +540,14 @@ gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local) {
 	G3DFace *face;
 	GList *item;
 
+#if 0
+	if (state->max_objects -- <= 0) {
+		local->nb = 0;
+		g_warning("reached max objects");
+		return TRUE;
+	}
+#endif
+
 	object = g_new0(G3DObject, 1);
 	if (state->current_tag)
 		object->name = g_strdup(state->current_tag);
@@ -548,10 +580,17 @@ gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local) {
 
 	g_debug("| apply %u matrices", g_list_length(state->matrix_queue->head));
 
+	for (item = state->matrix_queue->tail; item != NULL; item = item->prev) {
+#if 0
+		G3DMatrix *matrix = item->data;
+		g_debug("apply matrix");
+		g3d_matrix_dump(matrix);
+#endif
+	}
 	for (i = 0; i < vcount; i ++) {
 		for (j = 0; j < 3; j ++)
 			object->vertex_data[i * 3 + j] =
-				state->vertex_data[(i + vbase) * 3 + j] * state->scale;
+				state->vertex_data[(i + vbase) * 3 + j] /** state->scale*/;
 
 		for (item = state->matrix_queue->tail; item != NULL; item = item->prev) {
 			G3DMatrix *matrix = item->data;
@@ -665,9 +704,13 @@ gboolean msfsmdl_bgl_cb_point_vicall(G3DIffGlobal *global, G3DIffLocal *local) {
 
 	g3d_matrix_translate(x, y, z, matrix);
 
+#if 0
 	g3d_matrix_dump(matrix);
+#endif
 
+#if 0
 	g_queue_push_tail(state->matrix_queue, matrix);
+#endif
 	g_queue_push_head(state->call_stack, GSIZE_TO_POINTER(curr));
 
 	g_assert(addr);
@@ -731,7 +774,9 @@ gboolean msfsmdl_bgl_cb_animate(G3DIffGlobal *global, G3DIffLocal *local) {
 
 	g3d_matrix_translate(x, y, z, matrix);
 
+#if 1
 	g3d_matrix_dump(matrix);
+#endif
 
 	g_queue_push_tail(state->matrix_queue, matrix);
 
@@ -752,9 +797,11 @@ gboolean msfsmdl_bgl_cb_transform_mat(G3DIffGlobal *global, G3DIffLocal *local) 
 
 	for (i = 0; i < 3; i ++)
 		for (j = 0; j < 3; j ++)
-			matrix[j * 4 + i] = g3d_stream_read_float_le(global->stream);
+			matrix[i * 4 + j] = g3d_stream_read_float_le(global->stream);
 
+#if 1
 	g3d_matrix_dump(matrix);
+#endif
 
 	g_queue_push_tail(state->matrix_queue, matrix);
 

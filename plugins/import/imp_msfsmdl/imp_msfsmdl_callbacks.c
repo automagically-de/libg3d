@@ -7,6 +7,7 @@
 
 #include "imp_msfsmdl_callbacks.h"
 #include "imp_msfsmdl_bgl.h"
+#include "imp_msfsmdl_texture.h"
 
 typedef struct {
 	guint32 type;
@@ -95,7 +96,13 @@ gboolean msfsmdl_cb_amap(G3DIffGlobal *global, G3DIffLocal *local) {
 }
 
 gboolean msfsmdl_cb_bgl_(G3DIffGlobal *global, G3DIffLocal *local) {
-	return msfsmdl_parse_bgl(global, local);
+	if (msfsmdl_parse_bgl(global, local)) {
+		G3DMatrix *matrix = g3d_matrix_new();
+		g3d_matrix_scale(-1.0, 1.0, 1.0, matrix);
+		g3d_model_transform(global->model, matrix);
+		g3d_matrix_free(matrix);
+	}
+	return FALSE;
 }
 
 gboolean msfsmdl_cb_inde(G3DIffGlobal *global, G3DIffLocal *local) {
@@ -124,52 +131,6 @@ gboolean msfsmdl_cb_lode(G3DIffGlobal *global, G3DIffLocal *local) {
 	return TRUE;
 }
 
-static G3DImage *find_load_texture(G3DContext *context, G3DModel *model, const gchar *filename,
-	gboolean in_fallback) {
-
-	G3DImage *image = NULL;
-	const gchar *name;
-	GDir *dir = g_dir_open("../texture", 0, NULL);
-	gboolean found = FALSE;
-
-	if (!dir)
-		return NULL;
-
-	for (name = g_dir_read_name(dir); name != NULL; name = g_dir_read_name(dir)) {
-		if (g_ascii_strcasecmp(name, filename) == 0) {
-			gchar *path = g_strdup_printf("../texture/%s", name);
-			image = g3d_texture_load_cached(context, model, path);
-			if (!image)
-				g_warning("failed to load texture %s", path);
-			g_free(path);
-			found = TRUE;
-			break;
-		}
-	}
-
-	if (!found) {
-		guint32 extoff = strlen(filename) - 4;
-		g_warning("failed to find texture file %s", filename);
-
-		if (!in_fallback) {
-			if (g_ascii_strcasecmp(filename + extoff, ".bmp") == 0) {
-				gchar *ddsname = g_strdup(filename);
-				memcpy(ddsname + extoff, ".dds", 4);
-				image = find_load_texture(context, model, ddsname, TRUE);
-				g_free(ddsname);
-			}
-			if (g_ascii_strcasecmp(filename + extoff, ".dds") == 0) {
-				gchar *bmpname = g_strdup(filename);
-				memcpy(bmpname + extoff, ".bmp", 4);
-				image = find_load_texture(context, model, bmpname, TRUE);
-				g_free(bmpname);
-			}
-		}
-	}
-
-	g_dir_close(dir);
-	return image;
-}
 
 gboolean msfsmdl_cb_mate(G3DIffGlobal *global, G3DIffLocal *local) {
 	MdlState *state = get_state(global);
@@ -229,7 +190,7 @@ gboolean msfsmdl_cb_mate(G3DIffGlobal *global, G3DIffLocal *local) {
 				return FALSE;
 			}
 			g_debug("material %i wants texture %s", i, state->textures[diffuse_tex_index]);
-			mat->tex_image = find_load_texture(global->context, global->model,
+			mat->tex_image = msfsmdl_find_load_texture(global->context, global->model,
 				state->textures[diffuse_tex_index], FALSE);
 		}
 

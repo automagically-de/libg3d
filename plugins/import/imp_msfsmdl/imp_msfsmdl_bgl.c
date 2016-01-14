@@ -116,7 +116,14 @@ typedef struct {
 
 	guint32 vertex_count;
 	G3DVector *vertex_data;
+	G3DVector *normal_data;
+	G3DVector *tex_vertex_data;
 	G3DFloat scale;
+
+	guint32 n_textures;
+	gchar **textures;
+
+	G3DImage *current_texture;
 
 	gint32 max_objects;
 } BglState;
@@ -443,6 +450,8 @@ gboolean msfsmdl_bgl_cb_vertex_list(G3DIffGlobal *global, G3DIffLocal *local) {
 
 	state->vertex_count = n_elems;
 	state->vertex_data = g_new0(G3DVector, n_elems * 3);
+	state->normal_data = g_new0(G3DVector, n_elems * 3);
+	state->tex_vertex_data = g_new0(G3DVector, n_elems * 2);
 
 	for (i = 0; i < n_elems; i ++) {
 		/* x, y, z */
@@ -450,12 +459,12 @@ gboolean msfsmdl_bgl_cb_vertex_list(G3DIffGlobal *global, G3DIffLocal *local) {
 			state->vertex_data[i * 3 + j] = g3d_stream_read_float_le(global->stream);
 
 		/* nx, ny, nz */
-		g3d_stream_read_float_le(global->stream);
-		g3d_stream_read_float_le(global->stream);
-		g3d_stream_read_float_le(global->stream);
+		for (j = 0; j < 3; j ++)
+			state->normal_data[i * 3 + j] = g3d_stream_read_float_le(global->stream);
+
 		/* u, v */
-		g3d_stream_read_float_le(global->stream);
-		g3d_stream_read_float_le(global->stream);
+		state->tex_vertex_data[i * 2 + 0] = g3d_stream_read_float_le(global->stream);
+		state->tex_vertex_data[i * 2 + 1] = 1.0 - g3d_stream_read_float_le(global->stream);
 	}
 
 	return TRUE;
@@ -510,11 +519,15 @@ gboolean msfsmdl_bgl_cb_material_list(G3DIffGlobal *global, G3DIffLocal *local) 
 }
 
 gboolean msfsmdl_bgl_cb_texture_list(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
 	guint32 n_elems, i;
 	gchar name[65];
 
 	n_elems = g3d_stream_read_int16_le(global->stream);
 	g3d_stream_read_int32_le(global->stream);
+
+	state->n_textures = n_elems;
+	state->textures = g_new0(gchar*, n_elems);
 
 	for (i = 0; i < n_elems; i ++) {
 		g3d_stream_read_int32_le(global->stream); /* tclass */
@@ -524,6 +537,8 @@ gboolean msfsmdl_bgl_cb_texture_list(G3DIffGlobal *global, G3DIffLocal *local) {
 
 		memset(name, '\0', 65);
 		g3d_stream_read(global->stream, name, 64);
+
+		state->textures[i] = g_strdup(name);
 
 		g_debug("| texture %s", name);
 	}
@@ -620,6 +635,25 @@ gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local) {
 #if 0
 		g_debug("| %i", v1);
 #endif
+
+		face->flags |= G3D_FLAG_FAC_NORMALS;
+		face->normals = g_new0(G3DFloat, 3 * 3);
+		for (j = 0; j < 3; j ++) {
+			face->normals[0 * 3 + j] = state->normal_data[(vbase + v1) * 3 + j];
+			face->normals[1 * 3 + j] = state->normal_data[(vbase + v2) * 3 + j];
+			face->normals[2 * 3 + j] = state->normal_data[(vbase + v3) * 3 + j];
+		}
+
+		if (state->current_texture) {
+			face->tex_image = state->current_texture;
+			face->flags |= G3D_FLAG_FAC_TEXMAP;
+		}
+		face->tex_vertex_data = g_new0(G3DFloat, 3 * 2);
+		for (j = 0; j < 2; j ++) {
+			face->tex_vertex_data[0 * 2 + j] = state->tex_vertex_data[(vbase + v1) * 2 + j];
+			face->tex_vertex_data[1 * 2 + j] = state->tex_vertex_data[(vbase + v2) * 2 + j];
+			face->tex_vertex_data[2 * 2 + j] = state->tex_vertex_data[(vbase + v3) * 2 + j];
+		}
 	}
 
 	return TRUE;
@@ -643,7 +677,7 @@ gboolean msfsmdl_bgl_cb_draw_linelist(G3DIffGlobal *global, G3DIffLocal *local) 
 	}
 
 	for (i = 0; i < n_elems; i += 2) {
-		gint16 v1, v2;
+		gint16 __attribute__((unused)) v1, v2;
 		v1 = g3d_stream_read_int16_le(global->stream);
 		v2 = g3d_stream_read_int16_le(global->stream);
 #if 0
@@ -678,6 +712,19 @@ gboolean msfsmdl_bgl_cb_set_material(G3DIffGlobal *global, G3DIffLocal *local) {
 		state->current_material = g_slist_nth_data(global->model->materials, imat);
 	else
 		g_warning("out-of-bounds material index %i", imat);
+
+	if (itex < 0)
+		state->current_texture = NULL;
+	else if (itex < state->n_textures) {
+		state->current_texture = msfsmdl_find_load_texture(
+			global->context,
+			global->model,
+			state->textures[itex],
+			FALSE);
+		g_debug("| texture %s: %p", state->textures[itex], state->current_texture);
+	}
+	else
+		g_warning("out-of-bounds texture index %i", itex);
 
 	return TRUE;
 }

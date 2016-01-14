@@ -20,5 +20,6 @@ LIBTOOL += --quiet
 
 imp_msfsmdl_la_SOURCES = imp_msfsmdl.c \
 	imp_msfsmdl_callbacks.c \
-	imp_msfsmdl_bgl.c
+	imp_msfsmdl_bgl.c \
+	imp_msfsmdl_texture.c
 imp_msfsmdl_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@

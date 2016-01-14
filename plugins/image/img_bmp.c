@@ -72,7 +72,7 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 
 	g3d_image_set_size(image, width, height);
 	pixeldata = g3d_image_get_pixels(image);
-	rowstride = width * height * 4;
+	rowstride = width * 4;
 
 	switch (compression) {
 	case G3D_IFF_MKID('D','X','T','1'):
@@ -81,8 +81,10 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		g_debug("supported DXT%i compression %x", (compression & 0xFF) - '0', compression);
 		return decode_dxtn(image, stream, (compression & 0xFF) - '0');
 		break;
+	case 0:
+		break;
 	default:
-		g_debug("unknown compression 0x%08x, assuming uncompressed...");
+		g_debug("unknown compression 0x%08x, assuming uncompressed...", compression);
 		break;
 	}
 
@@ -94,6 +96,14 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 					for(i = 0; i < 3; i ++)
 						pixeldata[y * rowstride + x * 4 + i] = c;
 					pixeldata[y * rowstride + x * 4 + 3] = 0xFF;
+					break;
+				case 16:
+					c = g3d_stream_read_int16_le(stream);
+					for (i = 2; i >= 0; i --) {
+						pixeldata[y * rowstride + x * 4 + i] = (c & 0x1f) << 3;
+						c >>= 5;
+					}
+					pixeldata[y * rowstride + x * 4 + 3] = 0xff;
 					break;
 				case 24:
 #if 1

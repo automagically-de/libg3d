@@ -37,6 +37,8 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	guint32 pfsize, pfflags, pffourcc, pfbpp;
 	guint32 pfrmask, pfgmask, pfbmask, pfamask;
 	guint32 caps1, caps2;
+	guint32 x, y, rowstride;
+	guint8 *pixeldata;
 	gchar *sfourcc;
 
 	magic = g3d_stream_read_int32_be(stream);
@@ -59,12 +61,15 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	/* 0x0020 */
 	g3d_stream_skip(stream, 44);
 
+	/* 0x004c */
 	pfsize = g3d_stream_read_int32_le(stream);
 	pfflags = g3d_stream_read_int32_le(stream);
 
+	/* 0x0054 */
 	pffourcc = g3d_stream_read_int32_be(stream);
 	sfourcc = g3d_iff_id_to_text(pffourcc);
 
+	/* 0x0058 */
 	pfbpp = g3d_stream_read_int32_le(stream);
 	pfrmask = g3d_stream_read_int32_le(stream);
 	pfgmask = g3d_stream_read_int32_le(stream);
@@ -73,7 +78,10 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	caps1 = g3d_stream_read_int32_le(stream);
 	caps2 = g3d_stream_read_int32_le(stream);
 
+	/* 0x0074 */
 	g3d_stream_skip(stream, 12);
+
+	/* 0x0080 */
 
 #if DEBUG > 0
 	g_debug("DDS: %ux%u %s 0x%08x", width, height,
@@ -85,6 +93,19 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	g3d_image_set_size(image, width, height);
 
 	switch(pffourcc) {
+		case 0: /* no compression */
+			/* XXX: depth & RGBA masks are ignored */
+			pixeldata = g3d_image_get_pixels(image);
+			rowstride = width * 4;
+			for (y = 0; y < height; y ++) {
+				for (x = 0; x < width; x ++) {
+					pixeldata[y * rowstride + x * 4 + 2] = g3d_stream_read_int8(stream);
+					pixeldata[y * rowstride + x * 4 + 1] = g3d_stream_read_int8(stream);
+					pixeldata[y * rowstride + x * 4 + 0] = g3d_stream_read_int8(stream);
+					pixeldata[y * rowstride + x * 4 + 3] = g3d_stream_read_int8(stream);
+				}
+			}
+			break;
 		case G3D_IFF_MKID('D','X','T','1'):
 		case G3D_IFF_MKID('D','X','T','3'):
 		case G3D_IFF_MKID('D','X','T','5'):

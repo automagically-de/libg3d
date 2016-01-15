@@ -182,6 +182,14 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 							g3d_stream_read_int8(stream);
 					pixeldata[y * rowstride + x * 4 + 3] = 0xFF;
 					break;
+				case 32:
+					/* BGRA */
+					for(i = 2; i >= 0; i --)
+						pixeldata[y * rowstride + x * 4 + i] =
+							g3d_stream_read_int8(stream);
+					pixeldata[y * rowstride + x * 4 + 3] =
+						g3d_stream_read_int8(stream);
+					break;
 				default:
 					break;
 			}

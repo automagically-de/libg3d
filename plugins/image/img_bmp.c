@@ -31,6 +31,33 @@
 
 #include "dxtn.h"
 
+static guint32 get_bitshift(guint32 mask) {
+	size_t i;
+	guint32 shift = 0;
+	for (i = 0; i < 32; i ++)
+		if (mask & 1)
+			break;
+		else {
+			mask >>= 1;
+			shift ++;
+		}
+	return shift;
+}
+
+static guint32 get_bitlen(guint32 mask) {
+	size_t i;
+	guint32 n_bits = 0;
+	mask >>= get_bitshift(mask);
+	for (i = 0; i < 32; i ++)
+		if (mask & 1) {
+			n_bits ++;
+			mask >>= 1;
+		}
+		else
+			break;
+	return n_bits;
+}
+
 gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	G3DImage *image, gpointer user_data)
 {
@@ -38,6 +65,11 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	gint32 x, y, i;
 	guint32 ncolplanes, c, width, height, depth, rowstride;
 	guint8 *pixeldata;
+
+	gboolean bitfield_compression = FALSE;
+	guint32 bitmask[4];
+	guint32 bitlen[4];
+	guint32 bitshift[4];
 
 	/* bitmap file always starts with 'BM' */
 	if(g3d_stream_read_int16_le(stream) != ('B' | ('M' << 8))) {
@@ -81,6 +113,27 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 		g_debug("supported DXT%i compression %x", (compression & 0xFF) - '0', compression);
 		return decode_dxtn(image, stream, (compression & 0xFF) - '0');
 		break;
+	case 0x03000000: /* "3" byte-swapped as read as BE */
+		g_debug("bit fields %i", headsize);
+		g3d_stream_seek(stream, 0x36, G_SEEK_SET);
+		bitfield_compression = TRUE;
+		for (i = 0; i < 3; i ++) {
+			bitmask[i] = g3d_stream_read_int32_le(stream);
+			bitlen[i] = get_bitlen(bitmask[i]);
+			bitshift[i] = get_bitshift(bitmask[i]);
+			g_debug("mask %i: 0x%08x (len %i, shift %i)", i, bitmask[i], bitlen[i], bitshift[i]);
+		}
+		if (headsize > 40) {
+			bitmask[3] = g3d_stream_read_int32_le(stream);
+			bitlen[3] = get_bitlen(bitmask[3]);
+			bitshift[3] = get_bitshift(bitmask[3]);
+			g_debug("mask 3: 0x%08x", bitmask[3]);
+		}
+		else {
+			bitmask[3] = 0;
+		}
+		g3d_stream_seek(stream, offset, G_SEEK_SET);
+		break;
 	case 0:
 		break;
 	default:
@@ -99,11 +152,24 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 					break;
 				case 16:
 					c = g3d_stream_read_int16_le(stream);
-					for (i = 2; i >= 0; i --) {
-						pixeldata[y * rowstride + x * 4 + i] = (c & 0x1f) << 3;
-						c >>= 5;
+					if (bitfield_compression) {
+						for (i = 0; i < 3; i ++) {
+							pixeldata[y * rowstride + x * 4 + i] =
+								((c & bitmask[i]) >> bitshift[i]) << (8 - bitlen[i]);
+						}
+						if (bitmask[3])
+							pixeldata[y * rowstride + x * 4 + 3] =
+								((c & bitmask[3]) >> bitshift[3]) << (8 - bitlen[3]);
+						else
+							pixeldata[y * rowstride + x * 4 + 3] = 0xff;
 					}
-					pixeldata[y * rowstride + x * 4 + 3] = 0xff;
+					else {
+						for (i = 2; i >= 0; i --) {
+							pixeldata[y * rowstride + x * 4 + i] = (c & 0x1f) << 3;
+							c >>= 5;
+						}
+						pixeldata[y * rowstride + x * 4 + 3] = 0xff;
+					}
 					break;
 				case 24:
 #if 1

@@ -61,10 +61,11 @@ static guint32 get_bitlen(guint32 mask) {
 gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	G3DImage *image, gpointer user_data)
 {
-	guint32 filesize, offset, headsize, compression;
+	guint32 filesize, offset, headsize, compression, npalette;
 	gint32 x, y, i;
 	guint32 ncolplanes, c, width, height, depth, rowstride;
 	guint8 *pixeldata;
+	guint8 *palette = NULL;
 
 	gboolean bitfield_compression = FALSE;
 	guint32 bitmask[4];
@@ -83,6 +84,8 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	filesize = g3d_stream_read_int32_le(stream);      /* file size */
 	g3d_stream_read_int32_le(stream);                 /* 2 x UINT16 reserved */
 	offset   = g3d_stream_read_int32_le(stream);      /* offset of data */
+
+	/* 14: DIB header */
 	headsize = g3d_stream_read_int32_le(stream);      /* size of header */
 	/* 18 */
 	width  = g3d_stream_read_int32_le(stream);        /* width */
@@ -92,12 +95,27 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	/* 30 */
 	compression = g3d_stream_read_int32_be(stream);   /* compression, fourcc */
 	g3d_stream_read_int32_le(stream);                 /* image size */
-	g3d_stream_read_int32_le(stream);                 /* v/res (dpi) */
 	g3d_stream_read_int32_le(stream);                 /* h/res (dpi) */
+	g3d_stream_read_int32_le(stream);                 /* v/res (dpi) */
+
+	npalette = g3d_stream_read_int32_le(stream);
+	if (npalette) {
+		guint32 palette_offset = 14 + headsize;
+		if (compression == 0x03000000i && headsize == 40)
+			 palette_offset += 12; /* masks are not in header size */
+		palette = g_new(guint8, 4 * npalette);
+		g3d_stream_seek(stream, palette_offset, G_SEEK_SET);
+		for (i = 0; i < npalette; i ++) {
+			palette[i * 4 + 2] = g3d_stream_read_int8(stream);
+			palette[i * 4 + 1] = g3d_stream_read_int8(stream);
+			palette[i * 4 + 0] = g3d_stream_read_int8(stream);
+			palette[i * 4 + 3] = 0xff; g3d_stream_read_int8(stream);
+		}
+	}
 
 #if DEBUG > 0
-	g_debug("BMP: %dx%dx%d (%d, 0x%x)", width, height,
-		depth, ncolplanes, compression);
+	g_debug("BMP: %dx%dx%d (%d, 0x%x, %i byte header, %i palette entries)", width, height,
+		depth, ncolplanes, compression, headsize, npalette);
 #endif
 
 	g3d_stream_seek(stream, offset, G_SEEK_SET);
@@ -146,9 +164,20 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 			switch(depth) {
 				case 8:
 					c = g3d_stream_read_int8(stream);
-					for(i = 0; i < 3; i ++)
-						pixeldata[y * rowstride + x * 4 + i] = c;
-					pixeldata[y * rowstride + x * 4 + 3] = 0xFF;
+					if (npalette) {
+						/* color palette */
+						for (i = 0; i < 4; i ++)
+							if (c < npalette)
+								pixeldata[y * rowstride + x * 4 + i] = palette[c * 4 + i];
+							else
+								pixeldata[y * rowstride + x * 4 + i] = 0xff;
+					}
+					else {
+						/* grayscale */
+						for(i = 0; i < 3; i ++)
+							pixeldata[y * rowstride + x * 4 + i] = c;
+						pixeldata[y * rowstride + x * 4 + 3] = 0xFF;
+					}
 					break;
 				case 16:
 					c = g3d_stream_read_int16_le(stream);

@@ -99,6 +99,8 @@ gboolean plugin_load_image_from_stream(G3DContext *context, G3DStream *stream,
 	g3d_stream_read_int32_le(stream);                 /* v/res (dpi) */
 
 	npalette = g3d_stream_read_int32_le(stream);
+	if (depth == 8 && !npalette)
+		npalette = 256;
 	if (npalette) {
 		guint32 palette_offset = 14 + headsize;
 		if (compression == 0x03000000i && headsize == 40)

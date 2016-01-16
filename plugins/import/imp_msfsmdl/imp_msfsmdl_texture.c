@@ -37,6 +37,9 @@ G3DImage *msfsmdl_find_load_texture(G3DContext *context, G3DModel *model, const 
 
 	image = find_load_texture_from_path(context, model, filename, "../texture");
 
+	if (!image)
+		image = find_load_texture_from_path(context, model, filename, "../Texture");
+
 	if (!image) {
 		GDir *dir = g_dir_open("..", 0, NULL);
 		if (dir) {
@@ -59,12 +62,9 @@ G3DImage *msfsmdl_find_load_texture(G3DContext *context, G3DModel *model, const 
 	}
 
 	if (!image) {
-		guint32 extoff = strlen(filename) - 4;
-#if 0
-		g_warning("failed to find texture file %s", filename);
-#endif
+		if (!in_fallback && strlen(filename) > 4) {
+			guint32 extoff = strlen(filename) - 4;
 
-		if (!in_fallback) {
 			if (g_ascii_strcasecmp(filename + extoff, ".bmp") == 0) {
 				gchar *ddsname = g_strdup(filename);
 				memcpy(ddsname + extoff, ".dds", 4);

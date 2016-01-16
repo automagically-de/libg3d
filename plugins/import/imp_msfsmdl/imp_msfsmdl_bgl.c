@@ -891,7 +891,9 @@ gboolean msfsmdl_bgl_cb_var_base_32(G3DIffGlobal *global, G3DIffLocal *local) {
 	gint32 base = g3d_stream_read_int32_le(global->stream);
 	goffset curr = g3d_stream_tell(global->stream);
 	goffset dest = curr + base - 6;
-	guint32 i, x1;
+	guint32 i, x1, nf;
+	G3DMatrix *matrix = g3d_matrix_new();
+	G3DFloat pa,frame,x,y,z,w,a;
 
 	g_debug("| var base: %i (0x%08x)", base, base);
 
@@ -910,12 +912,29 @@ gboolean msfsmdl_bgl_cb_var_base_32(G3DIffGlobal *global, G3DIffLocal *local) {
 		x1 = g3d_stream_read_int16_le(global->stream);
 		g_debug("| var: %04x, %i", x1, -base);
 
+		if (x1 == 1) {
+			/* translation */
+			pa = g3d_stream_read_float_le(global->stream);
+			for (i = 0; i < 16; i ++)
+				g3d_stream_read_float_le(global->stream); /* ignore */
+			nf = g3d_stream_read_int16_le(global->stream);
+			for (i = 0; i < nf; i ++) {
+				frame = g3d_stream_read_float_le(global->stream);
+				x = g3d_stream_read_float_le(global->stream);
+				y = g3d_stream_read_float_le(global->stream);
+				z = g3d_stream_read_float_le(global->stream);
+
+				g_debug("| frame %i/%i [%f]: (%f,%f,%f)", i, nf, frame, x,y,z);
+
+				if (i == 0) {
+					g3d_matrix_translate(x, y, z, matrix);
+					state->current_varbase_matrix = matrix;
+				}
+			}
+		}
+
 		if (x1 == 3) {
 			/* rotation */
-			G3DMatrix *matrix = g3d_matrix_new();
-			G3DFloat pa,frame,x,y,z,w,a;
-			guint32 nf;
-
 			pa = g3d_stream_read_float_le(global->stream);
 			for (i = 0; i < 16; i ++)
 				g3d_stream_read_float_le(global->stream); /* ignore */
@@ -936,14 +955,15 @@ gboolean msfsmdl_bgl_cb_var_base_32(G3DIffGlobal *global, G3DIffLocal *local) {
 					state->current_varbase_matrix = matrix;
 				}
 			}
-			if (!state->current_varbase_matrix)
-				g_free(matrix);
-			g3d_matrix_dump(matrix);
 		}
 
 		g3d_stream_seek(global->stream, curr, G_SEEK_SET);
 		break;
 	}
+
+	g3d_matrix_dump(matrix);
+	if (!state->current_varbase_matrix)
+		g_free(matrix);
 
 	return TRUE;
 }

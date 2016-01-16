@@ -78,6 +78,9 @@ G3DImage *msfsmdl_find_load_texture(G3DContext *context, G3DModel *model, const 
 				g_free(bmpname);
 			}
 		}
+		else {
+			g_warning("failed to load %s", filename);
+		}
 	}
 
 	return image;

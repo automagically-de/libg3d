@@ -8,6 +8,10 @@
 
 #include "imp_msfsmdl_bgl.h"
 
+#ifndef M_PI
+#	define M_PI 3.14159265358979323846
+#endif
+
 typedef struct {
 	guint16 id;
 	gsize dlen;
@@ -39,6 +43,7 @@ gboolean msfsmdl_bgl_cb_tag(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_texture_list(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_transform_end(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_transform_mat(G3DIffGlobal *global, G3DIffLocal *local);
+gboolean msfsmdl_bgl_cb_var_base_32(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_vertex_list(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_vinstance_call(G3DIffGlobal *global, G3DIffLocal *local);
 gboolean msfsmdl_bgl_cb_vposition(G3DIffGlobal *global, G3DIffLocal *local);
@@ -73,7 +78,7 @@ static BglOpCode bgl_opcodes[] = {
 	{ 0x005b,    2, "INDIRECT_CALL" },
 	{ 0x005f,    0, "IFSIZEV", msfsmdl_bgl_cb_ifsizev },
 	{ 0x0088,    4, "JUMP_32", msfsmdl_bgl_cb_jump_32 },
-	{ 0x0089,    4, "VAR_BASE_32" },
+	{ 0x0089,    0, "VAR_BASE_32", msfsmdl_bgl_cb_var_base_32 },
 	{ 0x008a,    4, "CALL_32", msfsmdl_bgl_cb_call_32 },
 	{ 0x008e,    2, "VFILE_MARKER" },
 	{ 0x0096,    4, "CRASH_START" },
@@ -121,9 +126,10 @@ typedef struct {
 	G3DFloat scale;
 
 	guint32 n_textures;
-	gchar **textures;
+	G3DImage **tex_images;
 
 	G3DImage *current_texture;
+	G3DMatrix *current_varbase_matrix;
 
 	gint32 max_objects;
 } BglState;
@@ -189,6 +195,16 @@ gboolean msfsmdl_parse_bgl(G3DIffGlobal *global, G3DIffLocal *local) {
 			break;
 		}
 	}
+
+	for (i = 0; i < state->n_textures; i ++) {
+		if (!state->tex_images[i])
+			continue;
+		G3DMaterial *mat = g3d_material_new();
+		mat->tex_image = state->tex_images[i];
+		mat->name = g_strdup_printf("texture %i", i);
+		global->model->materials = g_slist_append(global->model->materials, mat);
+	}
+
 	return TRUE;
 }
 
@@ -527,7 +543,7 @@ gboolean msfsmdl_bgl_cb_texture_list(G3DIffGlobal *global, G3DIffLocal *local) {
 	g3d_stream_read_int32_le(global->stream);
 
 	state->n_textures = n_elems;
-	state->textures = g_new0(gchar*, n_elems);
+	state->tex_images = g_new0(G3DImage*, n_elems);
 
 	for (i = 0; i < n_elems; i ++) {
 		g3d_stream_read_int32_le(global->stream); /* tclass */
@@ -538,7 +554,11 @@ gboolean msfsmdl_bgl_cb_texture_list(G3DIffGlobal *global, G3DIffLocal *local) {
 		memset(name, '\0', 65);
 		g3d_stream_read(global->stream, name, 64);
 
-		state->textures[i] = g_strdup(name);
+		state->tex_images[i] = msfsmdl_find_load_texture(
+			global->context,
+			global->model,
+			name,
+			FALSE);
 
 		g_debug("| texture %s", name);
 	}
@@ -581,7 +601,7 @@ gboolean msfsmdl_bgl_cb_draw_trilist(G3DIffGlobal *global, G3DIffLocal *local) {
 
 	n_elems = g3d_stream_read_int16_le(global->stream);
 
-	g_debug("| DRAW_TRILIST  %i,0x%04x,%i", n_elems, vbase, vcount);
+	g_debug("| DRAW_TRILIST  %i,0x%04x,%i (object %s)", n_elems, vbase, vcount, object->name);
 
 	if (n_elems % 3 != 0) {
 		g_error("expected vertex count to be n * 3 (%i)", n_elems);
@@ -715,14 +735,8 @@ gboolean msfsmdl_bgl_cb_set_material(G3DIffGlobal *global, G3DIffLocal *local) {
 
 	if (itex < 0)
 		state->current_texture = NULL;
-	else if (itex < state->n_textures) {
-		state->current_texture = msfsmdl_find_load_texture(
-			global->context,
-			global->model,
-			state->textures[itex],
-			FALSE);
-		g_debug("| texture %s: %p", state->textures[itex], state->current_texture);
-	}
+	else if (itex < state->n_textures)
+		state->current_texture = state->tex_images[itex];
 	else
 		g_warning("out-of-bounds texture index %i", itex);
 
@@ -804,22 +818,26 @@ gboolean msfsmdl_bgl_cb_tag(G3DIffGlobal *global, G3DIffLocal *local) {
 gboolean msfsmdl_bgl_cb_animate(G3DIffGlobal *global, G3DIffLocal *local) {
 	BglState *state = global->user_data;
 	G3DMatrix *matrix = g3d_matrix_new();
+	gint32 i_base, i_offset, t_base, t_offset;
 	G3DVector x, y, z;
 
-	/* input_base */
-	g3d_stream_read_int32_le(global->stream);
-	/* input_offset */
-	g3d_stream_read_int32_le(global->stream);
-	/* table_base */
-	g3d_stream_read_int32_le(global->stream);
-	/* table_offset */
-	g3d_stream_read_int32_le(global->stream);
+	i_base = g3d_stream_read_int32_le(global->stream);
+	i_offset = g3d_stream_read_int32_le(global->stream);
+	t_base = g3d_stream_read_int32_le(global->stream);
+	t_offset = g3d_stream_read_int32_le(global->stream);
 
 	x = g3d_stream_read_float_le(global->stream);
 	y = g3d_stream_read_float_le(global->stream);
 	z = g3d_stream_read_float_le(global->stream);
 
+#if 1
 	g3d_matrix_translate(x, y, z, matrix);
+#endif
+
+	if (state->current_varbase_matrix)
+		g3d_matrix_multiply(matrix, state->current_varbase_matrix, matrix);
+
+	g_debug("| input=(%i,%i), table=(%i,%i)", i_base, i_offset, t_base, t_offset);
 
 #if 1
 	g3d_matrix_dump(matrix);
@@ -864,6 +882,68 @@ gboolean msfsmdl_bgl_cb_transform_end(G3DIffGlobal *global, G3DIffLocal *local) 
 	}
 
 	g_queue_pop_tail(state->matrix_queue);
+
+	return TRUE;
+}
+
+gboolean msfsmdl_bgl_cb_var_base_32(G3DIffGlobal *global, G3DIffLocal *local) {
+	BglState *state = global->user_data;
+	gint32 base = g3d_stream_read_int32_le(global->stream);
+	goffset curr = g3d_stream_tell(global->stream);
+	goffset dest = curr + base - 6;
+	guint32 i, x1;
+
+	g_debug("| var base: %i (0x%08x)", base, base);
+
+	if (state->current_varbase_matrix) {
+		g_free(state->current_varbase_matrix);
+		state->current_varbase_matrix = NULL;
+	}
+
+	switch (base) {
+	case -1:
+	case 0:
+	case 1:
+		break;
+	default:
+		g3d_stream_seek(global->stream, dest, G_SEEK_SET);
+		x1 = g3d_stream_read_int16_le(global->stream);
+		g_debug("| var: %04x, %i", x1, -base);
+
+		if (x1 == 3) {
+			/* rotation */
+			G3DMatrix *matrix = g3d_matrix_new();
+			G3DFloat pa,frame,x,y,z,w,a;
+			guint32 nf;
+
+			pa = g3d_stream_read_float_le(global->stream);
+			for (i = 0; i < 16; i ++)
+				g3d_stream_read_float_le(global->stream); /* ignore */
+			nf = g3d_stream_read_int16_le(global->stream);
+			for (i = 0; i < nf; i ++) {
+				frame = g3d_stream_read_float_le(global->stream);
+				x = g3d_stream_read_float_le(global->stream);
+				y = g3d_stream_read_float_le(global->stream);
+				z = g3d_stream_read_float_le(global->stream);
+				w = g3d_stream_read_float_le(global->stream);
+				a = (2 * acos(w));
+
+				g_debug("| frame %i/%i [%f]: (%f,%f,%f), %f (%f)", i, nf, frame, x,y,z, w,
+					a * 180.0 / M_PI);
+
+				if (i == 0) {
+					g3d_matrix_rotate(-a, x, y, z, matrix);
+					state->current_varbase_matrix = matrix;
+				}
+			}
+			if (!state->current_varbase_matrix)
+				g_free(matrix);
+			g3d_matrix_dump(matrix);
+		}
+
+		g3d_stream_seek(global->stream, curr, G_SEEK_SET);
+		break;
+	}
 
 	return TRUE;
 }
